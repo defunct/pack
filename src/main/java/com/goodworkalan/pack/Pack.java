@@ -136,7 +136,7 @@ public interface Pack
      * 
      * @return The map of named static pages.
      */
-    public Map<URI, Long> getStaticPages();
+    public Map<URI, Long> getStaticBlocks();
 }
 
 /* vim: set et sw=4 ts=4 ai tw=80 nowrap: */

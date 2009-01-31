@@ -520,7 +520,7 @@ public final class Mutator
     public void free(final long address)
     {
         // User is not allowed to free named blocks.
-        if (pager.getStaticPages().containsValue(address))
+        if (pager.getStaticBlocks().containsValue(address))
         {
             throw new PackException(Pack.ERROR_FREED_STATIC_ADDRESS);
         }

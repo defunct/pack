@@ -685,7 +685,7 @@ public class PackTestCase
         File file = newFile();
         Pack pack = creator.create(file);
         Mutator mutator = pack.mutate();
-        mutator.write(mutator.getPack().getStaticPages().get(URI.create("http://one.com/")), get64bytes());
+        mutator.write(mutator.getPack().getStaticBlocks().get(URI.create("http://one.com/")), get64bytes());
         mutator.commit();
     }
     

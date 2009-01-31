@@ -41,7 +41,7 @@ final class Pager implements Pack
      * A map of URIs that identify the addresses of static blocks specified
      * at the creation of the pack.
      */
-    private final Map<URI, Long> staticPages;
+    private final Map<URI, Long> staticBlocks;
 
     /**
      * This size of a page.
@@ -210,7 +210,7 @@ final class Pager implements Pack
         this.interimBoundary = new Boundary(pageSize, interimBoundary);
         this.rawPageByPosition = new HashMap<Long, RawPageReference>();
         this.freePageBySize = new ByRemainingTable(pageSize, alignment);
-        this.staticPages = Collections.unmodifiableMap(staticPages);
+        this.staticBlocks = Collections.unmodifiableMap(staticPages);
         this.emptyUserPages = new FreeSet();
         this.freeInterimPages = new FreeSet();
         this.queue = new ReferenceQueue<RawPage>();
@@ -308,11 +308,11 @@ final class Pager implements Pack
      * 
      * @return The map of named static pages.
      * 
-     * @see com.goodworkalan.pack.Pack#getStaticPages()
+     * @see com.goodworkalan.pack.Pack#getStaticBlocks()
      */
-    public Map<URI, Long> getStaticPages()
+    public Map<URI, Long> getStaticBlocks()
     {
-        return staticPages;
+        return staticBlocks;
     }
 
     /**
