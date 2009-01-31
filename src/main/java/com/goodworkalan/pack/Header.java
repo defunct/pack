@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.Regional;
+
 final class Header extends Regional
 {
     private final ByteBuffer bytes;
@@ -111,11 +113,13 @@ final class Header extends Regional
         invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 5, Pack.ADDRESS_SIZE);
     }
     
+    // FIXME Rename.
     public long getOpenBoundary()
     {
         return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 5);
     }
     
+    // FIXME Rename.
     public void setOpenBoundary(long openBoundary)
     {
         bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 5, openBoundary);

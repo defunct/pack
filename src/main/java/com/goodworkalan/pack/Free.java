@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.Sheaf;
+
 
 final class Free
 extends Operation
@@ -23,23 +25,24 @@ extends Operation
     @Override
     public void commit(Player player)
     {
+        Bouquet bouquet = player.getBouquet();
         // TODO Someone else can allocate the address and even the block
         // now that it is free and the replay ruins it. 
-        Pager pager = player.getPager();
-        pager.getAddressLocker().lock(address);
+        Sheaf pager = bouquet.getPager();
+        bouquet.getAddressLocker().lock(address);
         player.getAddressSet().add(address);
         // TODO Same problem with addresses as with temporary headers,
         // someone can reuse when we're scheduled to release.
-        pager.freeTemporary(address, player.getDirtyPages());
+        player.getBouquet().getTemporaryFactory().freeTemporary(player.getBouquet().getPager(), address, player.getDirtyPages());
         AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
         addresses.free(address, player.getDirtyPages());
         UserPage user = pager.getPage(player.adjust(position), UserPage.class, new UserPage());
         user.waitOnMirrored();
         // TODO What is reserve and release about here?
-        pager.getFreePageBySize().reserve(user.getRawPage().getPosition());
+        bouquet.getUserPagePool().getFreePageBySize().reserve(user.getRawPage().getPosition());
         user.free(address, player.getDirtyPages());
-        pager.getFreePageBySize().release(user.getRawPage().getPosition(), user.getRawPage().getPosition());
-        pager.returnUserPage(user);
+        bouquet.getUserPagePool().getFreePageBySize().release(user.getRawPage().getPosition(), user.getRawPage().getPosition());
+        bouquet.getUserPagePool().returnUserPage(user);
     }
 
     @Override

@@ -19,6 +19,11 @@ import java.util.TreeSet;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.goodworkalan.sheaf.Disk;
+import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.Regional;
+import com.goodworkalan.sheaf.Sheaf;
+
 public class PackTestCase
 {
     private File newFile()
@@ -311,7 +316,7 @@ public class PackTestCase
         mutator.commit();
         pack.close();
         
-        Pager pager = (Pager) new Opener().open(file);
+        Sheaf pager = new Opener().open(file).bouquet.getPager();
         Page page = pager.getPage(8192, RelocatablePage.class, new RelocatablePage());
         page = pager.getPage(8192, UserPage.class, new UserPage());
         assertEquals(8192, page.getRawPage().getPosition());

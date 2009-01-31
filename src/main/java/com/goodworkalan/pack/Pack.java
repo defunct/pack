@@ -2,13 +2,15 @@
 package com.goodworkalan.pack;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
  */
-public interface Pack
+public class Pack
 {
     /**
      * A constant value of the null address value of 0.
@@ -101,31 +103,64 @@ public interface Pack
     
     final static int COUNT_MASK = 0xA0000000;
     
+    final Bouquet bouquet;
+    
+    Pack(Bouquet bouquet)
+    {
+        this.bouquet = bouquet;
+    }
+    
     /**
      * Get the size of all underlying pages managed by this pager.
      * 
      * @return The page size.
      */
-    public int getPageSize();
+    public int getPageSize()
+    {
+        return bouquet.getPager().getPageSize();
+    }
 
     /**
      * Return the alignment to which all block allocations are rounded.
      * 
      * @return The block alignment.
      */
-    public int getAlignment();
+    public int getAlignment()
+    {
+        return bouquet.getAlignment();
+    }
 
     /**
      * Soft close of the pack will wait until all mutators commit or rollback
      * and then compact the pack before closing the file.
      */
-    public void close();
+    public void close()
+    {
+        // Grab the exclusive compact lock, which will wait for any concurrent
+        // commits to complete.
     
-    public Mutator mutate();
+        bouquet.getCompactLock().writeLock().lock();
     
-    public File getFile();
-
-    public void copacetic();
+        try
+        {
+            tryClose();
+        }
+        finally
+        {
+            bouquet.getCompactLock().writeLock().unlock();
+        }
+    }
+    
+    
+    public Mutator mutate()
+    {
+        return bouquet.getMutatorFactory().mutate();
+    }
+    
+    public File getFile()
+    {
+        return bouquet.getFile();
+    }
 
     /**
      * Return a map of named pages that maps a URI to the address of a static
@@ -136,7 +171,87 @@ public interface Pack
      * 
      * @return The map of named static pages.
      */
-    public Map<URI, Long> getStaticBlocks();
+    public Map<URI, Long> getStaticBlocks()
+    {
+        return bouquet.getStaticBlocks();
+    }
+    
+    /**
+     * Close the pager writing out the region boudnaries and the soft shutdown
+     * flag in the header and variable pager state to a region at the end of the
+     * file. The variable data includes address pages with addresses remaining,
+     * empty user pages, and user pages with space remaining. The variable data
+     * is positioned at the location indicated by the user to interim boundary.
+     * <p>
+     * Close will wait for any concurrent commits to complete.
+     */
+    private void tryClose()
+    {
+        // Write the set of address pages, the set of empty user pages and
+        // the set of pages with space remaining to a byte buffer.
+
+        int size = 0;
+        
+        int userPageSize = bouquet.getUserPagePool().getEmptyUserPages().size() + bouquet.getUserPagePool().getFreePageBySize().getSize();
+        size += Pack.COUNT_SIZE + bouquet.getAddressPagePool().size() * Pack.POSITION_SIZE;
+        size += Pack.COUNT_SIZE + userPageSize * Pack.POSITION_SIZE;
+        
+        ByteBuffer reopen = ByteBuffer.allocateDirect(size);
+        
+        reopen.putInt(bouquet.getAddressPagePool().size());
+        for (long position: bouquet.getAddressPagePool())
+        {
+            reopen.putLong(position);
+        }
+       
+        reopen.putInt(userPageSize);
+        for (long position: bouquet.getUserPagePool().getEmptyUserPages())
+        {
+            reopen.putLong(position);
+        }
+        for (long position: bouquet.getUserPagePool().getFreePageBySize())
+        {
+            reopen.putLong(position);
+        }
+        
+        reopen.flip();
+
+        // Write the variable data at the interim page positions.
+        
+        try
+        {
+            bouquet.getPager().getDisk().write(bouquet.getPager().getFileChannel(), reopen, bouquet.getInterimBoundary().getPosition());
+        }
+        catch (IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_WRITE, e);
+        }
+
+        // Write the boundaries and soft shutdown flag.
+        
+        try
+        {
+            bouquet.getPager().getDisk().truncate(bouquet.getPager().getFileChannel(), bouquet.getInterimBoundary().getPosition() + reopen.capacity());
+        }
+        catch (IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
+        }
+        
+        bouquet.getHeader().setDataBoundary(bouquet.getUserBoundary().getPosition());
+        bouquet.getHeader().setOpenBoundary(bouquet.getInterimBoundary().getPosition());
+
+        bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
+        try
+        {
+            bouquet.getHeader().write(bouquet.getPager().getDisk(), bouquet.getPager().getFileChannel());
+            bouquet.getPager().getDisk().close(bouquet.getPager().getFileChannel());
+        }
+        catch (IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_CLOSE, e);
+        }
+    }
 }
 
 /* vim: set et sw=4 ts=4 ai tw=80 nowrap: */

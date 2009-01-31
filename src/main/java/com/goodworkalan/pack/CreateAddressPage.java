@@ -20,7 +20,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        player.getPager().setPage(position, AddressPage.class, new AddressPage(), player.getDirtyPages(), true);
+        player.getBouquet().getPager().setPage(position, AddressPage.class, new AddressPage(), player.getDirtyPages(), true);
     }
     
     @Override

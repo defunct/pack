@@ -3,6 +3,10 @@ package com.goodworkalan.pack;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
+
 /**
  * Interprets an underlying page as an array of file positions that reference a
  * file position in the user region of the file. A user address references a
@@ -37,6 +41,9 @@ implements Page
      * page.
      */
     private int freeCount;
+    
+    /** FIXME OUTGOING! */
+    private final long first;
 
     /**
      * Construct an uninitialized address page that is then initialized by
@@ -57,6 +64,7 @@ implements Page
      */
     public AddressPage()
     {
+        first = 0;
     }
 
     /**
@@ -68,10 +76,9 @@ implements Page
      *            The raw page behind the address page.
      * @return The offset of address page header in the raw page.
      */
-    private static int getHeaderOffset(RawPage rawPage)
+    private int getHeaderOffset(RawPage rawPage)
     {
         int offset = 0;
-        long first = rawPage.getPager().getFirstAddressPageStart();
         if (rawPage.getPosition() < first)
         {
             offset = (int) (first % rawPage.getPager().getPageSize());

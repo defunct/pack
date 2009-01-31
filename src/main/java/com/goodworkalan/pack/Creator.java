@@ -12,6 +12,10 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Disk;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 public final class Creator
 {
@@ -157,20 +161,25 @@ public final class Creator
         
         SortedSet<Long> setOfAddressPages = new TreeSet<Long>();
         setOfAddressPages.add(offsets.getFirstAddressPage());
-        Pager pager = new Pager(file, fileChannel, disk, header, mapOfStaticPages, setOfAddressPages, header.getDataBoundary(), header.getDataBoundary(), mapOfTemporaryArrays);
+        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize());
+        Bouquet bouquet = new Bouquet(file, header,
+                mapOfStaticPages, header.getDataBoundary(), header.getDataBoundary(),
+                pager,
+                new AddressPagePool(setOfAddressPages),
+                new TemporaryServer(mapOfTemporaryArrays));
         
-        long user = pager.getInterimBoundary().getPosition();
-        pager.getInterimBoundary().increment();
+        long user = bouquet.getInterimBoundary().getPosition();
+        bouquet.getInterimBoundary().increment();
         
-        DirtyPageSet dirtyPages = new DirtyPageSet(pager, 0);
-        pager.setPage(user, UserPage.class, new UserPage(), dirtyPages, false);
-        UserPage blocks = pager.getPage(user, UserPage.class, new UserPage());
+        DirtyPageSet dirtyPages = new DirtyPageSet(bouquet.getPager(), 0);
+        bouquet.getPager().setPage(user, UserPage.class, new UserPage(), dirtyPages, false);
+        UserPage blocks = bouquet.getPager().getPage(user, UserPage.class, new UserPage());
         blocks.getRawPage().invalidate(0, pageSize);
         dirtyPages.flush();
         
-        pager.returnUserPage(blocks);
+        bouquet.getUserPagePool().returnUserPage(blocks);
         
-        Mutator mutator = pager.mutate();
+        Mutator mutator = bouquet.getMutatorFactory().mutate();
         
         header.setTemporaries(mutator.allocate(Pack.ADDRESS_SIZE * 2));
         ByteBuffer temporaries = mutator.read(header.getTemporaries());
@@ -223,7 +232,7 @@ public final class Creator
             throw new PackException(Pack.ERROR_IO_WRITE, e);
         }
 
-        pager.close();
+        new Pack(bouquet).close();
         
         Opener opener = new Opener();
         

@@ -15,6 +15,9 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.goodworkalan.sheaf.Disk;
+import com.goodworkalan.sheaf.Sheaf;
+
 /**
  * Opens pack files and performs recovery.
  */
@@ -172,19 +175,15 @@ public final class Opener
         
         Map<Long, ByteBuffer> mapOfTemporaryArrays = new HashMap<Long, ByteBuffer>();
         
-        Pager pager = new Pager(file, fileChannel, disk, header,
-                                mapOfStaticPages,
-                                setOfAddressPages,
-                                header.getDataBoundary(),
-                                header.getOpenBoundary(),
-                                mapOfTemporaryArrays);
+        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize());
+        Bouquet bouquet = new Bouquet(file, header, mapOfStaticPages, header.getDataBoundary(), header.getOpenBoundary(), pager, new AddressPagePool(setOfAddressPages), new TemporaryServer(mapOfTemporaryArrays));
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
         {
             long position = reopen.getLong();
             UserPage blockPage = pager.getPage(position, UserPage.class, new UserPage());
-            pager.returnUserPage(blockPage);
+            bouquet.getUserPagePool().returnUserPage(blockPage);
         }
         
         try
@@ -218,7 +217,7 @@ public final class Opener
             throw new PackException(Pack.ERROR_IO_FORCE, e);
         }
 
-        Mutator mutator = pager.mutate();
+        Mutator mutator = bouquet.getPack().mutate();
         
         long temporaries = header.getTemporaries();
         do
@@ -234,13 +233,9 @@ public final class Opener
         }
         while (temporaries != 0L);
 
-        pager = new Pager(file, fileChannel, disk, header,
-                          mapOfStaticPages,
-                          setOfAddressPages,
-                          header.getDataBoundary(),
-                          openBoundary,
-                          mapOfTemporaryArrays);
-        
-        return pager;
+        return new Bouquet(file, header, mapOfStaticPages,
+                    header.getDataBoundary(), openBoundary, pager,
+                    new AddressPagePool(setOfAddressPages),
+                    new TemporaryServer(mapOfTemporaryArrays)).getPack();
     }
 }

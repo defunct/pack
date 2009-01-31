@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.Sheaf;
+
 
 /**
  * Copy does not wait on mirrored pages, since it is called only on 
@@ -38,8 +40,8 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        Pager pager = player.getPager();
-        pager.getAddressLocker().bide(address);
+        Sheaf pager = player.getBouquet().getPager();
+        player.getBouquet().getAddressLocker().bide(address);
         InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
         UserPage user = pager.getPage(to, UserPage.class, new UserPage());
         interim.copy(address, user, player.getDirtyPages());

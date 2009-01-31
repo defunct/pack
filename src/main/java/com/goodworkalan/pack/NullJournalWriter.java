@@ -1,12 +1,15 @@
 package com.goodworkalan.pack;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 class NullJournalWriter
 extends JournalWriter
 {
-    public NullJournalWriter(Pager pager, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
+    public NullJournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
     {
-        super(pager, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
+        super(pager, interimPagePool, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
     }
 
     public boolean write(Operation operation)
@@ -38,9 +41,9 @@ extends JournalWriter
      */
     public JournalWriter extend()
     {
-        JournalPage journal = pager.newInterimPage(new JournalPage(), dirtyPages);
+        JournalPage journal = interimPagePool.newInterimPage(pager, JournalPage.class, new JournalPage(), dirtyPages);
         Movable start = new Movable(moveNodeRecorder.getMoveNode(), journal.getJournalPosition(), 0);
         pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(pager, moveNodeRecorder, pageRecorder, journal, start, dirtyPages);
+        return new JournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, journal, start, dirtyPages);
     }
 }

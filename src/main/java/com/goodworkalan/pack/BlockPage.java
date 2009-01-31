@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.Checksum;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.RawPage;
+
 /**
  * <p>
  * An application of a raw page that manages the page a list of data blocks.

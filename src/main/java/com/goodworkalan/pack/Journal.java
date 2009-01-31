@@ -1,12 +1,15 @@
 package com.goodworkalan.pack;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 class Journal
 {
     private JournalWriter writer;
     
-    public Journal(Pager pager, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
+    public Journal(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
     {
-        writer = new NullJournalWriter(pager, moveNodeRecorder, pageRecorder, dirtyPages);
+        writer = new NullJournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, dirtyPages);
     }
     
     public Movable getJournalStart()

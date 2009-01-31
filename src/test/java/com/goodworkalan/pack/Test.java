@@ -323,11 +323,6 @@ public class Test
             mutator = environment.pack.mutate();
         }
 
-        public void copacetic()
-        {
-            environment.pack.copacetic();
-        }
-
         public void rollback()
         {
             Iterator<Operation> rollbacks = listOfRollbackOperations.iterator();
@@ -346,7 +341,6 @@ public class Test
         {
             environment.pack.close();
             environment.pack = new Opener().open(environment.file);
-            environment.pack.copacetic();
             mutator = environment.pack.mutate();
         }
 

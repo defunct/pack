@@ -54,18 +54,20 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        player.getPager().setTemporary(address, temporary, player.getDirtyPages());
+        player.getBouquet().getTemporaryFactory().setTemporary(player.getBouquet().getPager(), address, temporary, player.getDirtyPages());
     }
-    
+
     /**
      * Called by a mutator during a rollback to return the temporary reference
-     * node to the set of free temporary refeence nodes maintained by the pager.
-     *
-     * @param pager The pager.
+     * node to the set of free temporary reference nodes maintained by the
+     * pager.
+     * 
+     * @param pager
+     *            The pager.
      */
-    public void rollback(Pager pager)
+    public void rollback(TemporaryServer temporaryNodes)
     {
-        pager.rollbackTemporary(address, temporary);
+        temporaryNodes.rollbackTemporary(address, temporary);
     }
 
     /**

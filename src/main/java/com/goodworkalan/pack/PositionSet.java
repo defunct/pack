@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.Pointer;
+
 /**
  * Maintains a set of allocated and free positions that reference a
  * position on range of the underlying file as a set of position. Used

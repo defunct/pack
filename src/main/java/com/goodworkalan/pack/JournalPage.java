@@ -3,6 +3,9 @@ package com.goodworkalan.pack;
 import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.RawPage;
+
 
 final class JournalPage
 extends RelocatablePage

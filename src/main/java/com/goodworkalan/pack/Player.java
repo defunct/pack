@@ -7,10 +7,13 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Pointer;
+
 
 final class Player
 {
-    private final Pager pager;
+    private final Bouquet bouquet;
 
     private final Pointer header;
 
@@ -25,13 +28,13 @@ final class Player
     private final LinkedList<Move> listOfMoves;
     
     
-    public Player(Pager pager, Pointer header, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, Pointer header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
         bytes.clear();
         
-        this.pager = pager;
+        this.bouquet = bouquet;
         this.header = header;
         this.entryPosition = bytes.getLong();
         this.dirtyPages = dirtyPages;
@@ -40,9 +43,9 @@ final class Player
         this.listOfMoves = new LinkedList<Move>();
     }
     
-    public Pager getPager()
+    public Bouquet getBouquet()
     {
-        return pager;
+        return bouquet;
     }
     
     public Pointer getJournalHeader()
@@ -72,12 +75,12 @@ final class Player
     
     public long adjust(long position)
     {
-        return pager.adjust(getMoveList(), position);
+        return bouquet.adjust(getMoveList(), position);
     }
 
     private void execute()
     {
-        JournalPage journalPage = pager.getPage(entryPosition, JournalPage.class, new JournalPage());
+        JournalPage journalPage = bouquet.getPager().getPage(entryPosition, JournalPage.class, new JournalPage());
         
         journalPage.seek(entryPosition);
         
@@ -106,6 +109,6 @@ final class Player
 
         dirtyPages.flush(header);
 
-        pager.getJournalHeaders().free(header);
+        bouquet.getJournalHeaders().free(header);
     }
 }

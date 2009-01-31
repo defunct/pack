@@ -2,6 +2,10 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.RawPage;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 final class UserPage extends BlockPage
 {
@@ -65,7 +69,7 @@ final class UserPage extends BlockPage
      *         or the mirrored page allocated, or null if no interim page was
      *         given nor allocated.
      */
-    public synchronized Mirror mirror(boolean vacuum, Pager pager, InterimPage interim, DirtyPageSet dirtyPages)
+    public synchronized Mirror mirror(boolean vacuum, InterimPagePool interimPagePool, Sheaf pager, InterimPage interim, DirtyPageSet dirtyPages)
     {
         int offset = vacuum ? -1 : 0;
         
@@ -99,7 +103,7 @@ final class UserPage extends BlockPage
                     {
                         if (interim == null)
                         {
-                            interim = pager.newInterimPage(new InterimPage(), dirtyPages);
+                            interim = interimPagePool.newInterimPage(pager, InterimPage.class, new InterimPage(), dirtyPages);
                         }
 
                         assert size <= interim.getRemaining();
@@ -141,7 +145,7 @@ final class UserPage extends BlockPage
         synchronized (getRawPage())
         {
             RawPage rawPage = getRawPage();
-            Pager pager = rawPage.getPager();
+            Sheaf pager = rawPage.getPager();
             AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
             long position = addresses.dereference(address);
             if (position != getRawPage().getPosition())

@@ -12,6 +12,10 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.Pointer;
+
 /**
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
  * order to allocate, read, write or free blocks, one must create a
@@ -19,8 +23,7 @@ import java.util.TreeSet;
  */
 public final class Mutator
 {
-    /** The page manager of the pack to mutate. */
-    private final Pager pager;
+    private final Bouquet bouquet;
     
     /** A journal to record the isolated mutations of the associated pack. */
     private final Journal journal;
@@ -94,15 +97,13 @@ public final class Mutator
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    Mutator(Pager pager, MoveLatchIterator moveLatchList, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder,
+    Mutator(Bouquet bouquet, MoveLatchIterator moveLatchList, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder,
         Journal journal, DirtyPageSet dirtyPages)
     {
-        ByRemainingTable allocPagesBySize = new ByRemainingTable(pager.getPageSize(), pager.getAlignment());
-        ByRemainingTable writePagesBySize = new ByRemainingTable(pager.getPageSize(), pager.getAlignment());
+        ByRemainingTable allocPagesBySize = new ByRemainingTable(bouquet.getPager().getPageSize(), bouquet.getAlignment());
+        ByRemainingTable writePagesBySize = new ByRemainingTable(bouquet.getPager().getPageSize(), bouquet.getAlignment());
 
-
-
-        this.pager = pager;
+        this.bouquet = bouquet;
         this.journal = journal;
         this.allocPagesBySize = allocPagesBySize;
         this.writePagesBySize = writePagesBySize;
@@ -143,7 +144,7 @@ public final class Mutator
             moveRecorder.add(new ByRemainingTableRecorder(writePagesBySize));
             moveRecorder.add(new JournalRecorder(journal));
             
-            moveLatches = pager.getMoveLatchList().newIterator(moveRecorder);
+            moveLatches = bouquet.getMoveLatchList().newIterator(moveRecorder);
         }
         
         return moveLatches;
@@ -156,7 +157,7 @@ public final class Mutator
      */
     public Pack getPack()
     {
-        return pager;
+        return bouquet.getPack();
     }
 
     /**
@@ -176,7 +177,7 @@ public final class Mutator
     {
         long address = allocate(blockSize);
         
-        final Temporary temporary = pager.getTemporary(address);
+        final Temporary temporary = bouquet.getTemporaryFactory().getTemporary(bouquet.getMutatorFactory(), address);
 
         getMoveLatches().mutate(new GuardedVoid()
         {
@@ -205,14 +206,14 @@ public final class Mutator
     {
         AddressPage addressPage = null;
         final long address;
-        addressPage = pager.getAddressPage(lastAddressPage);
+        addressPage = bouquet.getAddressPagePool().getAddressPage(bouquet.getMutatorFactory(), bouquet.getPager(), lastAddressPage);
         try
         {
             address = addressPage.reserve(dirtyPages);
         }
         finally
         {
-            pager.returnAddressPage(addressPage);
+            bouquet.getAddressPagePool().returnAddressPage(addressPage);
         }
         
         // Add the header size to the block size.
@@ -227,7 +228,7 @@ public final class Mutator
                 // This is unimplemented: Creating a linked list of blocks when
                 // the block size exceeds the size of a page.
                 
-                int pageSize = pager.getPageSize();
+                int pageSize = bouquet.getPager().getPageSize();
                 if (fullSize + Pack.BLOCK_PAGE_HEADER_SIZE > pageSize)
                 {
                     // Recurse.
@@ -251,12 +252,12 @@ public final class Mutator
                 long bestFit = allocPagesBySize.bestFit(fullSize);
                 if (bestFit == 0L)
                 {
-                    interim = pager.newInterimPage(new InterimPage(), dirtyPages);
+                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getPager(), InterimPage.class, new InterimPage(), dirtyPages);
                     pageRecorder.getAllocBlockPages().add(interim.getRawPage().getPosition());
                 }
                 else
                 {
-                    interim = pager.getPage(bestFit, InterimPage.class, new InterimPage());
+                    interim = bouquet.getPager().getPage(bestFit, InterimPage.class, new InterimPage());
                 }
                 
                 // Allocate a block from the wilderness data page.
@@ -286,7 +287,7 @@ public final class Mutator
     private UserPage dereference(long address, List<MoveLatch> userMoveLatches)
     {
         // Get the address page.
-        AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
+        AddressPage addresses = bouquet.getPager().getPage(address, AddressPage.class, new AddressPage());
 
         // Assert that address is not a free address.
         long position = addresses.dereference(address);
@@ -309,7 +310,7 @@ public final class Mutator
             }
         }
     
-        return pager.getPage(position, UserPage.class, new UserPage());
+        return bouquet.getPager().getPage(position, UserPage.class, new UserPage());
     }
 
     /**
@@ -357,12 +358,12 @@ public final class Mutator
                     long bestFit = writePagesBySize.bestFit(blockSize);
                     if (bestFit == 0L)
                     {
-                        interim = pager.newInterimPage(new InterimPage(), dirtyPages);
+                        interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getPager(), InterimPage.class, new InterimPage(), dirtyPages);
                         pageRecorder.getWriteBlockPages().add(interim.getRawPage().getPosition());
                     }
                     else
                     {
-                        interim = pager.getPage(bestFit, InterimPage.class, new InterimPage());
+                        interim = bouquet.getPager().getPage(bestFit, InterimPage.class, new InterimPage());
                     }
                     
                     interim.allocate(address, blockSize, dirtyPages);
@@ -383,7 +384,7 @@ public final class Mutator
                 }
                 else
                 {
-                    interim = pager.getPage(movable.getPosition(pager), InterimPage.class, new InterimPage());
+                    interim = bouquet.getPager().getPage(movable.getPosition(bouquet.getPager().getPageSize()), InterimPage.class, new InterimPage());
                 }
     
                 if (!interim.write(address, source, dirtyPages))
@@ -464,7 +465,7 @@ public final class Mutator
                 }
                 if (movable == null)
                 {
-                    AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
+                    AddressPage addresses = bouquet.getPager().getPage(address, AddressPage.class, new AddressPage());
                     long lastPosition = 0L;
                     for (;;)
                     {
@@ -476,7 +477,7 @@ public final class Mutator
 
                         if (actual != lastPosition)
                         {
-                            UserPage user = pager.getPage(actual, UserPage.class, new UserPage());
+                            UserPage user = bouquet.getPager().getPage(actual, UserPage.class, new UserPage());
                             out = user.read(address, destination);
                             if (out != null)
                             {
@@ -492,7 +493,7 @@ public final class Mutator
                 }
                 else
                 {
-                    InterimPage interim = pager.getPage(movable.getPosition(pager), InterimPage.class, new InterimPage());
+                    InterimPage interim = bouquet.getPager().getPage(movable.getPosition(bouquet.getPager().getPageSize()), InterimPage.class, new InterimPage());
                     out = interim.read(address, destination);
                 }
 
@@ -520,7 +521,7 @@ public final class Mutator
     public void free(final long address)
     {
         // User is not allowed to free named blocks.
-        if (pager.getStaticBlocks().containsValue(address))
+        if (bouquet.getStaticBlocks().containsValue(address))
         {
             throw new PackException(Pack.ERROR_FREED_STATIC_ADDRESS);
         }
@@ -554,7 +555,7 @@ public final class Mutator
                 if (movable != null)
                 {
                     // Find the current block position, adjusted for page moves.
-                    long position = movable.getPosition(pager);
+                    long position = movable.getPosition(bouquet.getPager().getPageSize());
                     
                     // Figure out which by size table contains the page.  We
                     // will not reinsert the page if it is not already in the by
@@ -563,7 +564,7 @@ public final class Mutator
                     boolean reinsert = bySize.remove(position) != 0;
                     
                     // Free the block from the interim page.
-                    InterimPage interim = pager.getPage(position, InterimPage.class, new InterimPage());
+                    InterimPage interim = bouquet.getPager().getPage(position, InterimPage.class, new InterimPage());
                     interim.free(address, dirtyPages);
                     
                     // We remove and reinsert because if we free from the end of
@@ -580,7 +581,7 @@ public final class Mutator
                 // to the journal.
                 if (unallocate)
                 {
-                    AddressPage addresses = pager.getPage(-address, AddressPage.class, new AddressPage());
+                    AddressPage addresses = bouquet.getPager().getPage(-address, AddressPage.class, new AddressPage());
                     addresses.free(address, dirtyPages);
                 }
                 else
@@ -610,7 +611,7 @@ public final class Mutator
             {
                 break;
             }
-            AddressPage addresses = pager.getPage(-address, AddressPage.class, new AddressPage());
+            AddressPage addresses = bouquet.getPager().getPage(-address, AddressPage.class, new AddressPage());
             addresses.free(-address, dirtyPages);
             dirtyPages.flushIfAtCapacity();
         }
@@ -620,7 +621,7 @@ public final class Mutator
         // by the opener when the file is reopened, needs to be rolled back. 
         for (Temporary temporary : temporaries)
         {
-            temporary.rollback(pager);
+            temporary.rollback(bouquet.getTemporaryFactory());
         }
         
         // Write any dirty pages.
@@ -628,9 +629,9 @@ public final class Mutator
         
         // Put the interim pages we used back into the set of free interim
         // pages.
-        pager.getFreeInterimPages().free(pageRecorder.getAllocBlockPages());
-        pager.getFreeInterimPages().free(pageRecorder.getWriteBlockPages());
-        pager.getFreeInterimPages().free(pageRecorder.getJournalPages());
+        bouquet.getInterimPagePool().getFreeInterimPages().free(pageRecorder.getAllocBlockPages());
+        bouquet.getInterimPagePool().getFreeInterimPages().free(pageRecorder.getWriteBlockPages());
+        bouquet.getInterimPagePool().getFreeInterimPages().free(pageRecorder.getJournalPages());
     }
     
     /**
@@ -663,7 +664,7 @@ public final class Mutator
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
 
-        pager.getCompactLock().readLock().lock();
+        bouquet.getCompactLock().readLock().lock();
 
         try
         {
@@ -677,7 +678,7 @@ public final class Mutator
         }
         finally
         {
-            pager.getCompactLock().readLock().unlock();
+            bouquet.getCompactLock().readLock().unlock();
         }
         clear(new Commit(pageRecorder, journal, moveNodeRecorder));
     }
@@ -690,9 +691,9 @@ public final class Mutator
      */
     private int getUserPageCount()
     {
-        long userPageSize = pager.getInterimBoundary().getPosition()
-                          - pager.getUserBoundary().getPosition();
-        return (int) (userPageSize / pager.getPageSize());
+        long userPageSize = bouquet.getInterimBoundary().getPosition()
+                          - bouquet.getUserBoundary().getPosition();
+        return (int) (userPageSize / bouquet.getPager().getPageSize());
     }
 
     /**
@@ -745,12 +746,12 @@ public final class Mutator
         {
             // Use the page that is at the data to interim boundary.
             
-            long userFromInterimPage = pager.getInterimBoundary().getPosition();
+            long userFromInterimPage = bouquet.getInterimBoundary().getPosition();
             
             // If it is not in the set of free pages it needs to be moved,
             // so we add it to the set of in use.
             
-            if (!pager.getFreeInterimPages().reserve(userFromInterimPage))
+            if (!bouquet.getInterimPagePool().getFreeInterimPages().reserve(userFromInterimPage))
             {
                 userFromInterimPagesToMove.add(userFromInterimPage);
             }
@@ -771,7 +772,7 @@ public final class Mutator
             
             // Increment the data to interim boundary.
 
-            pager.getInterimBoundary().increment();
+            bouquet.getInterimBoundary().increment();
         }
     }
 
@@ -796,14 +797,14 @@ public final class Mutator
         {
             for (long from : userFromInterimPagesToMove)
             {
-                long to = pager.newBlankInterimPage();
+                long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getPager());
                 if (userFromInterimPagesToMove.contains(to))
                 {
                     throw new IllegalStateException();
                 }
                 iterimMoveLatches.getLast().extend(new MoveLatch(new Move(from, to), false));
             }
-            pager.getMoveLatchList().add(iterimMoveLatches);
+            bouquet.getMoveLatchList().add(iterimMoveLatches);
             moveList.skip(iterimMoveLatches);
         }
     }
@@ -826,10 +827,10 @@ public final class Mutator
         for (long position: commit.getAddressFromUserPagesToMove())
         {
             // Get the user page to move.
-            UserPage user = pager.getPage(position, UserPage.class, new UserPage());
+            UserPage user = bouquet.getPager().getPage(position, UserPage.class, new UserPage());
 
-            // Allocate an iterim page to act as a mirror.
-            InterimPage interim = pager.newInterimPage(new InterimPage(), dirtyPages);
+            // Allocate an interim page to act as a mirror.
+            InterimPage interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getPager(), InterimPage.class, new InterimPage(), dirtyPages);
 
             // Add the interim page to the map of allocation page sets (by size).
             allocPagesBySize.add(interim.getRawPage().getPosition(), user.getRemaining());
@@ -869,7 +870,7 @@ public final class Mutator
         // Note that we aren't so grabby with the expand mutex during a user
         // commit, only during a new address page creation.
 
-        synchronized (pager.getUserExpandMutex())
+        synchronized (bouquet.getUserExpandMutex())
         {
             // We are going to create address pages from user pages, so check to
             // see that there are enough user pages. By enough user pages, I
@@ -923,7 +924,7 @@ public final class Mutator
         for (int i = 0; i < newAddressPageCount; i++)
         {
             // The new address page is the user page at the user page boundary.
-            long position = pager.getUserBoundary().getPosition();
+            long position = bouquet.getUserBoundary().getPosition();
             
             // Record the new address page.
             newAddressPages.add(position);
@@ -936,7 +937,7 @@ public final class Mutator
                 // If the position is not in the free page by size, then we'll
                 // attempt to reserve it from the list of free user pages.
 
-                if (pager.getFreePageBySize().reserve(position))
+                if (bouquet.getUserPagePool().getFreePageBySize().reserve(position))
                 {
                     // This user page needs to be moved.
                     commit.getAddressFromUserPagesToMove().add(position);
@@ -944,12 +945,12 @@ public final class Mutator
                     // Remember that free user pages is a FreeSet which will
                     // remove from a set of available, or add to a set of
                     // positions that should not be made available. 
-                    pager.getEmptyUserPages().reserve(position);
+                    bouquet.getUserPagePool().getEmptyUserPages().reserve(position);
                 }
                 else
                 {
                     // Was not in set of pages by size.
-                    if (!pager.getEmptyUserPages().reserve(position))
+                    if (!bouquet.getUserPagePool().getEmptyUserPages().reserve(position))
                     {
                         // Was not in set of empty, so it is in use.
                         commit.getAddressFromUserPagesToMove().add(position);
@@ -958,7 +959,7 @@ public final class Mutator
             }
 
             // Move the boundary for user pages.
-            pager.getUserBoundary().increment();
+            bouquet.getUserBoundary().increment();
         }
 
         // To move a data page to make space for an address page, we simply copy
@@ -1019,16 +1020,16 @@ public final class Mutator
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
 
-        pager.getCompactLock().readLock().lock();
+        bouquet.getCompactLock().readLock().lock();
         
         try
         {
             final Commit commit = new Commit(pageRecorder, journal, moveNodeRecorder);
-            return tryNewAddressPage(pager.getMoveLatchList().newIterator(commit), commit, count); 
+            return tryNewAddressPage(bouquet.getMoveLatchList().newIterator(commit), commit, count); 
         }
         finally
         {
-            pager.getCompactLock().readLock().unlock();
+            bouquet.getCompactLock().readLock().unlock();
         }
     }
 
@@ -1060,7 +1061,7 @@ public final class Mutator
             
             // Get a relocatable page.
 
-            RelocatablePage page = pager.getPage(head.getMove().getFrom(), RelocatablePage.class, new RelocatablePage());
+            RelocatablePage page = bouquet.getPager().getPage(head.getMove().getFrom(), RelocatablePage.class, new RelocatablePage());
             
             // Please note that relocate simply moves the entire page with
             // an unforced write. There is minimal benefit to the dirty page
@@ -1084,9 +1085,9 @@ public final class Mutator
             // Therefore, we can relocate these interim pages confident that
             // no one is currently attempting to dereference them.
             
-            pager.relocate(head.getMove().getFrom(), head.getMove().getTo());
+            bouquet.getPager().relocate(head.getMove().getFrom(), head.getMove().getTo());
 
-            pager.setPage(head.getMove().getFrom(), UserPage.class, new UserPage(), dirtyPages, false);
+            bouquet.getPager().setPage(head.getMove().getFrom(), UserPage.class, new UserPage(), dirtyPages, false);
 
             // Now we can let anyone who is waiting on this interim page
             // through.
@@ -1161,7 +1162,7 @@ public final class Mutator
         for (Map.Entry<Long, Movable> entry: commit.getMovingUserPageMirrors().entrySet())
         {
             long addressFromUserPage = entry.getKey();
-            long mirroredAsAllocation = entry.getValue().getPosition(pager);
+            long mirroredAsAllocation = entry.getValue().getPosition(bouquet.getPager().getPageSize());
             
             Movable movable = commit.getInterimToSharedUserPage().get(mirroredAsAllocation);
             if (movable == null)
@@ -1173,7 +1174,7 @@ public final class Mutator
                 throw new IllegalStateException();
             }
             
-            long newOrExistingUser = movable.getPosition(pager);
+            long newOrExistingUser = movable.getPosition(bouquet.getPager().getPageSize());
             copies.put(addressFromUserPage, newOrExistingUser);
         }
 
@@ -1207,12 +1208,12 @@ public final class Mutator
         for (Map.Entry<Long, Movable> entry: commit.getMovingUserPageMirrors().entrySet())
         {
             long addressFromUserPage = entry.getKey();
-            long allocation = entry.getValue().getPosition(pager);
+            long allocation = entry.getValue().getPosition(bouquet.getPager().getPageSize());
             
-            InterimPage mirrored = pager.getPage(allocation, InterimPage.class, new InterimPage());
+            InterimPage mirrored = bouquet.getPager().getPage(allocation, InterimPage.class, new InterimPage());
             
-            UserPage user = pager.getPage(addressFromUserPage, UserPage.class, new UserPage());
-            user.mirror(false, null, mirrored, dirtyPages);
+            UserPage user = bouquet.getPager().getPage(addressFromUserPage, UserPage.class, new UserPage());
+            user.mirror(false, null, null, mirrored, dirtyPages);
 
             userPagesMirroredForMove.add(user);
         }
@@ -1229,10 +1230,10 @@ public final class Mutator
     {
         for (Map.Entry<Long, Movable> entry: commits.entrySet())
         {
-            InterimPage interim = pager.getPage(entry.getKey(), InterimPage.class, new InterimPage());
+            InterimPage interim = bouquet.getPager().getPage(entry.getKey(), InterimPage.class, new InterimPage());
             for (long address: interim.getAddresses())
             {
-                journal.write(new Copy(address, entry.getKey(), entry.getValue().getPosition(pager)));
+                journal.write(new Copy(address, entry.getKey(), entry.getValue().getPosition(bouquet.getPager().getPageSize())));
             }
         }
     }
@@ -1266,7 +1267,7 @@ public final class Mutator
      */
     private void freeInterimPages(Set<Long> pages)
     {
-        pager.getFreeInterimPages().free(pages);
+        bouquet.getInterimPagePool().getFreeInterimPages().free(pages);
     }
 
     /**
@@ -1279,10 +1280,10 @@ public final class Mutator
      */
     private void freeInterimPageMap(Map<Long, Movable> map)
     {
-        pager.getFreeInterimPages().free(map.keySet());
+        bouquet.getInterimPagePool().getFreeInterimPages().free(map.keySet());
         for (Movable reference : map.values())
         {
-            pager.returnUserPage(pager.getPage(reference.getPosition(pager), UserPage.class, new UserPage()));
+            bouquet.getUserPagePool().returnUserPage(bouquet.getPager().getPage(reference.getPosition(bouquet.getPager().getPageSize()), UserPage.class, new UserPage()));
         }
     }
 
@@ -1319,8 +1320,8 @@ public final class Mutator
                     // pages to store our new block allocations.
                     for (long position : allocPagesBySize)
                     {
-                        int needed = pager.getPageSize() - (Pack.BLOCK_PAGE_HEADER_SIZE + allocPagesBySize.getRemaining(position));
-                        long found = pager.getFreePageBySize().bestFit(needed);
+                        int needed = bouquet.getPager().getPageSize() - (Pack.BLOCK_PAGE_HEADER_SIZE + allocPagesBySize.getRemaining(position));
+                        long found = bouquet.getUserPagePool().getFreePageBySize().bestFit(needed);
                         if (found != 0L)
                         {
                             pageRecorder.getTrackedUserPages().add(found);
@@ -1336,7 +1337,7 @@ public final class Mutator
                     while (commit.getUnassignedInterimBlockPages().size() != 0)
                     {
                         // If there are no empty user pages available, give up.
-                        long position = pager.getEmptyUserPages().allocate();
+                        long position = bouquet.getUserPagePool().getEmptyUserPages().allocate();
                         if (position == 0L)
                         {
                             break;
@@ -1365,7 +1366,7 @@ public final class Mutator
         {
             // Grab the expand mutex to prevent anyone else from adjusting the
             // user to interim boundary.
-            synchronized (pager.getUserExpandMutex())
+            synchronized (bouquet.getUserExpandMutex())
             {
                 // Lock obtained. We might actually have enough pages now, but
                 // that is unlikely. Let's make more without checking.
@@ -1430,7 +1431,7 @@ public final class Mutator
             });
 
             // Append the user page moves to the per pager list of move latches.
-            pager.getMoveLatchList().add(userMoveLatches);
+            bouquet.getMoveLatchList().add(userMoveLatches);
 
             // Skip the user move latches we just added.
             moveLatchList.skip(userMoveLatches);
@@ -1461,8 +1462,8 @@ public final class Mutator
                 for (Map.Entry<Long, Movable> entry: commit.getInterimToSharedUserPage().entrySet())
                 {
                     // Mirror the shared user page.
-                    UserPage user = pager.getPage(entry.getValue().getPosition(pager), UserPage.class, new UserPage());
-                    Mirror mirror = user.mirror(true, pager, null, dirtyPages);
+                    UserPage user = bouquet.getPager().getPage(entry.getValue().getPosition(bouquet.getPager().getPageSize()), UserPage.class, new UserPage());
+                    Mirror mirror = user.mirror(true, bouquet.getInterimPagePool(), bouquet.getPager(), null, dirtyPages);
 
                     // If mirror returns null, the user page did not need a
                     // vacuum, there were no free blocks surrounded by employed
@@ -1512,7 +1513,7 @@ public final class Mutator
                 // to be created by vacuuming.
                 for (long position: pageRecorder.getWriteBlockPages())
                 {
-                    InterimPage interim = pager.getPage(position, InterimPage.class, new InterimPage());
+                    InterimPage interim = bouquet.getPager().getPage(position, InterimPage.class, new InterimPage());
                     for (long address: interim.getAddresses())
                     {
                         journal.write(new Write(address, position));
@@ -1534,16 +1535,16 @@ public final class Mutator
     
                 // Need to use the entire list of moves since the start
                 // of the journal to determine the actual journal start.
-                long journalStart = journal.getJournalStart().getPosition(pager);
+                long journalStart = journal.getJournalStart().getPosition(bouquet.getPager().getPageSize());
                 journal.write(new NextOperation(journalStart));
     
                 // Create a next pointer to point at the start of operations.
-                Pointer header = pager.getJournalHeaders().allocate();
+                Pointer header = bouquet.getJournalHeaders().allocate();
                 header.getByteBuffer().putLong(beforeVacuum);
                 dirtyPages.flush(header);
                 
                 // Create a journal player.
-                Player player = new Player(pager, header, dirtyPages);
+                Player player = new Player(bouquet, header, dirtyPages);
                 
                 // First do the vacuums. We'll hit a terimate.
                 player.vacuum();
@@ -1554,14 +1555,14 @@ public final class Mutator
                 // Then do everything else.
                 player.commit();
 
-                // We can unlock any user block pages mirroed for address move.
+                // We can unlock any user block pages mirrored for address move.
                 unlockMirrored(userPagesMirroredForMove);
 
                 // Unlock any addresses that were returned as free to their
                 // address pages, but were locked to prevent the commit of a
                 // reallocation until this commit completed.
 
-                pager.getAddressLocker().unlock(player.getAddressSet());
+                bouquet.getAddressLocker().unlock(player.getAddressSet());
                 
                 // TODO Are there special user pages to return for address
                 // expansion? (Only the mirror pages, where are they?)
@@ -1599,18 +1600,19 @@ public final class Mutator
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
 
-        pager.getCompactLock().readLock().lock();
+        bouquet.getCompactLock().readLock().lock();
 
         try
         {
             // Create a move latch list from our move latch list, with the
-            // commit structure as the move recoder, so that page moves by other
-            // committing mutators will be reflected in state of the commit.
-            tryCommit(pager.getMoveLatchList().newIterator(commit), commit);
+            // commit structure as the move recorder, so that page moves by
+            // other committing mutators will be reflected in state of the
+            // commit.
+            tryCommit(bouquet.getMoveLatchList().newIterator(commit), commit);
         }
         finally
         {
-            pager.getCompactLock().readLock().unlock();
+            bouquet.getCompactLock().readLock().unlock();
         }
 
         clear(commit);

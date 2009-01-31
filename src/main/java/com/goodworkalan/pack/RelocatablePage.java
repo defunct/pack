@@ -3,6 +3,11 @@ package com.goodworkalan.pack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
+import com.goodworkalan.sheaf.Sheaf;
+
 class RelocatablePage
 implements Page
 {
@@ -36,12 +41,12 @@ implements Page
     public void relocate(long to)
     {
         RawPage rawPage = getRawPage();
-        Pager pager = rawPage.getPager();
+        Sheaf sheaf = rawPage.getPager();
         ByteBuffer bytes = rawPage.getByteBuffer();
         bytes.clear();
         try
         {
-            pager.getDisk().write(pager.getFileChannel(), bytes, to);
+            sheaf.getDisk().write(sheaf.getFileChannel(), bytes, to);
         }
         catch (IOException e)
         {

@@ -1,11 +1,16 @@
 package com.goodworkalan.pack;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 class JournalWriter
 {
     protected final JournalPage journal;
 
-    protected final Pager pager;
+    protected final Sheaf pager;
+    
+    protected final InterimPagePool interimPagePool;
     
     protected final DirtyPageSet dirtyPages;
     
@@ -15,9 +20,10 @@ class JournalWriter
     
     protected final MoveNodeRecorder moveNodeRecorder;
     
-    public JournalWriter(Pager pager, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
     {
         this.pager = pager;
+        this.interimPagePool = interimPagePool;
         this.pageRecorder = pageRecorder;
         this.journal = journal;
         this.start = start;
@@ -42,14 +48,14 @@ class JournalWriter
     
     public JournalWriter extend()
     {
-        JournalPage nextJournal = pager.newInterimPage(new JournalPage(), dirtyPages);
+        JournalPage nextJournal = interimPagePool.newInterimPage(pager, JournalPage.class, new JournalPage(), dirtyPages);
         journal.write(new NextOperation(nextJournal.getJournalPosition()), 0, dirtyPages);
         pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(pager, moveNodeRecorder, pageRecorder, nextJournal, start, dirtyPages);
+        return new JournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, nextJournal, start, dirtyPages);
     }
     
     public JournalWriter reset()
     {
-        return new NullJournalWriter(pager, moveNodeRecorder, pageRecorder, dirtyPages);
+        return new NullJournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, dirtyPages);
     }
 }

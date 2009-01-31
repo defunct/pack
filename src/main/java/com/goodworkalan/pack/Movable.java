@@ -32,17 +32,64 @@ class Movable
         this.position = position;
         this.skip = skip;
     }
-    
+
     /**
-     * Return the file position referenced by this movable reference
-     * adjusting the file position based on page moves since the
-     * creation of the reference.
-     *
-     * @param pager The pager.
+     * Return the file position referenced by this movable reference adjusting
+     * the file position based on page moves since the creation of the
+     * reference.
+     * <p>
+     * The adjustment will account for offset into the page position. This is
+     * necessary for next operations in journals, which may jump to any
+     * operation in a journal, which may be at any location in a page.
+     * 
+     * @param bouquet
+     *            The pager.
      */
-    public long getPosition(Pager pager)
+    public long getPosition(int pageSize)
     {
-        return pager.adjust(moveNode, position, skip);
+        return adjust(moveNode, position, skip, pageSize);
+    }
+
+    /**
+     * Return a file position based on the given file position adjusted by the
+     * linked list of page moves appended to the given move node. The adjustment
+     * will skip the number of move nodes given by skip.
+     * <p>
+     * The adjustment will account for offset into the page position. This is
+     * necessary for next operations in journals, which may jump to any
+     * operation in a journal, which may be at any location in a page.
+     * 
+     * @param moveNode
+     *            The head of a list of move nodes.
+     * @param position
+     *            The file position to track.
+     * @param skip
+     *            The number of moves to skip (0 or 1).
+     * @param pageSize
+     *            The page size.
+     * @return The file position adjusted by the recorded page moves.
+     */
+    private static long adjust(MoveNode moveNode, long position, int skip, int pageSize)
+    {
+        int offset = (int) (position % pageSize);
+        position = position - offset;
+        while (moveNode.getNext() != null)
+        {
+            moveNode = moveNode.getNext();
+            Move move = moveNode.getMove();
+            if (move.getFrom() == position)
+            {
+                if (skip == 0)
+                {
+                    position = move.getTo();
+                }
+                else
+                {
+                    skip--;
+                }
+            }
+        }
+        return position + offset;
     }
 }
 

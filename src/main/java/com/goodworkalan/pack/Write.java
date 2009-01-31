@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.Sheaf;
+
 
 final class Write
 extends Operation
@@ -23,7 +25,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        Pager pager = player.getPager();
+        Sheaf pager = player.getBouquet().getPager();
         InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
         interim.write(address, player.getDirtyPages());
     }

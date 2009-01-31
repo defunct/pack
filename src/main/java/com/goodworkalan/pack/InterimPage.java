@@ -2,6 +2,9 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 final class InterimPage extends BlockPage
 {
@@ -140,7 +143,7 @@ final class InterimPage extends BlockPage
                 bytes.position(bytes.position() + Pack.BLOCK_HEADER_SIZE);
                 
 
-                Pager pager = getRawPage().getPager();
+                Sheaf pager = getRawPage().getPager();
                 AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
                 long lastPosition = 0L;
                 for (;;)
