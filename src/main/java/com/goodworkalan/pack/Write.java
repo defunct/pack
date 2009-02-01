@@ -25,7 +25,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        Sheaf pager = player.getBouquet().getPager();
+        Sheaf pager = player.getBouquet().getSheaf();
         InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
         interim.write(address, player.getDirtyPages());
     }

@@ -88,7 +88,7 @@ final class Player
 
     private void execute()
     {
-        JournalPage journalPage = bouquet.getPager().getPage(entryPosition, JournalPage.class, new JournalPage());
+        JournalPage journalPage = bouquet.getSheaf().getPage(entryPosition, JournalPage.class, new JournalPage());
         
         journalPage.seek(entryPosition);
         
@@ -116,8 +116,8 @@ final class Player
         header.getByteBuffer().putLong(0, 0L);
 
         dirtyPages.flush();
-        header.write(bouquet.getPager());
-        bouquet.getPager().force();
+        header.write(bouquet.getSheaf());
+        bouquet.getSheaf().force();
         
         bouquet.getJournalHeaders().free(header);
     }

@@ -117,7 +117,7 @@ public class Pack
      */
     public int getPageSize()
     {
-        return bouquet.getPager().getPageSize();
+        return bouquet.getSheaf().getPageSize();
     }
 
     /**
@@ -220,7 +220,7 @@ public class Pack
         
         try
         {
-            bouquet.getPager().getDisk().write(bouquet.getPager().getFileChannel(), reopen, bouquet.getInterimBoundary().getPosition());
+            bouquet.getSheaf().getDisk().write(bouquet.getSheaf().getFileChannel(), reopen, bouquet.getInterimBoundary().getPosition());
         }
         catch (IOException e)
         {
@@ -231,7 +231,7 @@ public class Pack
         
         try
         {
-            bouquet.getPager().getDisk().truncate(bouquet.getPager().getFileChannel(), bouquet.getInterimBoundary().getPosition() + reopen.capacity());
+            bouquet.getSheaf().getDisk().truncate(bouquet.getSheaf().getFileChannel(), bouquet.getInterimBoundary().getPosition() + reopen.capacity());
         }
         catch (IOException e)
         {
@@ -244,8 +244,8 @@ public class Pack
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
         try
         {
-            bouquet.getHeader().write(bouquet.getPager().getDisk(), bouquet.getPager().getFileChannel(), 0);
-            bouquet.getPager().getDisk().close(bouquet.getPager().getFileChannel());
+            bouquet.getHeader().write(bouquet.getSheaf().getDisk(), bouquet.getSheaf().getFileChannel(), 0);
+            bouquet.getSheaf().getDisk().close(bouquet.getSheaf().getFileChannel());
         }
         catch (IOException e)
         {

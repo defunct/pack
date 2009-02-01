@@ -170,9 +170,9 @@ public final class Creator
         long user = bouquet.getInterimBoundary().getPosition();
         bouquet.getInterimBoundary().increment();
         
-        DirtyPageSet dirtyPages = new DirtyPageSet(bouquet.getPager(), 0);
-        bouquet.getPager().setPage(user, UserPage.class, new UserPage(), dirtyPages, false);
-        UserPage blocks = bouquet.getPager().getPage(user, UserPage.class, new UserPage());
+        DirtyPageSet dirtyPages = new DirtyPageSet(bouquet.getSheaf(), 0);
+        bouquet.getSheaf().setPage(user, UserPage.class, new UserPage(), dirtyPages, false);
+        UserPage blocks = bouquet.getSheaf().getPage(user, UserPage.class, new UserPage());
         blocks.getRawPage().invalidate(0, pageSize);
         dirtyPages.flush();
         

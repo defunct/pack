@@ -54,7 +54,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        player.getBouquet().getTemporaryFactory().setTemporary(player.getBouquet().getPager(), address, temporary, player.getDirtyPages());
+        player.getBouquet().getTemporaryFactory().setTemporary(player.getBouquet().getSheaf(), address, temporary, player.getDirtyPages());
     }
 
     /**

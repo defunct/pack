@@ -32,8 +32,8 @@ extends Operation
             bytes.clear();
             bytes.putLong(newJournalPosition);
             player.getDirtyPages().flush();
-            player.getJournalHeader().write(player.getBouquet().getPager());
-            player.getBouquet().getPager().force();
+            player.getJournalHeader().write(player.getBouquet().getSheaf());
+            player.getBouquet().getSheaf().force();
         }
     }
 

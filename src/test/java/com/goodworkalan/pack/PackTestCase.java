@@ -180,7 +180,7 @@ public class PackTestCase
         mutator.commit();
         pack.close();
         
-        Sheaf pager = new Opener().open(file).bouquet.getPager();
+        Sheaf pager = new Opener().open(file).bouquet.getSheaf();
         Page page = pager.getPage(8192, RelocatablePage.class, new RelocatablePage());
         page = pager.getPage(8192, UserPage.class, new UserPage());
         assertEquals(8192, page.getRawPage().getPosition());

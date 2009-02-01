@@ -40,7 +40,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        Sheaf pager = player.getBouquet().getPager();
+        Sheaf pager = player.getBouquet().getSheaf();
         player.getBouquet().getAddressLocker().bide(address);
         InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
         UserPage user = pager.getPage(to, UserPage.class, new UserPage());

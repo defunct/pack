@@ -48,8 +48,8 @@ extends Operation
      */
     public void vacuum(Player player)
     {
-        InterimPage mirrored = player.getBouquet().getPager().getPage(from, InterimPage.class, new InterimPage());
-        UserPage user = player.getBouquet().getPager().getPage(to, UserPage.class, new UserPage());
+        InterimPage mirrored = player.getBouquet().getSheaf().getPage(from, InterimPage.class, new InterimPage());
+        UserPage user = player.getBouquet().getSheaf().getPage(to, UserPage.class, new UserPage());
         mirrored.vacuum(player.getAdler32(), user, player.getDirtyPages(), offset, checksum);
     }
 

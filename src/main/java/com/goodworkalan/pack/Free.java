@@ -28,12 +28,12 @@ extends Operation
         Bouquet bouquet = player.getBouquet();
         // TODO Someone else can allocate the address and even the block
         // now that it is free and the replay ruins it. 
-        Sheaf pager = bouquet.getPager();
+        Sheaf pager = bouquet.getSheaf();
         bouquet.getAddressLocker().lock(address);
         player.getAddressSet().add(address);
         // TODO Same problem with addresses as with temporary headers,
         // someone can reuse when we're scheduled to release.
-        player.getBouquet().getTemporaryFactory().freeTemporary(player.getBouquet().getPager(), address, player.getDirtyPages());
+        player.getBouquet().getTemporaryFactory().freeTemporary(player.getBouquet().getSheaf(), address, player.getDirtyPages());
         AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
         addresses.free(address, player.getDirtyPages());
         UserPage user = pager.getPage(player.adjust(position), UserPage.class, new UserPage());

@@ -80,6 +80,9 @@ final class Bouquet
     /** The file where this pager writes its contents. */
     private final File file;
     
+    /** Housekeeping information stored at the head of the file. */
+    private final Header header;
+
     private final MutatorFactory mutatorFactory;
 
     /**
@@ -125,9 +128,6 @@ final class Bouquet
         this.mutatorFactory = new MutatorFactory(this);
     }
     
-    /** Housekeeping information stored at the head of the file. */
-    private final Header header;
-
     public Pack getPack()
     {
         return pack;
@@ -179,7 +179,7 @@ final class Bouquet
         return addressLocker;
     }
 
-    public Sheaf getPager()
+    public Sheaf getSheaf()
     {
         return pager;
     }
