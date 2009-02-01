@@ -53,7 +53,7 @@ public class InterimPagePool
         long position = getFreeInterimPages().allocate();
         if (position == 0L)
         {
-            position = pager.newPage();
+            position = pager.extend();
         }
         return position;
     }
@@ -112,7 +112,7 @@ public class InterimPagePool
     
         if (position == 0L)
         {
-            position = pager.newPage();
+            position = pager.extend();
         }
     
         return pager.setPage(position, pageClass, page, dirtyPages, false);

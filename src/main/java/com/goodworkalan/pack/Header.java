@@ -1,10 +1,12 @@
 package com.goodworkalan.pack;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
-import com.goodworkalan.sheaf.Regional;
+import com.goodworkalan.sheaf.Invalidator;
 
-final class Header extends Regional
+final class Header extends Invalidator
 {
     private final ByteBuffer bytes;
     
@@ -12,6 +14,19 @@ final class Header extends Regional
     {
         super(0L);
         this.bytes = bytes;
+    }
+    
+    public int getHeaderSize(Map<URI, Integer> staticBlocks)
+    {
+        int size = Pack.COUNT_SIZE;
+        for (Map.Entry<URI, Integer> entry: staticBlocks.entrySet())
+        {
+            size += Pack.COUNT_SIZE + Pack.ADDRESS_SIZE;
+            size += entry.getKey().toString().length() * 2;
+        }
+        size += getInternalJournalCount() * Pack.POSITION_SIZE;
+        size += Pack.FILE_HEADER_SIZE;
+        return size;
     }
     
     public ByteBuffer getByteBuffer()
@@ -91,49 +106,49 @@ final class Header extends Regional
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4, Pack.COUNT_SIZE);
     }
     
-    public long getFirstAddressPageStart()
+    public int getFirstAddressPageStart()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5);
+        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
     }
     
-    public void setFirstAddressPageStart(long firstAddressPageStart)
+    public void setFirstAddressPageStart(int firstAddressPageStart)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, firstAddressPageStart);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, Pack.ADDRESS_SIZE);
+        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, firstAddressPageStart);
+        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.COUNT_SIZE);
     }
 
     public long getDataBoundary()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 5);
+        return bytes.getLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
     }
     
     public void setDataBoundary(long dataBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 5, dataBoundary);
-        invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 5, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, dataBoundary);
+        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
     
     // FIXME Rename.
     public long getOpenBoundary()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 5);
+        return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6);
     }
     
     // FIXME Rename.
     public void setOpenBoundary(long openBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 5, openBoundary);
-        invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 5, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, openBoundary);
+        invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
     
     public long getTemporaries()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 5);
+        return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6);
     }
     
     public void setTemporaries(long temporaries)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 5, temporaries);
-        invalidate(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 5, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6, temporaries);
+        invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
 }

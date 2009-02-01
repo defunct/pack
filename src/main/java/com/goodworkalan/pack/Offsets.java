@@ -24,6 +24,7 @@ final class Offsets
     {
         return internalJournalCount;
     }
+
     private long getEndOfHeader()
     {
         return Pack.FILE_HEADER_SIZE + staticPageMapSize + internalJournalCount * Pack.POSITION_SIZE; 

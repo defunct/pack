@@ -345,11 +345,11 @@ abstract class BlockPage extends RelocatablePage
     }
 
     /**
-     * TODO Note that we can keep this to checksum mirroring, but we do not want
-     * to keep this to checksum each page. Rather, we are going to add an
-     * imprint to each block.
+     * Generate a checksum of the block contents of the page. This will generate
+     * a checksum of the blocks and block headers, excluding the free blocks and
+     * unallocated bytes.
      * <p>
-     * Note that this must be called in a synchronized block.
+     * This must be called in a synchronized block.
      * 
      * @param checksum
      *            The checksum to use.

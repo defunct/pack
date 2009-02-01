@@ -67,7 +67,7 @@ public final class Creator
         mapOfStaticPageSizes.put(uri, blockSize);
     }
     
-    private int getStaticPagesMapSize()
+    private int getStaticBlockMapSize()
     {
         int size = Pack.COUNT_SIZE;
         for (Map.Entry<URI, Integer> entry: mapOfStaticPageSizes.entrySet())
@@ -84,7 +84,6 @@ public final class Creator
     public Pack create(File file)
     {
         // Open the file.
-        
         FileChannel fileChannel;
         try
         {
@@ -95,7 +94,7 @@ public final class Creator
             throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
         }
         
-        Offsets offsets = new Offsets(pageSize, internalJournalCount, getStaticPagesMapSize());
+        Offsets offsets = new Offsets(pageSize, internalJournalCount, getStaticBlockMapSize());
         ByteBuffer fullSize = ByteBuffer.allocateDirect((int) (offsets.getFirstAddressPage() + pageSize));
         try
         {
@@ -115,14 +114,14 @@ public final class Creator
         header.setPageSize(pageSize);
         header.setAlignment(alignment);
         header.setInternalJournalCount(internalJournalCount);
-        header.setStaticPageSize(getStaticPagesMapSize());
-        header.setFirstAddressPageStart(offsets.getFirstAddressPageStart());
-        header.setDataBoundary(offsets.getDataBoundary());
+        header.setStaticPageSize(getStaticBlockMapSize());
+        header.setFirstAddressPageStart(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
+        header.setDataBoundary(0L);
         header.setOpenBoundary(0L);
 
         try
         {
-            header.write(disk, fileChannel);
+            header.write(disk, fileChannel, 0);
         }
         catch (IOException e)
         {
@@ -155,18 +154,18 @@ public final class Creator
         // This local pack will have a bogus, empty map of static pages.
         // We create a subsequent pack to return to the user.
 
-        Map<URI, Long> mapOfStaticPages = new HashMap<URI, Long>();
+        Map<URI, Long> staticBlocks = new HashMap<URI, Long>();
 
-        Map<Long, ByteBuffer> mapOfTemporaryArrays = new HashMap<Long, ByteBuffer>();
+        Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
-        SortedSet<Long> setOfAddressPages = new TreeSet<Long>();
-        setOfAddressPages.add(offsets.getFirstAddressPage());
-        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize());
+        SortedSet<Long> addressPages = new TreeSet<Long>();
+        addressPages.add(offsets.getFirstAddressPage());
+        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize(), header.getFirstAddressPageStart());
         Bouquet bouquet = new Bouquet(file, header,
-                mapOfStaticPages, header.getDataBoundary(), header.getDataBoundary(),
+                staticBlocks, header.getDataBoundary(), header.getDataBoundary(),
                 pager,
-                new AddressPagePool(setOfAddressPages),
-                new TemporaryServer(mapOfTemporaryArrays));
+                new AddressPagePool(addressPages),
+                new TemporaryServer(temporaryNodes));
         
         long user = bouquet.getInterimBoundary().getPosition();
         bouquet.getInterimBoundary().increment();
@@ -190,7 +189,7 @@ public final class Creator
         temporaries.flip();
         mutator.write(header.getTemporaries(), temporaries);
         
-        ByteBuffer statics = ByteBuffer.allocateDirect(getStaticPagesMapSize());
+        ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         
         statics.putInt(mapOfStaticPageSizes.size());
         
@@ -225,7 +224,7 @@ public final class Creator
         
         try
         {
-            header.write(disk, fileChannel);
+            header.write(disk, fileChannel, 0);
         }
         catch (IOException e)
         {

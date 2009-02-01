@@ -231,23 +231,6 @@ final class Bouquet
     }
 
     /**
-     * Return the position of the first address page, which may be offset from
-     * an aligned page start, in order to accommodate the header.
-     * <p>
-     * TODO Feel like this should be a property of sheaf, or give up trying
-     * to use every last bit of file, header creates loss, ah, or pages
-     * start at an offset, because most files will have some sort of header.
-     * <p>
-     * TODO Duh!
-     * 
-     * @return The first address page position.
-     */
-    public long getFirstAddressPageStart()
-    {
-        return header.getFirstAddressPageStart();
-    }
-
-    /**
      * Get the boundary between user pages and interim pages.
      *
      * @return The boundary between user pages and interim pages.
@@ -266,9 +249,6 @@ final class Bouquet
     {
         return userBoundary;
     }
-
-
-
 
     /**
      * Return a file position based on the given file position adjusted by page

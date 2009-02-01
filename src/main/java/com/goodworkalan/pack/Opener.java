@@ -49,9 +49,9 @@ public final class Opener
             || address > header.getDataBoundary();
     }
 
-    private Map<URI, Long> readStaticPages(Header header, FileChannel fileChannel) 
+    private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
     {
-        Map<URI, Long> mapOfStaticPages = new TreeMap<URI, Long>();
+        Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
         ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticPageSize());
         try
         {
@@ -78,16 +78,15 @@ public final class Opener
             }
             try
             {
-                mapOfStaticPages.put(new URI(uri.toString()), address);
+                staticBlocks.put(new URI(uri.toString()), address);
             }
             catch (URISyntaxException e)
             {
                 throw new PackException(Pack.ERROR_IO_STATIC_PAGES, e);
             }
         }
-        return mapOfStaticPages;
+        return staticBlocks;
     }    
-
 
     private Header readHeader(FileChannel fileChannel)
     {
@@ -106,7 +105,6 @@ public final class Opener
     public Pack open(File file)
     {
         // Open the file channel.
-
         FileChannel fileChannel;
         try
         {
@@ -142,7 +140,7 @@ public final class Opener
 
     private Pack softOpen(File file, FileChannel fileChannel, Header header)
     {
-        Map<URI, Long> mapOfStaticPages = readStaticPages(header, fileChannel);
+        Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
 
         int reopenSize = 0;
         try
@@ -165,18 +163,18 @@ public final class Opener
         }
         reopen.flip();
         
-        SortedSet<Long> setOfAddressPages = new TreeSet<Long>();
+        SortedSet<Long> addressPages = new TreeSet<Long>();
         
         int addressPageCount = reopen.getInt();
         for (int i = 0; i < addressPageCount; i++)
         {
-            setOfAddressPages.add(reopen.getLong());
+            addressPages.add(reopen.getLong());
         }
         
-        Map<Long, ByteBuffer> mapOfTemporaryArrays = new HashMap<Long, ByteBuffer>();
+        Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
-        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize());
-        Bouquet bouquet = new Bouquet(file, header, mapOfStaticPages, header.getDataBoundary(), header.getOpenBoundary(), pager, new AddressPagePool(setOfAddressPages), new TemporaryServer(mapOfTemporaryArrays));
+        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize(), header.getFirstAddressPageStart());
+        Bouquet bouquet = new Bouquet(file, header, staticBlocks, header.getDataBoundary(), header.getOpenBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
@@ -201,7 +199,7 @@ public final class Opener
 
         try
         {
-            header.write(disk, fileChannel);
+            header.write(disk, fileChannel, 0);
         }
         catch (IOException e)
         {
@@ -223,7 +221,7 @@ public final class Opener
         do
         {
             ByteBuffer node = mutator.read(temporaries);
-            mapOfTemporaryArrays.put(temporaries, node);
+            temporaryNodes.put(temporaries, node);
             long address = node.getLong(0);
             if (address != 0L)
             {
@@ -233,9 +231,9 @@ public final class Opener
         }
         while (temporaries != 0L);
 
-        return new Bouquet(file, header, mapOfStaticPages,
+        return new Bouquet(file, header, staticBlocks,
                     header.getDataBoundary(), openBoundary, pager,
-                    new AddressPagePool(setOfAddressPages),
-                    new TemporaryServer(mapOfTemporaryArrays)).getPack();
+                    new AddressPagePool(addressPages),
+                    new TemporaryServer(temporaryNodes)).getPack();
     }
 }

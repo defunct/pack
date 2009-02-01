@@ -6,16 +6,17 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Pointer;
+import com.goodworkalan.sheaf.Region;
 
 
 final class Player
 {
     private final Bouquet bouquet;
 
-    private final Pointer header;
+    private final Region header;
 
     private long entryPosition;
 
@@ -27,8 +28,9 @@ final class Player
     
     private final LinkedList<Move> listOfMoves;
     
+    private final Adler32 adler32;
     
-    public Player(Bouquet bouquet, Pointer header, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, Region header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
@@ -41,6 +43,7 @@ final class Player
         this.setOfAddresses = new TreeSet<Long>();
         this.setOfVacuums = new HashSet<Vacuum>();
         this.listOfMoves = new LinkedList<Move>();
+        this.adler32 = new Adler32();
     }
     
     public Bouquet getBouquet()
@@ -48,7 +51,12 @@ final class Player
         return bouquet;
     }
     
-    public Pointer getJournalHeader()
+    public Adler32 getAdler32()
+    {
+        return adler32;
+    }
+    
+    public Region getJournalHeader()
     {
         return header;
     }
@@ -107,8 +115,10 @@ final class Player
         header.getByteBuffer().clear();
         header.getByteBuffer().putLong(0, 0L);
 
-        dirtyPages.flush(header);
-
+        dirtyPages.flush();
+        header.write(bouquet.getPager());
+        bouquet.getPager().force();
+        
         bouquet.getJournalHeaders().free(header);
     }
 }

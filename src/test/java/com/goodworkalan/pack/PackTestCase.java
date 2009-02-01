@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import com.goodworkalan.sheaf.Disk;
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.Regional;
+import com.goodworkalan.sheaf.Invalidator;
 import com.goodworkalan.sheaf.Sheaf;
 
 public class PackTestCase
@@ -53,33 +53,11 @@ public class PackTestCase
         pack.close();
     }
 
-    private void assertBuffer(Disk disk, FileChannel fileChannel,
-            final ByteBuffer expected, ByteBuffer actual) throws IOException
-    {
-        expected.clear();
-        actual.clear();
-        disk.read(fileChannel, actual, 0L);
-        actual.flip();
-        
-        for (int i = 0; i < 64; i++)
-        {
-            try
-            {
-                assertEquals(expected.get(i), actual.get(i));
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-                System.out.println(i);
-                throw e;
-            }
-        }
-    }
-
     @Test(expected=java.lang.IllegalStateException.class) public void regionalLowerRange()
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        Regional regional = new Regional(0L)
+        Invalidator regional = new Invalidator(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -94,7 +72,7 @@ public class PackTestCase
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        Regional regional = new Regional(0L)
+        Invalidator regional = new Invalidator(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -105,120 +83,6 @@ public class PackTestCase
         regional.invalidate(0, 65);
     }
 
-    @Test public void regional() throws IOException
-    {
-        Disk disk = new Disk();
-        FileChannel fileChannel = disk.open(newFile());
-
-        final ByteBuffer expected = ByteBuffer.allocateDirect(64);
-        
-        Regional regional = new Regional(0L)
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return expected;
-            }
-        };
-        
-        for (int i = 0; i < 64; i++)
-        {
-            expected.put(i, (byte) 0);
-        }
-        
-        regional.invalidate(0, 64);
-        
-        regional.write(disk, fileChannel);
-        
-        ByteBuffer actual = ByteBuffer.allocateDirect(64);
-        assertBuffer(disk, fileChannel, expected, actual);
-        
-        for (int i = 3; i < 6; i++)
-        {
-            expected.put(i, (byte) i);
-        }
-        regional.invalidate(3, 3);
-
-        for (int i = 7; i < 10; i++)
-        {
-            expected.put(i, (byte) i);
-        }
-        regional.invalidate(7, 3);
-        
-        assertEquals(2, regional.setOfRegions.size());
-        
-        regional.write(disk, fileChannel);
-        
-        assertBuffer(disk, fileChannel, expected, actual);
-        
-        for (int i = 3; i < 10; i++)
-        {
-            expected.put(i, (byte) -i);
-        }
-        regional.invalidate(3, 3);
-        regional.invalidate(6, 4);
-
-        assertEquals(1, regional.setOfRegions.size());
-
-        regional.write(disk, fileChannel);
-        
-        assertBuffer(disk, fileChannel, expected, actual);
-        
-        for (int i = 3; i < 10; i++)
-        {
-            expected.put(i, (byte) i);
-        }
-        regional.invalidate(6, 4);
-        regional.invalidate(3, 3);
-        assertEquals(1, regional.setOfRegions.size());
-
-        regional.write(disk, fileChannel);
-        assertBuffer(disk, fileChannel, expected, actual);
-
-        for (int i = 2; i < 11; i++)
-        {
-            expected.put(i, (byte) i);
-        }
-        // Two invalid regions.
-        regional.invalidate(3, 3);
-        regional.invalidate(7, 3);
-        assertEquals(2, regional.setOfRegions.size());
-        
-        // First region extended by one.
-        regional.invalidate(2, 4);
-        assertEquals(2, regional.setOfRegions.size());
-        
-        // First region replace by larger region and merged into second region.
-        regional.invalidate(2, 5);
-        assertEquals(1, regional.setOfRegions.size());
-
-        // Invalidating an already invalid region.
-        regional.invalidate(3, 3);
-        assertEquals(1, regional.setOfRegions.size());
-        
-        // Extending a region.
-        regional.invalidate(8, 3);
-        assertEquals(1, regional.setOfRegions.size());
-
-        regional.write(disk, fileChannel);
-        assertBuffer(disk, fileChannel, expected, actual);
-        
-        for (int i = 2; i < 16; i++)
-        {
-            expected.put(i, (byte) -i);
-        }
-        // Swallowing entire regions.
-        regional.invalidate(3, 3);
-        regional.invalidate(7, 3);
-        assertEquals(2, regional.setOfRegions.size());
-        regional.invalidate(11, 2);
-        assertEquals(3, regional.setOfRegions.size());
-        regional.invalidate(2, 14);
-        assertEquals(1, regional.setOfRegions.size());
-
-        regional.write(disk, fileChannel);
-        assertBuffer(disk, fileChannel, expected, actual);
-    }
 
     @Test public void reopen()
     {

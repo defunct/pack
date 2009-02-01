@@ -1,6 +1,7 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
@@ -79,7 +80,7 @@ final class InterimPage extends BlockPage
         }
     }
 
-    public void vacuum(UserPage user, DirtyPageSet dirtyPages, int offset, long checksum)
+    public void vacuum(Adler32 adler32, UserPage user, DirtyPageSet dirtyPages, int offset, long checksum)
     {
         if (offset > user.count)
         {
@@ -103,7 +104,7 @@ final class InterimPage extends BlockPage
         {
             copy(address, user, dirtyPages);
         }
-        if (checksum != user.getChecksum(dirtyPages.getChecksum()))
+        if (checksum != user.getChecksum(adler32))
         {
             throw new IllegalStateException();
         }

@@ -50,7 +50,7 @@ extends Operation
     {
         InterimPage mirrored = player.getBouquet().getPager().getPage(from, InterimPage.class, new InterimPage());
         UserPage user = player.getBouquet().getPager().getPage(to, UserPage.class, new UserPage());
-        mirrored.vacuum(user, player.getDirtyPages(), offset, checksum);
+        mirrored.vacuum(player.getAdler32(), user, player.getDirtyPages(), offset, checksum);
     }
 
     /**

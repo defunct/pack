@@ -2,7 +2,7 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-import com.goodworkalan.sheaf.Pointer;
+import com.goodworkalan.sheaf.Region;
 
 /**
  * Maintains a set of allocated and free positions that reference a
@@ -54,9 +54,9 @@ final class PositionSet
      * @return A position in which to store a position value from the
      * range covered by this position set.
      */
-    public synchronized Pointer allocate()
+    public synchronized Region allocate()
     {
-        Pointer pointer = null;
+        Region pointer = null;
         for (;;)
         {
             for (int i = 0; i < reserved.length && pointer == null; i++)
@@ -64,7 +64,7 @@ final class PositionSet
                 if (!reserved[i])
                 {
                     reserved[i] = true;
-                    pointer = new Pointer(ByteBuffer.allocateDirect(Pack.POSITION_SIZE), position + i * Pack.POSITION_SIZE, this);
+                    pointer = new Region(ByteBuffer.allocateDirect(Pack.POSITION_SIZE), position + i * Pack.POSITION_SIZE, this);
                 }
             }
             if (pointer == null)
@@ -92,7 +92,7 @@ final class PositionSet
      *
      * @pointer A structure containing the position the free.
      */
-    public synchronized void free(Pointer pointer)
+    public synchronized void free(Region pointer)
     {
         int offset = (int) (pointer.getPosition() - position) / Pack.POSITION_SIZE;
         reserved[offset] = false;

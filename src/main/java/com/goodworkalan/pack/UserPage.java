@@ -1,6 +1,7 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.RawPage;
@@ -69,7 +70,7 @@ final class UserPage extends BlockPage
      *         or the mirrored page allocated, or null if no interim page was
      *         given nor allocated.
      */
-    public synchronized Mirror mirror(boolean vacuum, InterimPagePool interimPagePool, Sheaf pager, InterimPage interim, DirtyPageSet dirtyPages)
+    public synchronized Mirror mirror(Adler32 adler32, boolean vacuum, InterimPagePool interimPagePool, Sheaf pager, InterimPage interim, DirtyPageSet dirtyPages)
     {
         int offset = vacuum ? -1 : 0;
         
@@ -124,8 +125,7 @@ final class UserPage extends BlockPage
             
             if (interim != null)
             {
-                long checksum = getChecksum(dirtyPages.getChecksum());
-                mirror = new Mirror(interim, offset, checksum);
+                mirror = new Mirror(interim, offset, getChecksum(adler32));
             }
         }
         

@@ -11,10 +11,11 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.Pointer;
+import com.goodworkalan.sheaf.Region;
 
 /**
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
@@ -76,6 +77,8 @@ public final class Mutator
      * @see Pager#getAddressPage(long)
      */
     private long lastAddressPage;
+    
+    private final Adler32 checksum = new Adler32();
 
     /**
      * Create a new mutator to alter the contents of a specific pagers.
@@ -1213,7 +1216,7 @@ public final class Mutator
             InterimPage mirrored = bouquet.getPager().getPage(allocation, InterimPage.class, new InterimPage());
             
             UserPage user = bouquet.getPager().getPage(addressFromUserPage, UserPage.class, new UserPage());
-            user.mirror(false, null, null, mirrored, dirtyPages);
+            user.mirror(checksum, false, null, null, mirrored, dirtyPages);
 
             userPagesMirroredForMove.add(user);
         }
@@ -1463,7 +1466,7 @@ public final class Mutator
                 {
                     // Mirror the shared user page.
                     UserPage user = bouquet.getPager().getPage(entry.getValue().getPosition(bouquet.getPager().getPageSize()), UserPage.class, new UserPage());
-                    Mirror mirror = user.mirror(true, bouquet.getInterimPagePool(), bouquet.getPager(), null, dirtyPages);
+                    Mirror mirror = user.mirror(checksum, true, bouquet.getInterimPagePool(), bouquet.getPager(), null, dirtyPages);
 
                     // If mirror returns null, the user page did not need a
                     // vacuum, there were no free blocks surrounded by employed
@@ -1539,9 +1542,13 @@ public final class Mutator
                 journal.write(new NextOperation(journalStart));
     
                 // Create a next pointer to point at the start of operations.
-                Pointer header = bouquet.getJournalHeaders().allocate();
+                Region header = bouquet.getJournalHeaders().allocate();
                 header.getByteBuffer().putLong(beforeVacuum);
-                dirtyPages.flush(header);
+                
+                // Write and force our journal.
+                dirtyPages.flush();
+                header.write(bouquet.getPager());
+                bouquet.getPager().force();
                 
                 // Create a journal player.
                 Player player = new Player(bouquet, header, dirtyPages);

@@ -244,7 +244,7 @@ public class Pack
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
         try
         {
-            bouquet.getHeader().write(bouquet.getPager().getDisk(), bouquet.getPager().getFileChannel());
+            bouquet.getHeader().write(bouquet.getPager().getDisk(), bouquet.getPager().getFileChannel(), 0);
             bouquet.getPager().getDisk().close(bouquet.getPager().getFileChannel());
         }
         catch (IOException e)

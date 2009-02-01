@@ -1,7 +1,6 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
-import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
@@ -41,9 +40,6 @@ implements Page
      * page.
      */
     private int freeCount;
-    
-    /** FIXME OUTGOING! */
-    private final long first;
 
     /**
      * Construct an uninitialized address page that is then initialized by
@@ -64,26 +60,6 @@ implements Page
      */
     public AddressPage()
     {
-        first = 0;
-    }
-
-    /**
-     * Calculate the header offset for the specified raw page, adjusting for the
-     * header when this is the first address page, which shares space with the
-     * pack file header and journal headers.
-     * 
-     * @param rawPage
-     *            The raw page behind the address page.
-     * @return The offset of address page header in the raw page.
-     */
-    private int getHeaderOffset(RawPage rawPage)
-    {
-        int offset = 0;
-        if (rawPage.getPosition() < first)
-        {
-            offset = (int) (first % rawPage.getPager().getPageSize());
-        }
-        return offset;
     }
 
     /**
@@ -98,7 +74,7 @@ implements Page
     {
         ByteBuffer bytes = rawPage.getByteBuffer();
 
-        bytes.position(getHeaderOffset(rawPage));
+        bytes.position(0);
 
         bytes.getLong();
         
@@ -170,40 +146,6 @@ implements Page
     }
 
     /**
-     * Generate a checksum of the address page. The checksum is generated is
-     * the checksum of the entire contents of the address page.
-     * 
-     * @param checksum
-     *            The checksum to use.
-     */
-    public void checksum(Checksum checksum)
-    {
-        checksum.reset();
-        ByteBuffer bytes = getRawPage().getByteBuffer();
-        bytes.position(getFirstAddressOffset(getRawPage()));
-        while (bytes.remaining() != 0)
-        {
-            checksum.update(bytes.get());
-        }
-        bytes.putLong(getHeaderOffset(getRawPage()), checksum.getValue());
-        getRawPage().invalidate(getHeaderOffset(getRawPage()), Pack.CHECKSUM_SIZE);
-    }
-
-    /**
-     * Adjust the starting offset for addresses in the address page
-     * accounting for the header and for the file header, if this is the
-     * first address page in file.
-     * 
-     * @param rawPage
-     *            A raw page used to back an address page.
-     * @return The start offset for iterating through the addresses.
-     */
-    private int getFirstAddressOffset(RawPage rawPage)
-    {
-        return getHeaderOffset(rawPage) + Pack.ADDRESS_PAGE_HEADER_SIZE;
-    }
-
-    /**
      * Reserve an available address from the address page. Reserving an address
      * requires marking it as reserved by using an unlikely file position value
      * - <code>Long.MAX_VALUE</code> - as a reservation value.
@@ -228,7 +170,7 @@ implements Page
             // Iterate the page buffer looking for a zeroed address that has
             // not been reserved, reserving it and returning it if found.
             
-            for (int offset = getFirstAddressOffset(getRawPage()); offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
+            for (int offset = Pack.ADDRESS_PAGE_HEADER_SIZE; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
             {
                 if (bytes.getLong(offset) == 0L)
                 {
