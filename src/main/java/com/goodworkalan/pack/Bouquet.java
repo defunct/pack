@@ -14,7 +14,7 @@ final class Bouquet
     private final Pack pack;
     
     /** The page manager of the pack to mutate. */
-    private final Sheaf pager;
+    private final Sheaf sheaf;
     
     /**
      * A synchronization strategy that prevents addresses that have been freed
@@ -90,7 +90,7 @@ final class Bouquet
      *            The file where this pager writes its contents.
      * @param alignment
      *            The alignment to which all block allocations are rounded.
-     * @param pager
+     * @param sheaf
      *            Page management.
      * @param header
      *            Housekeeping information stored at the head of the file.
@@ -106,7 +106,7 @@ final class Bouquet
      * @param interimBoundary
      *            The boundary between user data pages and interim data pages.
      */
-    public Bouquet(File file, Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf pager, AddressPagePool addressPagePool, TemporaryServer temporaryFactory)
+    public Bouquet(File file, Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryServer temporaryFactory)
     {
         this.pack = new Pack(this);
         this.file = file;
@@ -114,11 +114,11 @@ final class Bouquet
         this.header = header;
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
-        this.userBoundary = new Boundary(pager.getPageSize(), userBoundary);
-        this.interimBoundary = new Boundary(pager.getPageSize(), interimBoundary);
-        this.pager = pager;
+        this.userBoundary = new Boundary(sheaf.getPageSize(), userBoundary);
+        this.interimBoundary = new Boundary(sheaf.getPageSize(), interimBoundary);
+        this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
-        this.userPagePool = new UserPagePool(pager.getPageSize(), alignment);
+        this.userPagePool = new UserPagePool(sheaf.getPageSize(), alignment);
         this.interimPagePool = new InterimPagePool();
         this.temporaryFactory = temporaryFactory;
         this.moveLatchList = new MoveLatchList();
@@ -181,7 +181,7 @@ final class Bouquet
 
     public Sheaf getSheaf()
     {
-        return pager;
+        return sheaf;
     }
     
     public AddressPagePool getAddressPagePool()
@@ -266,7 +266,7 @@ final class Bouquet
      */
     public long adjust(List<Move> moveList, long position)
     {
-        int offset = (int) (position % pager.getPageSize());
+        int offset = (int) (position % sheaf.getPageSize());
         position = position - offset;
         for (Move move: moveList)
         {
