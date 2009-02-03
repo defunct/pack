@@ -15,7 +15,7 @@ import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.Region;
+import com.goodworkalan.sheaf.Segment;
 
 /**
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
@@ -1542,7 +1542,7 @@ public final class Mutator
                 journal.write(new NextOperation(journalStart));
     
                 // Create a next pointer to point at the start of operations.
-                Region header = bouquet.getJournalHeaders().allocate();
+                Segment header = bouquet.getJournalHeaders().allocate();
                 header.getByteBuffer().putLong(beforeVacuum);
                 
                 // Write and force our journal.

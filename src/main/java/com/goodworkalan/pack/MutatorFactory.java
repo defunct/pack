@@ -28,7 +28,7 @@ public class MutatorFactory
             public Mutator run(List<MoveLatch> listOfMoveLatches)
             {
                 MoveNodeRecorder moveNodeRecorder = new MoveNodeRecorder();
-                DirtyPageSet dirtyPages = new DirtyPageSet(bouquet.getSheaf(), 16);
+                DirtyPageSet dirtyPages = new DirtyPageSet(16);
                 Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), moveNodeRecorder, pageRecorder, dirtyPages);
                 return new Mutator(bouquet, moveLatchIterator, moveNodeRecorder, pageRecorder, journal, dirtyPages);
             }

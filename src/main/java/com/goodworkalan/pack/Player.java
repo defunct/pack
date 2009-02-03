@@ -9,14 +9,14 @@ import java.util.TreeSet;
 import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Region;
+import com.goodworkalan.sheaf.Segment;
 
 
 final class Player
 {
     private final Bouquet bouquet;
 
-    private final Region header;
+    private final Segment header;
 
     private long entryPosition;
 
@@ -30,7 +30,7 @@ final class Player
     
     private final Adler32 adler32;
     
-    public Player(Bouquet bouquet, Region header, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, Segment header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
@@ -56,7 +56,7 @@ final class Player
         return adler32;
     }
     
-    public Region getJournalHeader()
+    public Segment getJournalHeader()
     {
         return header;
     }

@@ -41,7 +41,7 @@ implements Page
     public void relocate(long to)
     {
         RawPage rawPage = getRawPage();
-        Sheaf sheaf = rawPage.getPager();
+        Sheaf sheaf = rawPage.getSheaf();
         ByteBuffer bytes = rawPage.getByteBuffer();
         bytes.clear();
         try

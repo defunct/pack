@@ -85,7 +85,7 @@ abstract class BlockPage extends RelocatablePage
         super.create(rawPage, dirtyPages);
 
         this.count = 0;
-        this.remaining = rawPage.getPager().getPageSize()
+        this.remaining = rawPage.getSheaf().getPageSize()
                 - Pack.BLOCK_PAGE_HEADER_SIZE;
 
         ByteBuffer bytes = rawPage.getByteBuffer();
@@ -125,7 +125,7 @@ abstract class BlockPage extends RelocatablePage
         bytes.getLong();
 
         this.count = getDiskCount(bytes.getInt());
-        this.remaining = getRawPage().getPager().getPageSize() - getConsumed();
+        this.remaining = getRawPage().getSheaf().getPageSize() - getConsumed();
     }
 
     public int getCount()

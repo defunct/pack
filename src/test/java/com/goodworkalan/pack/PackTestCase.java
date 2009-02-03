@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import com.goodworkalan.sheaf.Disk;
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.Invalidator;
+import com.goodworkalan.sheaf.DirtyRegionMap;
 import com.goodworkalan.sheaf.Sheaf;
 
 public class PackTestCase
@@ -57,7 +57,7 @@ public class PackTestCase
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        Invalidator regional = new Invalidator(0L)
+        DirtyRegionMap regional = new DirtyRegionMap(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -72,7 +72,7 @@ public class PackTestCase
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        Invalidator regional = new Invalidator(0L)
+        DirtyRegionMap regional = new DirtyRegionMap(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()

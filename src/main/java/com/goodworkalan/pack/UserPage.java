@@ -145,7 +145,7 @@ final class UserPage extends BlockPage
         synchronized (getRawPage())
         {
             RawPage rawPage = getRawPage();
-            Sheaf pager = rawPage.getPager();
+            Sheaf pager = rawPage.getSheaf();
             AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
             long position = addresses.dereference(address);
             if (position != getRawPage().getPosition())

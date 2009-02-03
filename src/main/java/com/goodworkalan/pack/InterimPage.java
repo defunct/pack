@@ -144,7 +144,7 @@ final class InterimPage extends BlockPage
                 bytes.position(bytes.position() + Pack.BLOCK_HEADER_SIZE);
                 
 
-                Sheaf pager = getRawPage().getPager();
+                Sheaf pager = getRawPage().getSheaf();
                 AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
                 long lastPosition = 0L;
                 for (;;)

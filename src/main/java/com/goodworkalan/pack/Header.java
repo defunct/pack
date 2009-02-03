@@ -4,9 +4,9 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import com.goodworkalan.sheaf.Invalidator;
+import com.goodworkalan.sheaf.DirtyRegionMap;
 
-final class Header extends Invalidator
+final class Header extends DirtyRegionMap
 {
     private final ByteBuffer bytes;
     
