@@ -220,7 +220,7 @@ public class Pack
         
         try
         {
-            bouquet.getSheaf().getDisk().write(bouquet.getSheaf().getFileChannel(), reopen, bouquet.getInterimBoundary().getPosition());
+            bouquet.getSheaf().getFileChannel().write(reopen, bouquet.getInterimBoundary().getPosition());
         }
         catch (IOException e)
         {
@@ -231,21 +231,21 @@ public class Pack
         
         try
         {
-            bouquet.getSheaf().getDisk().truncate(bouquet.getSheaf().getFileChannel(), bouquet.getInterimBoundary().getPosition() + reopen.capacity());
+            bouquet.getSheaf().getFileChannel().truncate(bouquet.getInterimBoundary().getPosition() + reopen.capacity());
         }
         catch (IOException e)
         {
             throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
         }
         
-        bouquet.getHeader().setDataBoundary(bouquet.getUserBoundary().getPosition());
-        bouquet.getHeader().setOpenBoundary(bouquet.getInterimBoundary().getPosition());
+        bouquet.getHeader().setUserBoundary(bouquet.getUserBoundary().getPosition());
+        bouquet.getHeader().setInterimBoundary(bouquet.getInterimBoundary().getPosition());
 
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
         try
         {
-            bouquet.getHeader().write(bouquet.getSheaf().getDisk(), bouquet.getSheaf().getFileChannel(), 0);
-            bouquet.getSheaf().getDisk().close(bouquet.getSheaf().getFileChannel());
+            bouquet.getHeader().write(bouquet.getSheaf().getFileChannel(), 0);
+            bouquet.getSheaf().getFileChannel().close();
         }
         catch (IOException e)
         {

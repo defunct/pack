@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -116,8 +117,15 @@ final class Player
         header.getByteBuffer().putLong(0, 0L);
 
         dirtyPages.flush();
-        header.write(bouquet.getSheaf());
-        bouquet.getSheaf().force();
+        header.write(bouquet.getSheaf().getFileChannel());
+        try
+        {
+            bouquet.getSheaf().getFileChannel().force(true);
+        }
+        catch (IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_FORCE, e);
+        }
         
         bouquet.getJournalHeaders().free(header);
     }

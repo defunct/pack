@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -13,7 +14,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Disk;
 import com.goodworkalan.sheaf.Sheaf;
 
 
@@ -27,15 +27,12 @@ public final class Creator
 
     private int internalJournalCount;
     
-    private Disk disk;
-
     public Creator()
     {
         this.mapOfStaticPageSizes = new TreeMap<URI, Integer>();
         this.pageSize = 8 * 1024;
         this.alignment = 64;
         this.internalJournalCount = 64;
-        this.disk = new Disk();
     }
 
     public void setPageSize(int pageSize)
@@ -51,15 +48,6 @@ public final class Creator
     public void setInternalJournalCount(int internalJournalCount)
     {
         this.internalJournalCount = internalJournalCount;
-    }
-    
-    /**
-     * Implements a wrapper around 
-     * @param disk
-     */
-    void setDisk(Disk disk)
-    {
-        this.disk = disk;
     }
 
     public void addStaticPage(URI uri, int blockSize)
@@ -80,6 +68,8 @@ public final class Creator
 
     /**
      * Create a new pack that writes to the specified file.
+     * <p>
+     * TODO Create form a file channel.
      */
     public Pack create(File file)
     {
@@ -87,7 +77,7 @@ public final class Creator
         FileChannel fileChannel;
         try
         {
-            fileChannel = disk.open(file);
+            fileChannel = new RandomAccessFile(file, "rw").getChannel();
         }
         catch (FileNotFoundException e)
         {
@@ -98,7 +88,7 @@ public final class Creator
         ByteBuffer fullSize = ByteBuffer.allocateDirect((int) (offsets.getFirstAddressPage() + pageSize));
         try
         {
-            disk.write(fileChannel, fullSize, 0L);
+            fileChannel.write(fullSize, 0L);
         }
         catch (IOException e)
         {
@@ -115,13 +105,13 @@ public final class Creator
         header.setAlignment(alignment);
         header.setInternalJournalCount(internalJournalCount);
         header.setStaticPageSize(getStaticBlockMapSize());
-        header.setFirstAddressPageStart(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
-        header.setDataBoundary(0L);
-        header.setOpenBoundary(0L);
+        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
+        header.setUserBoundary(0L);
+        header.setInterimBoundary(0L);
 
         try
         {
-            header.write(disk, fileChannel, 0);
+            header.write(fileChannel, 0);
         }
         catch (IOException e)
         {
@@ -160,9 +150,9 @@ public final class Creator
         
         SortedSet<Long> addressPages = new TreeSet<Long>();
         addressPages.add(offsets.getFirstAddressPage());
-        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize(), header.getFirstAddressPageStart());
+        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
         Bouquet bouquet = new Bouquet(file, header,
-                staticBlocks, header.getDataBoundary(), header.getDataBoundary(),
+                staticBlocks, header.getUserBoundary(), header.getUserBoundary(),
                 pager,
                 new AddressPagePool(addressPages),
                 new TemporaryServer(temporaryNodes));
@@ -180,14 +170,14 @@ public final class Creator
         
         Mutator mutator = bouquet.getMutatorFactory().mutate();
         
-        header.setTemporaries(mutator.allocate(Pack.ADDRESS_SIZE * 2));
-        ByteBuffer temporaries = mutator.read(header.getTemporaries());
+        header.setFirstTemporaryNode(mutator.allocate(Pack.ADDRESS_SIZE * 2));
+        ByteBuffer temporaries = mutator.read(header.getFirstTemporaryNode());
         while (temporaries.remaining() != 0)
         {
             temporaries.putLong(0L);
         }
         temporaries.flip();
-        mutator.write(header.getTemporaries(), temporaries);
+        mutator.write(header.getFirstTemporaryNode(), temporaries);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         
@@ -215,7 +205,7 @@ public final class Creator
         
         try
         {
-            disk.write(fileChannel, statics, header.getStaticPagesStart());
+            fileChannel.write(statics, header.getStaticPagesStart());
         }
         catch (IOException e)
         {
@@ -224,7 +214,7 @@ public final class Creator
         
         try
         {
-            header.write(disk, fileChannel, 0);
+            header.write(fileChannel, 0);
         }
         catch (IOException e)
         {
@@ -233,10 +223,6 @@ public final class Creator
 
         new Pack(bouquet).close();
         
-        Opener opener = new Opener();
-        
-        opener.setDisk(disk);
-        
-        return opener.open(file);
+        return new Opener().open(file);
     }
 }

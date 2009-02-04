@@ -7,6 +7,7 @@ import static junit.framework.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -19,9 +20,8 @@ import java.util.TreeSet;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.goodworkalan.sheaf.Disk;
-import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.DirtyRegionMap;
+import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
 public class PackTestCase
@@ -145,7 +145,6 @@ public class PackTestCase
     
     @Test public void badSignature() throws IOException
     {
-        Disk disk = new Disk();
         File file = newFile();
         
         new Creator().create(file).close();
@@ -154,7 +153,7 @@ public class PackTestCase
         bytes.put((byte) 0);
         bytes.flip();
 
-        FileChannel fileChannel = disk.open(file);
+        FileChannel fileChannel = new RandomAccessFile(file, "rw").getChannel();
         fileChannel.write(bytes, 0L);
         fileChannel.close();
 
@@ -571,6 +570,7 @@ public class PackTestCase
     @Test public void softRecover()
     {
         Creator newPack = new Creator();
+        /* This needs to be rewritten when pack takes FileChannel instead.
         newPack.setDisk(new Disk()
         {
             int count = 0;
@@ -585,21 +585,7 @@ public class PackTestCase
                 }
                 return fileChannel.truncate(size);
             }
-//            Saving this for a different sort of recover.
-//            public int write(FileChannel fileChannel, ByteBuffer dst, long position) throws IOException
-//            {
-//                if (position == 52)
-//                {
-//                    if (count++ == 1)
-//                    {
-//                        fileChannel.close();
-//                        throw new IOException();
-//                    }
-//                }
-//                
-//                return fileChannel.write(dst, position);
-//            }
-        });
+        }); */
         File file = newFile();
         Pack pack = newPack.create(file);
         Mutator mutator = pack.mutate();

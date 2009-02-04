@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -15,7 +16,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.goodworkalan.sheaf.Disk;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -23,13 +23,10 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 public final class Opener
 {
-    private Disk disk;
-    
     private final Set<Long> setOfTemporaryBlocks;
     
     public Opener()
     {
-        this.disk = new Disk();
         this.setOfTemporaryBlocks = new HashSet<Long>();
     }
     
@@ -38,15 +35,10 @@ public final class Opener
         return setOfTemporaryBlocks;
     }
     
-    public void setDisk(Disk disk)
-    {
-        this.disk = disk;
-    }
-    
     private boolean badAddress(Header header, long address)
     {
-        return address < header.getFirstAddressPageStart() + Pack.ADDRESS_PAGE_HEADER_SIZE
-            || address > header.getDataBoundary();
+        return address < header.getHeaderSize() + Pack.ADDRESS_PAGE_HEADER_SIZE
+            || address > header.getUserBoundary();
     }
 
     private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
@@ -55,7 +47,7 @@ public final class Opener
         ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticPageSize());
         try
         {
-            disk.read(fileChannel, bytes, header.getStaticPagesStart());
+            fileChannel.read(bytes, header.getStaticPagesStart());
         }
         catch (IOException e)
         {
@@ -93,7 +85,7 @@ public final class Opener
         ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
         try
         {
-            disk.read(fileChannel, bytes, 0L);
+            fileChannel.read(bytes, 0L);
         }
         catch (IOException e)
         {
@@ -108,7 +100,7 @@ public final class Opener
         FileChannel fileChannel;
         try
         {
-            fileChannel = disk.open(file);
+            fileChannel = new RandomAccessFile(file, "rw").getChannel();
         }
         catch (FileNotFoundException e)
         {
@@ -145,7 +137,7 @@ public final class Opener
         int reopenSize = 0;
         try
         {
-            reopenSize = (int) (disk.size(fileChannel) - header.getOpenBoundary());
+            reopenSize = (int) (fileChannel.size() - header.getInterimBoundary());
         }
         catch (IOException e)
         {
@@ -155,7 +147,7 @@ public final class Opener
         ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
         try
         {
-            disk.read(fileChannel, reopen, header.getOpenBoundary());
+            fileChannel.read(reopen, header.getInterimBoundary());
         }
         catch (IOException e)
         {
@@ -173,8 +165,8 @@ public final class Opener
         
         Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
-        Sheaf pager = new Sheaf(fileChannel, disk, header.getPageSize(), header.getFirstAddressPageStart());
-        Bouquet bouquet = new Bouquet(file, header, staticBlocks, header.getDataBoundary(), header.getOpenBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
+        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        Bouquet bouquet = new Bouquet(file, header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
@@ -186,20 +178,20 @@ public final class Opener
         
         try
         {
-            disk.truncate(fileChannel, header.getOpenBoundary());
+            fileChannel.truncate(header.getInterimBoundary());
         }
         catch (IOException e)
         {
             throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
         }
         
-        long openBoundary = header.getOpenBoundary();
+        long openBoundary = header.getInterimBoundary();
         header.setShutdown(Pack.HARD_SHUTDOWN);
-        header.setOpenBoundary(0L);
+        header.setInterimBoundary(0L);
 
         try
         {
-            header.write(disk, fileChannel, 0);
+            header.write(fileChannel, 0);
         }
         catch (IOException e)
         {
@@ -208,7 +200,7 @@ public final class Opener
         
         try
         {
-            disk.force(fileChannel);
+            fileChannel.force(true);
         }
         catch (IOException e)
         {
@@ -217,7 +209,7 @@ public final class Opener
 
         Mutator mutator = bouquet.getPack().mutate();
         
-        long temporaries = header.getTemporaries();
+        long temporaries = header.getFirstTemporaryNode();
         do
         {
             ByteBuffer node = mutator.read(temporaries);
@@ -232,7 +224,7 @@ public final class Opener
         while (temporaries != 0L);
 
         return new Bouquet(file, header, staticBlocks,
-                    header.getDataBoundary(), openBoundary, pager,
+                    header.getUserBoundary(), openBoundary, pager,
                     new AddressPagePool(addressPages),
                     new TemporaryServer(temporaryNodes)).getPack();
     }

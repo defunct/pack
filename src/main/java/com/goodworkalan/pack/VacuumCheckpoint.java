@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 
@@ -32,8 +33,15 @@ extends Operation
             bytes.clear();
             bytes.putLong(newJournalPosition);
             player.getDirtyPages().flush();
-            player.getJournalHeader().write(player.getBouquet().getSheaf());
-            player.getBouquet().getSheaf().force();
+            player.getJournalHeader().write(player.getBouquet().getSheaf().getFileChannel());
+            try
+            {
+                player.getBouquet().getSheaf().getFileChannel().force(true);
+            }
+            catch (IOException e)
+            {
+                throw new PackException(Pack.ERROR_IO_FORCE, e);
+            }
         }
     }
 

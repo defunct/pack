@@ -46,7 +46,7 @@ implements Page
         bytes.clear();
         try
         {
-            sheaf.getDisk().write(sheaf.getFileChannel(), bytes, to);
+            sheaf.getFileChannel().write(bytes, to);
         }
         catch (IOException e)
         {

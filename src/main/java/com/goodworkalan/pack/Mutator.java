@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -1547,8 +1548,15 @@ public final class Mutator
                 
                 // Write and force our journal.
                 dirtyPages.flush();
-                header.write(bouquet.getSheaf());
-                bouquet.getSheaf().force();
+                header.write(bouquet.getSheaf().getFileChannel());
+                try
+                {
+                    bouquet.getSheaf().getFileChannel().force(true);
+                }
+                catch (IOException e)
+                {
+                    throw new PackException(Pack.ERROR_IO_FORCE, e);
+                }
                 
                 // Create a journal player.
                 Player player = new Player(bouquet, header, dirtyPages);
