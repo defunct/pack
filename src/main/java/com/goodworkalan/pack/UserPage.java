@@ -11,16 +11,29 @@ import com.goodworkalan.sheaf.Sheaf;
 final class UserPage extends BlockPage
 {
     /**
-     * True if the page is in the midst of a vacuum and should not be written to.
+     * True if the page is in the midst of a vacuum and should not be written
+     * to.
      */
     private boolean mirrored;
 
+    /**
+     * Return the count as it should be written to disk.
+     * <p>
+     * Count is stored as a negative value so that the first bit is set
+     * indicating that this is a user page.
+     */
     protected int getDiskCount()
     {
         return count | Pack.COUNT_MASK;
     }
     
-    protected int getDiskCount(int count)
+    /**
+     * Convert the count written to disk into the actual count value.
+     * <p>
+     * Count is stored as a negative value so that the first bit is set
+     * indicating that this is a user page.
+     */
+    protected int convertDiskCount(int count)
     {
         if ((count & Pack.COUNT_MASK) == 0)
         {

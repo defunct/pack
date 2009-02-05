@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.RawPage;
 
 
 final class JournalPage
@@ -12,10 +11,8 @@ extends RelocatablePage
 {
     private int offset;
 
-    public void create(RawPage position, DirtyPageSet dirtyPages)
+    public void create(DirtyPageSet dirtyPages)
     {
-        super.create(position, dirtyPages);
-
         ByteBuffer bytes = getRawPage().getByteBuffer();
         
         bytes.clear();
@@ -29,10 +26,8 @@ extends RelocatablePage
         this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
     }
 
-    public void load(RawPage position)
+    public void load()
     {
-        super.load(position);
-        
         this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
     }
     

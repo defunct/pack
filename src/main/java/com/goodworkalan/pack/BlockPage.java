@@ -7,11 +7,12 @@ import java.util.List;
 import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.RawPage;
+import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.Sheaf;
 
 /**
  * <p>
- * An application of a raw page that manages the page a list of data blocks.
+ * A relocatable page that contains a list of data blocks.
  * <h3>Duplicate Soft References</h3>
  * <p>
  * The data page is the only page that can take advantage of the duplication
@@ -68,35 +69,78 @@ import com.goodworkalan.sheaf.RawPage;
  */
 abstract class BlockPage extends RelocatablePage
 {
+    /** The count of blocks in this page. */
     protected int count;
 
+    /** The count of bytes remaining for block allocation. */
     protected int remaining;
 
+    /**
+     * Construct an uninitialized block page that is then initialized by calling
+     * the {@link #create create} or {@link #load load} methods. The default
+     * constructor creates an empty address page that must be initialized before
+     * use.
+     * <p>
+     * All of the page classes have default constructors. This constructor is
+     * called by clients of the <code>Sheaf</code> when requesting pages or
+     * creating new pages.
+     * <p>
+     * An uninitialized page of the expected Java class of page is given to the
+     * <code>Sheaf</code>. If the page does not exist, the empty, default
+     * constructed page is used, if not is ignored and garbage collected. This
+     * is a variation on the prototype object construction pattern.
+     * 
+     * @see com.goodworkalan.sheaf.Sheaf#getPage(long, Class, Page)
+     * @see com.goodworkalan.sheaf.Sheaf#setPage(long, Class, Page,
+     *      DirtyPageSet, boolean)
+     */
     public BlockPage()
     {
     }
 
+    /**
+     * Return an integer value to write to disk to store the block count. User
+     * block pages store a negative value to indicate block count, interim pages
+     * store a positive value.
+     * <p>
+     * TODO Why so clever? We got rid of checksums. That is eight bytes saved.
+     * Why not use the first byte, short or integer as a set of flags instead?
+     * <p>
+     * Guess we won't know until recovery is implemented.
+     */
     protected abstract int getDiskCount();
 
-    protected abstract int getDiskCount(int count);
+    /**
+     * Convert an integer value read from to disk to store the block count into
+     * an actual block count. User block pages store a negative value to
+     * indicate block count, interim pages store a positive value.
+     */
+    protected abstract int convertDiskCount(int count);
 
-    public void create(RawPage rawPage, DirtyPageSet dirtyPages)
+    /**
+     * Create a block page under the given raw page.
+     * 
+     * @param rawPage
+     *            The raw page.
+     * @param dirtyPages
+     *            The collection of dirty pages.
+     * @see Sheaf#setPage(long, Class, Page, DirtyPageSet, boolean)
+     */
+    public void create(DirtyPageSet dirtyPages)
     {
-        super.create(rawPage, dirtyPages);
-
         this.count = 0;
-        this.remaining = rawPage.getSheaf().getPageSize()
+        this.remaining = getRawPage().getSheaf().getPageSize()
                 - Pack.BLOCK_PAGE_HEADER_SIZE;
 
-        ByteBuffer bytes = rawPage.getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
 
-        rawPage.invalidate(0, Pack.BLOCK_PAGE_HEADER_SIZE);
+        getRawPage().invalidate(0, Pack.BLOCK_PAGE_HEADER_SIZE);
         bytes.putLong(0L);
         bytes.putInt(getDiskCount());
 
-        dirtyPages.add(rawPage);
+        dirtyPages.add(getRawPage());
     }
 
     private int getConsumed()
@@ -115,19 +159,22 @@ abstract class BlockPage extends RelocatablePage
         return consumed;
     }
 
-    public void load(RawPage rawPage)
+    public void load()
     {
-        super.load(rawPage);
-
-        ByteBuffer bytes = rawPage.getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
         bytes.getLong();
 
-        this.count = getDiskCount(bytes.getInt());
+        this.count = convertDiskCount(bytes.getInt());
         this.remaining = getRawPage().getSheaf().getPageSize() - getConsumed();
     }
 
+    /**
+     * Get the count of blocks in this page.
+     * 
+     * @return The count of blocks in this page.
+     */
     public int getCount()
     {
         synchronized (getRawPage())
@@ -136,6 +183,11 @@ abstract class BlockPage extends RelocatablePage
         }
     }
 
+    /**
+     * Get the count of bytes remaining for block allocation.
+     * 
+     * @return The count of bytes remaining for block allocation.
+     */
     public int getRemaining()
     {
         synchronized (getRawPage())
@@ -152,6 +204,14 @@ abstract class BlockPage extends RelocatablePage
         return blockSize;
     }
 
+    /**
+     * Return the back-referenced address of the block at the current position
+     * of the given byte buffer without adjusting the byte buffer position.
+     * 
+     * @param bytes
+     *            The page byte buffer.
+     * @return The back-referenced address.
+     */
     protected long getAddress(ByteBuffer bytes)
     {
         return bytes.getLong(bytes.position() + Pack.COUNT_SIZE);

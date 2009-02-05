@@ -27,6 +27,11 @@ import java.util.Set;
  * values and a set is chosen by hashing. Synchronization is performed on the
  * set, so contention is reduced by the reduced chance of two addresses hashing
  * to the same set at the same time.
+ * <p>
+ * TODO This doesn't work! If you lock the address, mark it as free, then
+ * sleep, then the other thread marks it as pending, it sleeps, then you end up
+ * flushing the pending to disk. The other thread rolls back. Then soft
+ * shutdown. Now you've leaked an address.
  * 
  * @author Alan Gutierrez
  */

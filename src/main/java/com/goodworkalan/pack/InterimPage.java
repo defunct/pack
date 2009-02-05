@@ -14,7 +14,7 @@ final class InterimPage extends BlockPage
         return count;
     }
     
-    protected int getDiskCount(int count)
+    protected int convertDiskCount(int count)
     {
         if ((count & Pack.COUNT_MASK) != 0)
         {

@@ -3,37 +3,23 @@ package com.goodworkalan.pack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
-class RelocatablePage
-implements Page
+/**
+ * Abstract superclass class for the relocatble page implementations; block
+ * pages and journal pages.
+ * 
+ * @author Alan Gutierrez
+ * 
+ */
+class RelocatablePage extends Page
 {
-    private RawPage rawPage;
-    
-    public void create(RawPage rawPage, DirtyPageSet dirtyPages)
-    {
-        this.rawPage = rawPage;
-        rawPage.setPage(this);
-    }
-
-    public void load(RawPage rawPage)
-    {
-        this.rawPage = rawPage;
-        rawPage.setPage(this);
-    }
-    
-    public RawPage getRawPage()
-    {
-        return rawPage;
-    }
-    
     /**
-     * Relocate a page from one position to another writing it out
-     * immediately. This method does not use a dirty page map, the page
-     * is written immediately.
+     * Relocate a page from one position to another writing it out to the file
+     * channel of the sheaf associated with the raw page. This method does not
+     * use a dirty page map, the page is written immediately.
      * 
      * @param to
      *            The position where the page will be relocated.

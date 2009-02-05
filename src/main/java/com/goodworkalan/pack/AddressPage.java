@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.RawPage;
 
 /**
  * Interprets an underlying page as an array of file positions that reference a
@@ -29,12 +28,8 @@ import com.goodworkalan.sheaf.RawPage;
  * address position by writing the maximum long value as the value of the page
  * position.
  */
-final class AddressPage
-implements Page
+final class AddressPage extends Page
 {
-    /** The raw page where the contents of the address page are stored. */
-    private RawPage rawPage;
-    
     /**
      * A count of free addresses available for reservation on the address
      * page.
@@ -48,15 +43,17 @@ implements Page
      * initialized before use.
      * <p>
      * All of the page classes have default constructors. This constructor is
-     * called by clients of the <code>Pager</code> when requesting pages or
+     * called by clients of the <code>Sheaf</code> when requesting pages or
      * creating new pages.
      * <p>
      * An uninitialized page of the expected Java class of page is given to the
-     * <code>Pager</code>. If the page does not exist, the empty, default
+     * <code>Sheaf</code>. If the page does not exist, the empty, default
      * constructed page is used, if not is ignored and garbage collected. This
      * is a variation on the prototype object construction pattern.
      * 
-     * @see com.goodworkalan.pack.Pager#getPage
+     * @see com.goodworkalan.sheaf.Sheaf#getPage(long, Class, Page)
+     * @see com.goodworkalan.sheaf.Sheaf#setPage(long, Class, Page,
+     *      DirtyPageSet, boolean)
      */
     public AddressPage()
     {
@@ -66,13 +63,10 @@ implements Page
      * Load the address page from the raw page. This method will generate a
      * count of free pages by scanning the raw page at address positions
      * looking for zero, the unallocated value.
-     * 
-     * @param rawPage
-     *            The raw page behind this address page.
      */
-    public void load(RawPage rawPage)
+    public void load()
     {
-        ByteBuffer bytes = rawPage.getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.position(0);
 
@@ -86,9 +80,6 @@ implements Page
                 freeCount++;
             }
         }
-
-        rawPage.setPage(this);
-        this.rawPage = rawPage;
     }
 
     /**
@@ -96,14 +87,12 @@ implements Page
      * out zero values at each address offset in the address page. This
      * method will set the page of the raw page to this address page.
      * 
-     * @param rawPage
-     *            The raw page that will become an address page.
      * @param dirtyPages
      *            A set of pages that need to be flushed to disk.
      */
-    public void create(RawPage rawPage, DirtyPageSet dirtyPages)
+    public void create(DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = rawPage.getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
         
@@ -115,22 +104,9 @@ implements Page
             freeCount++;
         }
 
-        dirtyPages.add(rawPage);
-
-        this.rawPage = rawPage;
-        rawPage.setPage(this);
+        dirtyPages.add(getRawPage());
     }
     
-    /**
-     * Return the raw page that backs this address page.
-     *
-     * @return The raw page behind this address page.
-     */
-    public RawPage getRawPage()
-    {
-        return rawPage;
-    }
-
     /**
      * Return the count of free addresses, addresses that are neither
      * allocated nor reserved for allocation.
@@ -202,8 +178,8 @@ implements Page
     {
         synchronized (getRawPage())
         {
-            ByteBuffer bytes = rawPage.getByteBuffer();
-            int offset = (int) (address - rawPage.getPosition());
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            int offset = (int) (address - getRawPage().getPosition());
             bytes.putLong(offset, position);
             getRawPage().invalidate(offset, Pack.POSITION_SIZE);
             dirtyPages.add(getRawPage());
@@ -238,8 +214,8 @@ implements Page
     {
         synchronized (getRawPage())
         {
-            ByteBuffer bytes = rawPage.getByteBuffer();
-            int offset = (int) (address - rawPage.getPosition());
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            int offset = (int) (address - getRawPage().getPosition());
             long position = bytes.getLong(offset);
             if (position != 0L)
             {
