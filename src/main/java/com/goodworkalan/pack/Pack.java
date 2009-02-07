@@ -105,6 +105,11 @@ public class Pack
     
     final Bouquet bouquet;
     
+    /**
+     * Create a pack with the given bouquet of services.
+     * 
+     * @param bouquet The bouquet.
+     */
     Pack(Bouquet bouquet)
     {
         this.bouquet = bouquet;

@@ -9,8 +9,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.goodworkalan.sheaf.Sheaf;
 
+/**
+ * Gathers the various services so that they are in one place, but not all in
+ * one class.
+ * <p>
+ * These services depend on each other, and many could be placed in a single
+ * class, but the bouquet pattern allows us some modularity. Where one service
+ * depends on another, that service is given as a parameter, rather than having
+ * the services combined.
+ * 
+ * @author Alan Gutierrez
+ */
 final class Bouquet
 {
+    /** The pack object. */
     private final Pack pack;
     
     /** The page manager of the pack to mutate. */
@@ -22,9 +34,7 @@ final class Bouquet
      */
     private final AddressLocker addressLocker;
 
-    /**
-     * Round block allocations to this alignment.
-     */
+    /**  Round block allocations to this alignment. */
     private final int alignment;
 
     private final TemporaryServer temporaryFactory;

@@ -19,8 +19,6 @@ extends RelocatablePage
         bytes.putLong(0);
         bytes.putInt(0);
 
-        getRawPage().setPage(this);
-        
         dirtyPages.add(getRawPage());
         
         this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;

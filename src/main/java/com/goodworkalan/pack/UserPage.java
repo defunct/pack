@@ -4,10 +4,29 @@ import java.nio.ByteBuffer;
 import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
-
+/**
+ * A block page with operations specific to user block pages such as
+ * synchronization for mirror and vacuum.
+ * <p>
+ * The
+ * {@link #mirror(Adler32, boolean, InterimPagePool, Sheaf, InterimPage, DirtyPageSet)
+ * mirror} method copies the contents of this user block page to an interim
+ * block page for move and for vacuum.
+ * <p>
+ * When moving the user page, all blocks are copied to an interim page. At
+ * commit the mirrored blocks are copied to the destination user page.
+ * <p>
+ * When vacuuming the user page, all blocks after the first block that is
+ * preceded by an freed block are copied to an interim page. At commit
+ * the mirrored blocks are copied into place, overwriting the freed blocks.
+ * <p>
+ * The {@link #copy(long, ByteBuffer, DirtyPageSet) copy} method copies a single
+ * block from a mirror of the user page.
+ * 
+ * @author Alan Gutierrez
+ */
 final class UserPage extends BlockPage
 {
     /**
@@ -26,7 +45,7 @@ final class UserPage extends BlockPage
     {
         return count | Pack.COUNT_MASK;
     }
-    
+
     /**
      * Convert the count written to disk into the actual count value.
      * <p>
@@ -43,8 +62,11 @@ final class UserPage extends BlockPage
     }
 
     /**
-     * Called in two peculiar places. Before free and before write. Hidden
-     * in the code. Not called for copies.
+     * If the page is mirrored for vacuum, wait for the vacuum to complete.
+     * <p>
+     * This is called before write and before free. If we were to write
+     * a block or free a block that was mirrored, then then the vacuum
+     * copies the mirror into place, the mirror would be overwritten.
      */
     public synchronized void waitOnMirrored()
     {
@@ -66,14 +88,29 @@ final class UserPage extends BlockPage
      * The vacuum parameter indicates that mirroring should begin at the first
      * allocated block beyond the first free block. If there are no free blocks
      * to vacuum, then <code>mirror</code> returns null. If the interim
-     * parameter is null, then the <code>pager</code> will be used to allocate
+     * parameter is null, then the <code>sheaf</code> will be used to allocate
      * an <code>InterimPage</code> if vacuum is necessary.
+     * <p>
+     * Upon mirroring the user page, any subsequent write or free operation will
+     * block until the {@link #unmirror()} method is called. Until
+     * <code>unmirror</code> is called a hard reference to each mirrored user
+     * page must be held by the caller in order to ensure that all mutators
+     * reference the same user page. The hard reference must be released after
+     * <code>unmirror</code> is called.
+     * <p>
+     * FIXME When mirror is called and returns null, what happens?
      * 
+     * @param adler32
+     *            Used to record the checksum of the block pages.
      * @param vacuum
      *            If true, mirror only if there are free blocks between
      *            allocated blocks, if false, mirror from the first block.
-     * @param pager
-     *            The pager to use to allocate an interim page.
+     * @param interimPagePool
+     *            The interim page pool used to allocate a block page if the
+     *            given interim page is null and a vacuum is actually necessary.
+     * @param sheaf
+     *            The sheaf used to allocate a block page if the given interim
+     *            page is null and a vacuum is actually necessary.
      * @param interim
      *            The interim page to which this page is mirrored, or null for
      *            only if needed allocation.
@@ -83,23 +120,37 @@ final class UserPage extends BlockPage
      *         or the mirrored page allocated, or null if no interim page was
      *         given nor allocated.
      */
-    public synchronized Mirror mirror(Adler32 adler32, boolean vacuum, InterimPagePool interimPagePool, Sheaf pager, InterimPage interim, DirtyPageSet dirtyPages)
+    public synchronized Mirror mirror(Adler32 adler32, boolean vacuum, InterimPagePool interimPagePool, Sheaf sheaf, InterimPage interim, DirtyPageSet dirtyPages)
     {
+        // Should not mirror if already mirrored.
+        if (mirrored)
+        {
+            throw new IllegalStateException();
+        }
+
+        // If always vacuum, start at offset 0.
         int offset = vacuum ? -1 : 0;
         
         Mirror mirror = null;
         
-        assert ! mirrored;
-        
+        // Synchronize on the raw page.
         synchronized (getRawPage())
         {
+            // Get the byte bufer with the position at the first block.
             ByteBuffer bytes = getBlockRange();
+
+            // Iterate over the blocks, advancing if the block count if the
+            // block has not been freed.
             int block = 0;
             while (block != count)
             {
+                // If the block size is negative, then the block has been freed.
+                // The absolute block size is the size of the block.
                 int size = getBlockSize(bytes);
                 if (size < 0)
                 {
+                    // If the offset has not been set already, set the offset to
+                    // begin at this block count.
                     if (offset == -1)
                     {
                         offset = block;
@@ -108,25 +159,31 @@ final class UserPage extends BlockPage
                 }
                 else
                 {
+                    // Increment the block count.
                     block++;
+
+                    // If we have an offset, we mirror the block, otherwise we
+                    // advance to the next block. 
                     if (offset == -1)
                     {
                         advance(bytes, size);
                     }
                     else
                     {
+                        // Allocate the interim page if it has not given or
+                        // already allocated.
                         if (interim == null)
                         {
-                            interim = interimPagePool.newInterimPage(pager, InterimPage.class, new InterimPage(), dirtyPages);
+                            interim = interimPagePool.newInterimPage(sheaf, InterimPage.class, new InterimPage(), dirtyPages);
                         }
 
-                        assert size <= interim.getRemaining();
-
+                        // Allocate a block in the interim page.
                         int blockSize = bytes.getInt();
                         long address = bytes.getLong();
                         
                         interim.allocate(address, blockSize, dirtyPages);
 
+                        // Write the user block to the interim block.
                         int userSize = blockSize - Pack.BLOCK_HEADER_SIZE;
 
                         bytes.limit(bytes.position() + userSize);
@@ -136,45 +193,91 @@ final class UserPage extends BlockPage
                 } 
             }
             
-            if (interim != null)
+            // If we were given or have allocated an interim block, then we have
+            // in fact mirrored the user page.
+            mirrored = mirror != null;
+            
+            // Return a mirror structure including a checksum of the block
+            // contents.
+            if (mirrored)
             {
                 mirror = new Mirror(interim, offset, getChecksum(adler32));
             }
         }
         
-        mirrored = mirror != null;
-
         return mirror;
     }
-    
+
+    /**
+     * Notify all mutators waiting to write or free a block on this mirrored
+     * page that a vacuum has completed.
+     */
     public synchronized void unmirror()
     {
+        if (!mirrored)
+        {
+            throw new IllegalStateException();
+        }
         mirrored = false;
         notifyAll();
     }
-    
+
+    /**
+     * Copy a block into this user block page from a interim block page where
+     * the blocks have been mirrored.
+     * <p>
+     * This method will check to see if the block alreay exists. If it already
+     * exists, it writes the block like the
+     * {@link BlockPage#write(long, ByteBuffer, DirtyPageSet) write} method of
+     * {@link BlockPage}. Unlike {@link BlockPage}, if the block does not exist,
+     * it will append the block.
+     * <p>
+     * This method also updates the address page, so that the address in the
+     * address page references the file position of this user page.
+     * 
+     * @param address
+     *            The address of the block.
+     * @param block
+     *            The contents of the block.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     */
     public void copy(long address, ByteBuffer block, DirtyPageSet dirtyPages)
     {
+        // Synchronize on the raw page.
         synchronized (getRawPage())
         {
-            RawPage rawPage = getRawPage();
-            Sheaf pager = rawPage.getSheaf();
-            AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
+            // Dereference the file position of the address.
+            Sheaf sheaf = getRawPage().getSheaf();
+            AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
             long position = addresses.dereference(address);
+
+            // If the file position of the address does not agree with us, set
+            // the file position to that of the current raw page.
             if (position != getRawPage().getPosition())
             {
+                // Position must not be null.
                 if (position == 0L)
                 {
                     throw new IllegalStateException();
                 }
-                if (position != Long.MAX_VALUE)
+
+                // Set the address to the new file position. In the case of a
+                // vacuum, the file position will not change. In the case of a
+                // page move, the file position will change, but we don't need
+                // to free the block froim the current user block page, since it
+                // will simply be drained an reassigned as an address page.
+                if (position != getRawPage().getPosition())
                 {
-                    UserPage blocks = pager.getPage(position, UserPage.class, new UserPage());
-                    blocks.free(address, dirtyPages);
+                    addresses.set(address, getRawPage().getPosition(), dirtyPages);
                 }
-                addresses.set(address, getRawPage().getPosition(), dirtyPages);
             }
             
+            // If the block exists in the page, overwrite the block. Otherwise,
+            // append the block to the end of the user page.
+            
+            // FIXME Does not work. It will skip freed blocks, recreating the
+            // bad mojo.
             ByteBuffer bytes = getRawPage().getByteBuffer();
             if (seek(bytes, address))
             {
@@ -217,11 +320,30 @@ final class UserPage extends BlockPage
             dirtyPages.add(getRawPage());
         }
     }
-    
-    public boolean free(long address, DirtyPageSet dirtyPages)
+
+    /**
+     * Free a user block page.
+     * <p>
+     * The page is altered so that the block is skipped when the list of blocks
+     * is iterated. If the block is the last block, then the bytes are 
+     * immediately available for reallocation. If teh block is followed by one
+     * or more blocks, the bytes are not available for reallocation until the
+     * user page is vacuumed (or until all the blocks after this block are
+     * freed, but that is not at all predictable.)
+     * 
+     * @param address
+     *            The address of the block to free.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     */
+    public void free(long address, DirtyPageSet dirtyPages)
     {
+        // Synchronize on the raw page.
         synchronized (getRawPage())
         {
+            // If the block is found, negate the block size, indicating that the
+            // absolute value of the block size should be skipped when iterating
+            // the blocks.
             ByteBuffer bytes = getRawPage().getByteBuffer();
             if (seek(bytes, address))
             {
@@ -241,9 +363,7 @@ final class UserPage extends BlockPage
                 bytes.putInt(Pack.CHECKSUM_SIZE, getDiskCount());
 
                 dirtyPages.add(getRawPage());
-                return true;
             }
         }
-        return false;
     }
 }

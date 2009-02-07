@@ -20,6 +20,8 @@ class RelocatablePage extends Page
      * Relocate a page from one position to another writing it out to the file
      * channel of the sheaf associated with the raw page. This method does not
      * use a dirty page map, the page is written immediately.
+     * <p>
+     * FIXME This seems like it should be pushed down to <code>Sheaf</code>.
      * 
      * @param to
      *            The position where the page will be relocated.

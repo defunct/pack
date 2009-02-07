@@ -143,7 +143,13 @@ abstract class BlockPage extends RelocatablePage
         dirtyPages.add(getRawPage());
     }
 
-    private int getConsumed()
+    /**
+     * Return the count of bytes allocated by iterating over the blocks
+     * and reading their block sizes.
+     * 
+     * @return The count of bytes allocated.
+     */
+    private int getAllocated()
     {
         int consumed = Pack.BLOCK_PAGE_HEADER_SIZE;
         ByteBuffer bytes = getBlockRange();
@@ -167,7 +173,7 @@ abstract class BlockPage extends RelocatablePage
         bytes.getLong();
 
         this.count = convertDiskCount(bytes.getInt());
-        this.remaining = getRawPage().getSheaf().getPageSize() - getConsumed();
+        this.remaining = getRawPage().getSheaf().getPageSize() - getAllocated();
     }
 
     /**
@@ -217,6 +223,15 @@ abstract class BlockPage extends RelocatablePage
         return bytes.getLong(bytes.position() + Pack.COUNT_SIZE);
     }
 
+    /**
+     * Set offset the position of the given byte buffer by the absolute value of
+     * the given block size.
+     * 
+     * @param bytes
+     *            The block page byte buffer.
+     * @param blockSize
+     *            A block size read from the block page.
+     */
     protected void advance(ByteBuffer bytes, int blockSize)
     {
         bytes.position(bytes.position() + Math.abs(blockSize));
@@ -224,8 +239,10 @@ abstract class BlockPage extends RelocatablePage
 
     /**
      * Return the byte buffer associated with this data page with the position
-     * and limit set to the range of bytes that contain blocks.
+     * set to the range of bytes that contain blocks.
      * 
+     * @param bytes
+     *            The block page byte buffer.
      * @return The byte buffer limited to the block range.
      */
     private ByteBuffer getBlockRange(ByteBuffer bytes)
@@ -237,11 +254,6 @@ abstract class BlockPage extends RelocatablePage
     protected ByteBuffer getBlockRange()
     {
         return getBlockRange(getRawPage().getByteBuffer());
-    }
-
-    private boolean unmoved()
-    {
-        return getRawPage().getPage() == this;
     }
 
     /**
@@ -274,11 +286,6 @@ abstract class BlockPage extends RelocatablePage
             advance(bytes, size);
         }
         return false;
-    }
-
-    public boolean contains(long address)
-    {
-        return unmoved() && seek(getRawPage().getByteBuffer(), address);
     }
 
     public int getBlockSize(long address)

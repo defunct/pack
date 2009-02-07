@@ -4,18 +4,16 @@ import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.Sheaf;
 
-
 /**
- * Copy does not wait on mirrored pages, since it is called only on 
- * pages that it has vacuumed and mirrored. In the cases of address
- * expansion, copy will be draining a mirrored page using free. Any
- * writers or readers will block and when the block is not found, they
- * will dereference the address page again, to determine the new location
- * of the block.
+ * Copy does not wait on mirrored pages, since it is called only on pages that
+ * it has vacuumed and mirrored. In the cases of address expansion, copy will be
+ * draining a mirrored page using free. Any writers or readers will block and
+ * when the block is not found, they will dereference the address page again, to
+ * determine the new location of the block.
  * <p>
  * This use means the mirror flag should block for address page relocation
- * through the entire commit, whereas with an ordinary commit, we can
- * allow concurrent writes after the vacuum commit.
+ * through the entire commit, whereas with an ordinary commit, we can allow
+ * concurrent writes after the vacuum commit.
  */
 final class Copy
 extends Operation

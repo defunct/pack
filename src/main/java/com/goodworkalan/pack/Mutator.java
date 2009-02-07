@@ -1471,8 +1471,8 @@ public final class Mutator
 
                     // If mirror returns null, the user page did not need a
                     // vacuum, there were no free blocks surrounded by employed
-                    // bocks. If mirror returns non null, then we note that the
-                    // joruanl needs to add the vacuum to the list of vacuums.
+                    // blocks. If mirror returns non null, then we note that the
+                    // Journal needs to add the vacuum to the list of vacuums.
                     if (mirror != null)
                     {
                         journal.write(new Vacuum(mirror, user));
