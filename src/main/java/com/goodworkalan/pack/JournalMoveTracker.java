@@ -1,5 +1,10 @@
 package com.goodworkalan.pack;
 
+/**
+ * A move tracker that journals {@link ShiftMove} operations.
+ * 
+ * @author Alan Gutierrez
+ */
 final class JournalMoveTracker
 implements MoveTracker
 {

@@ -16,18 +16,18 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class JournalWriter
 {
-    /** The current journal page. */
-    protected final JournalPage journal;
-
     /** The sheaf from which to allocate pages. */
     protected final Sheaf sheaf;
     
     /** The interim page pool from which to allocate pages. */
     protected final InterimPagePool interimPagePool;
     
-    /** The set of dirty pages. */
-    protected final DirtyPageSet dirtyPages;
-    
+    /**
+     * A move node recorder to obtain the move node necessary to create the
+     * movable reference to the first page in the linked list of journal pages.
+     */
+    protected final MoveNodeMoveTracker moveNodeRecorder;
+
     /** New journal page allocations are reported to this page tracker. */
     protected final PageMoveTracker pageRecorder;
     
@@ -37,11 +37,11 @@ class JournalWriter
      */
     protected final Movable start;
 
-    /**
-     * A move node recorder to obtain the move node necessary to create the
-     * movable reference to the first page in the linked list of journal pages.
-     */
-    protected final MoveNodeMoveTracker moveNodeRecorder;
+    /** The current journal page. */
+    protected final JournalPage journal;
+
+    /** The set of dirty pages. */
+    protected final DirtyPageSet dirtyPages;
 
     /**
      * Create a journal writer that will allocate pages from the given sheaf and
@@ -51,9 +51,7 @@ class JournalWriter
      * {@link NullJournalWriter} which in turn uses it to create a movable
      * reference to the first page of the linked list of journal pages.
      * <p>
-     * New page allocations are added to the ...
-     * <p>
-     * FIXME Left off here.
+     * New page allocations are added to the given page move tracker.
      * 
      * @param sheaf
      *            The sheaf from which to allocate pages.
@@ -66,15 +64,15 @@ class JournalWriter
      * @param pageRecorder
      *            New journal page allocations are reported to this page
      *            tracker.
-     * @param journal
-     *            The current journal page.
      * @param start
      *            A movable reference to the first page in the linked list of
      *            journal pages.
+     * @param journal
+     *            The current journal page.
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, Movable start, JournalPage journal, DirtyPageSet dirtyPages)
     {
         this.sheaf = pager;
         this.interimPagePool = interimPagePool;
@@ -136,6 +134,9 @@ class JournalWriter
      * operation of the newly created page as the last operation to the current
      * page. It then creates a new journal writer that writes to the newly
      * created journal page.
+     * <p>
+     * The movable reference to the first page in the link list of journal pages
+     * is given to the newly created journal writer.
      * 
      * @return A new journal writer that will write to a journal page that has
      *         been appended to the linked list of journal pages.
@@ -145,7 +146,7 @@ class JournalWriter
         JournalPage nextJournal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
         journal.write(new NextOperation(nextJournal.getJournalPosition()), 0, dirtyPages);
         pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, nextJournal, start, dirtyPages);
+        return new JournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, start, nextJournal, dirtyPages);
     }
 
     /**
