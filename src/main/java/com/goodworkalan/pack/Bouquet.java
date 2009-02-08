@@ -1,6 +1,5 @@
 package com.goodworkalan.pack;
 
-import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -86,9 +85,6 @@ final class Bouquet
 
     /** The boundary between address pages and user data pages. */
     private final Boundary userBoundary;
-
-    /** The file where this pager writes its contents. */
-    private final File file;
     
     /** Housekeeping information stored at the head of the file. */
     private final Header header;
@@ -116,10 +112,9 @@ final class Bouquet
      * @param interimBoundary
      *            The boundary between user data pages and interim data pages.
      */
-    public Bouquet(File file, Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryServer temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryServer temporaryFactory)
     {
         this.pack = new Pack(this);
-        this.file = file;
         this.alignment = header.getAlignment();
         this.header = header;
         this.staticBlocks = staticBlocks;
@@ -313,15 +308,5 @@ final class Bouquet
     public ReadWriteLock getCompactLock()
     {
         return compactLock;
-    }
-
-    /**
-     * Return the file associated with this pack.
-     * 
-     * @return The pack file.
-     */
-    public File getFile()
-    {
-        return file;
     }
 }

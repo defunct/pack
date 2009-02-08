@@ -1,9 +1,6 @@
 package com.goodworkalan.pack;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -94,19 +91,8 @@ public final class Opener
         return new Header(bytes);
     }
 
-    public Pack open(File file)
+    public Pack open(FileChannel fileChannel)
     {
-        // Open the file channel.
-        FileChannel fileChannel;
-        try
-        {
-            fileChannel = new RandomAccessFile(file, "rw").getChannel();
-        }
-        catch (FileNotFoundException e)
-        {
-            throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
-        }
-
         // Read the header and obtain the basic file properties.
 
         Header header = readHeader(fileChannel);
@@ -127,10 +113,10 @@ public final class Opener
             return null;
         }
 
-        return softOpen(file, fileChannel, header);
+        return softOpen(fileChannel, header);
    }
 
-    private Pack softOpen(File file, FileChannel fileChannel, Header header)
+    private Pack softOpen(FileChannel fileChannel, Header header)
     {
         Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
 
@@ -166,7 +152,7 @@ public final class Opener
         Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
         Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        Bouquet bouquet = new Bouquet(file, header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
+        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
@@ -223,7 +209,7 @@ public final class Opener
         }
         while (temporaries != 0L);
 
-        return new Bouquet(file, header, staticBlocks,
+        return new Bouquet(header, staticBlocks,
                     header.getUserBoundary(), openBoundary, pager,
                     new AddressPagePool(addressPages),
                     new TemporaryServer(temporaryNodes)).getPack();

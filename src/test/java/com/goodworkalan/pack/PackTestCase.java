@@ -6,6 +6,7 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URI;
@@ -26,13 +27,23 @@ import com.goodworkalan.sheaf.Sheaf;
 
 public class PackTestCase
 {
-    private File newFile()
+    private FileChannel newFile()
     {
         try
         {
             File file = File.createTempFile("momento", ".mto");
             file.deleteOnExit();
-            return file;
+            // Open the file.
+            FileChannel fileChannel;
+            try
+            {
+                fileChannel = new RandomAccessFile(file, "rw").getChannel();
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
+            }
+            return fileChannel;
         }
         catch (IOException e)
         {
@@ -43,14 +54,6 @@ public class PackTestCase
     @Test public void create()
     {
         new Creator().create(newFile()).close();
-    }
-    
-    @Test public void getFile()
-    {
-        File file = newFile();
-        Pack pack = new Creator().create(file);
-        assertEquals(file, pack.getFile());
-        pack.close();
     }
 
     @Test(expected=java.lang.IllegalStateException.class) public void regionalLowerRange()
@@ -86,7 +89,7 @@ public class PackTestCase
 
     @Test public void reopen()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         new Creator().create(file).close();
         new Opener().open(file).close();
         new Opener().open(file).close();
@@ -94,7 +97,7 @@ public class PackTestCase
 
     @Test public void commit()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.commit();
@@ -104,7 +107,7 @@ public class PackTestCase
 
     @Test public void allocate()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
@@ -113,53 +116,22 @@ public class PackTestCase
         new Opener().open(file).close();
     }
     
-    @Test public void fileNotFoundOpen()
-    {
-        File file = new File("/not/very/likely/harpsicord");
-        try
-        {
-            new Opener().open(file);
-        }
-        catch (PackException e)
-        {
-            assertEquals(Pack.ERROR_FILE_NOT_FOUND, e.getCode());
-            return;
-        }
-        fail("Expected exception not thrown."); 
-    }
-    
-    @Test public void fileNotFoundCreate()
-    {
-        File file = new File("/not/very/likely/harpsicord");
-        try
-        {
-            new Creator().create(file);
-        }
-        catch (PackException e)
-        {
-            assertEquals(Pack.ERROR_FILE_NOT_FOUND, e.getCode());
-            return;
-        }
-        fail("Expected exception not thrown."); 
-    }
-    
     @Test public void badSignature() throws IOException
     {
-        File file = newFile();
+        FileChannel fileChannel = newFile();
         
-        new Creator().create(file).close();
+        new Creator().create(fileChannel).close();
         
         ByteBuffer bytes = ByteBuffer.allocateDirect(1);
         bytes.put((byte) 0);
         bytes.flip();
 
-        FileChannel fileChannel = new RandomAccessFile(file, "rw").getChannel();
         fileChannel.write(bytes, 0L);
         fileChannel.close();
 
         try
         {
-            new Opener().open(file);
+            new Opener().open(fileChannel);
         }
         catch (PackException e)
         {
@@ -172,7 +144,7 @@ public class PackTestCase
 
     @Test public void relocatable()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
@@ -198,7 +170,7 @@ public class PackTestCase
     
     @Test public void write()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
@@ -239,7 +211,7 @@ public class PackTestCase
     
     @Test public void rewrite()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
@@ -283,7 +255,7 @@ public class PackTestCase
     
     @Test public void collect()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
@@ -340,7 +312,7 @@ public class PackTestCase
     
     @Test public void rewriteMany()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
 
         rewrite(pack, 12);
@@ -400,7 +372,7 @@ public class PackTestCase
 
     @Test public void free()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         
         Mutator mutator = pack.mutate();
@@ -430,7 +402,7 @@ public class PackTestCase
 
     @Test public void freeAndClose()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         
         Mutator mutator = pack.mutate();
@@ -463,7 +435,7 @@ public class PackTestCase
     
     @Test public void freeWithContext()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         
         Mutator mutator = pack.mutate();
@@ -495,7 +467,7 @@ public class PackTestCase
 
     @Test public void mulipleJournalPages()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
 
         rewrite(pack, 1);
@@ -512,7 +484,7 @@ public class PackTestCase
 
     @Test public void moveUserPageForAddress()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
 
         rewrite(pack, 1);
@@ -550,7 +522,7 @@ public class PackTestCase
         Creator creator = new Creator();
         creator.addStaticPage(URI.create("http://one.com/"), 64);
         creator.addStaticPage(URI.create("http://two.com/"), 64);
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = creator.create(file);
         Mutator mutator = pack.mutate();
         mutator.write(mutator.getPack().getStaticBlocks().get(URI.create("http://one.com/")), get64bytes());
@@ -559,7 +531,7 @@ public class PackTestCase
     
     @Ignore @Test public void moveInterimPageForAddress()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
 
         rewrite(pack, 8000);
@@ -586,7 +558,7 @@ public class PackTestCase
                 return fileChannel.truncate(size);
             }
         }); */
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = newPack.create(file);
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
@@ -618,7 +590,7 @@ public class PackTestCase
     
     @Test public void rollback() 
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
@@ -637,7 +609,7 @@ public class PackTestCase
     
     @Test public void vacuum()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
@@ -657,7 +629,7 @@ public class PackTestCase
     
     @Test public void vacuumAtOffset()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
@@ -680,7 +652,7 @@ public class PackTestCase
 
     @Test public void temporary()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.temporary(64);
@@ -703,7 +675,7 @@ public class PackTestCase
     
     @Test public void unallocate()
     {
-        File file = newFile();
+        FileChannel file = newFile();
         Pack pack = new Creator().create(file);
         Mutator mutator = pack.mutate();
         mutator.allocate(13);

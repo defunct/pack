@@ -1,9 +1,6 @@
 package com.goodworkalan.pack;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -68,22 +65,9 @@ public final class Creator
 
     /**
      * Create a new pack that writes to the specified file.
-     * <p>
-     * TODO Create form a file channel.
      */
-    public Pack create(File file)
+    public Pack create(FileChannel fileChannel)
     {
-        // Open the file.
-        FileChannel fileChannel;
-        try
-        {
-            fileChannel = new RandomAccessFile(file, "rw").getChannel();
-        }
-        catch (FileNotFoundException e)
-        {
-            throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
-        }
-        
         Offsets offsets = new Offsets(pageSize, internalJournalCount, getStaticBlockMapSize());
         ByteBuffer fullSize = ByteBuffer.allocateDirect((int) (offsets.getFirstAddressPage() + pageSize));
         try
@@ -150,10 +134,10 @@ public final class Creator
         
         SortedSet<Long> addressPages = new TreeSet<Long>();
         addressPages.add(offsets.getFirstAddressPage());
-        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        Bouquet bouquet = new Bouquet(file, header,
-                staticBlocks, header.getUserBoundary(), header.getUserBoundary(),
-                pager,
+        Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        Bouquet bouquet = new Bouquet(header, staticBlocks,
+                header.getUserBoundary(), header.getUserBoundary(),
+                sheaf,
                 new AddressPagePool(addressPages),
                 new TemporaryServer(temporaryNodes));
         
@@ -223,6 +207,6 @@ public final class Creator
 
         new Pack(bouquet).close();
         
-        return new Opener().open(file);
+        return new Opener().open(fileChannel);
     }
 }

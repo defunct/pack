@@ -1,7 +1,6 @@
 /* Copyright Alan Gutierrez 2006 */
 package com.goodworkalan.pack;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -160,11 +159,6 @@ public class Pack
     public Mutator mutate()
     {
         return bouquet.getMutatorFactory().mutate();
-    }
-    
-    public File getFile()
-    {
-        return bouquet.getFile();
     }
 
     /**

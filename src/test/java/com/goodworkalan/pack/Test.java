@@ -9,8 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,13 +46,23 @@ public class Test
     @Option(name = "-i", usage = "Number of iterations.")
     private int iterations = 1000;
 
-    private static File newFile()
+    private static FileChannel newFile()
     {
         try
         {
             File file = File.createTempFile("bento", ".bto");
             file.deleteOnExit();
-            return file;
+            // Open the file.
+            FileChannel fileChannel;
+            try
+            {
+                fileChannel = new RandomAccessFile(file, "rw").getChannel();
+            }
+            catch (FileNotFoundException e)
+            {
+                throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
+            }
+            return fileChannel;
         }
         catch (IOException e)
         {
@@ -666,7 +678,7 @@ public class Test
 
         public final int iterations;
 
-        public final File file;
+        public final FileChannel file;
 
         public Pack pack;
 

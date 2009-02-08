@@ -180,8 +180,6 @@ abstract class BlockPage extends RelocatablePage
 
     /**
      * Get the count of blocks in this page.
-     * <p>
-     * FIXME Rename getBlockCount.
      * 
      * @return The count of blocks in this page.
      */
