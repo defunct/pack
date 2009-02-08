@@ -2,7 +2,7 @@ package com.goodworkalan.pack;
 
 import java.util.TreeMap;
 
-final class MapTracker
+final class MapMoveTracker
 extends TreeMap<Long, Movable>
 implements MoveTracker
 {

@@ -11,13 +11,13 @@ final class CommitMoveTracker extends CompositeMoveTracker
      * A map of interim pages containing new allocations to destination user
      * blocks pages that already contain blocks from other mutators.
      */
-    private final MapTracker interimToSharedUserPage;
+    private final MapMoveTracker interimToSharedUserPage;
 
     /**
      * A map of interim pages containing new allocations to destination user
      * blocks pages that contain no blocks from other mutators.
      */
-    private final MapTracker interimToEmptyUserPage;
+    private final MapMoveTracker interimToEmptyUserPage;
 
     private final SortedSet<Long> userFromInterimPages;
 
@@ -35,8 +35,8 @@ final class CommitMoveTracker extends CompositeMoveTracker
         this.movingUserPageMirrors = new TreeMap<Long, Movable>();
         add(unassignedInterimBlockPages = new SetTracker());
         add(pageRecorder);
-        add(interimToSharedUserPage = new MapTracker());
-        add(interimToEmptyUserPage = new MapTracker());
+        add(interimToSharedUserPage = new MapMoveTracker());
+        add(interimToEmptyUserPage = new MapMoveTracker());
         add(moveNodeRecorder);
         add(new JournalMoveTracker(journal));
     }
