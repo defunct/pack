@@ -163,8 +163,8 @@ final class InterimPage extends BlockPage
                 bytes.position(bytes.position() + Pack.BLOCK_HEADER_SIZE);
                 
 
-                Sheaf pager = getRawPage().getSheaf();
-                AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
+                Sheaf sheaf = getRawPage().getSheaf();
+                AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
                 long lastPosition = 0L;
                 for (;;)
                 {
@@ -179,7 +179,7 @@ final class InterimPage extends BlockPage
                     
                     if (actual != lastPosition)
                     {
-                        UserPage user = pager.getPage(actual, UserPage.class, new UserPage());
+                        UserPage user = sheaf.getPage(actual, UserPage.class, new UserPage());
                         user.waitOnMirrored();
                         synchronized (user.getRawPage())
                         {

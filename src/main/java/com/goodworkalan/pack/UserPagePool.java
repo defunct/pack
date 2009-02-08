@@ -87,7 +87,7 @@ public class UserPagePool
      */
     public void returnUserPage(UserPage userPage)
     {
-        if (userPage.getCount() == 0)
+        if (userPage.getBlockCount() == 0)
         {
             emptyUserPages.free(userPage.getRawPage().getPosition());
         }

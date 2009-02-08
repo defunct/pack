@@ -19,8 +19,8 @@ import com.goodworkalan.sheaf.Sheaf;
  * commit the mirrored blocks are copied to the destination user page.
  * <p>
  * When vacuuming the user page, all blocks after the first block that is
- * preceded by an freed block are copied to an interim page. At commit
- * the mirrored blocks are copied into place, overwriting the freed blocks.
+ * preceded by an freed block are copied to an interim page. At commit the
+ * mirrored blocks are copied into place, overwriting the freed blocks.
  * <p>
  * The {@link #copy(long, ByteBuffer, DirtyPageSet) copy} method copies a single
  * block from a mirror of the user page.
@@ -262,7 +262,7 @@ final class UserPage extends BlockPage
                     throw new IllegalStateException();
                 }
                 // There interim page must have the correct amount of blocks.
-                if (count - offset != mirrored.getCount())
+                if (count - offset != mirrored.getBlockCount())
                 {
                     throw new IllegalStateException();
                 }

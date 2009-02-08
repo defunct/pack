@@ -185,7 +185,7 @@ abstract class BlockPage extends RelocatablePage
      * 
      * @return The count of blocks in this page.
      */
-    public int getCount()
+    public int getBlockCount()
     {
         synchronized (getRawPage())
         {
@@ -338,12 +338,12 @@ abstract class BlockPage extends RelocatablePage
      */
     public List<Long> getAddresses()
     {
-        List<Long> listOfAddresses = new ArrayList<Long>(getCount());
+        List<Long> listOfAddresses = new ArrayList<Long>(getBlockCount());
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getBlockRange();
             int block = 0;
-            while (block < getCount())
+            while (block < getBlockCount())
             {
                 int size = getBlockSize(bytes);
                 if (size > 0)
