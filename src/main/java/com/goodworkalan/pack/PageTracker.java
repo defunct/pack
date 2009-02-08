@@ -2,7 +2,7 @@ package com.goodworkalan.pack;
 
 import java.util.Set;
 
-final class PageRecorder
+final class PageTracker
 extends CompositeMoveRecorder
 {
     private final SetRecorder trackedUserPages;
@@ -13,7 +13,7 @@ extends CompositeMoveRecorder
     
     private final SetRecorder allocBlockPages;
     
-    public PageRecorder()
+    public PageTracker()
     {
         add(this.trackedUserPages = new SetRecorder());
         add(this.journalPages = new SetRecorder());

@@ -29,7 +29,7 @@ class JournalWriter
     protected final DirtyPageSet dirtyPages;
     
     /** New journal page allocations are reported to this page tracker. */
-    protected final PageRecorder pageRecorder;
+    protected final PageTracker pageRecorder;
     
     /**
      * A movable reference to the first page in the linked list of journal
@@ -74,7 +74,7 @@ class JournalWriter
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageTracker pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
     {
         this.sheaf = pager;
         this.interimPagePool = interimPagePool;
