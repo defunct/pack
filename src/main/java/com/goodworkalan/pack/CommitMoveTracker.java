@@ -28,7 +28,7 @@ final class CommitMoveTracker extends CompositeMoveTracker
     private final SortedMap<Long, Movable> movingUserPageMirrors;
 
     public CommitMoveTracker(PageMoveTracker pageRecorder, Journal journal,
-            MoveNodeRecorder moveNodeRecorder)
+            MoveNodeMoveTracker moveNodeRecorder)
     {
         this.userFromInterimPages = new TreeSet<Long>();
         this.addressFromUserPagesToMove = new TreeSet<Long>();

@@ -41,7 +41,7 @@ class JournalWriter
      * A move node recorder to obtain the move node necessary to create the
      * movable reference to the first page in the linked list of journal pages.
      */
-    protected final MoveNodeRecorder moveNodeRecorder;
+    protected final MoveNodeMoveTracker moveNodeRecorder;
 
     /**
      * Create a journal writer that will allocate pages from the given sheaf and
@@ -74,7 +74,7 @@ class JournalWriter
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageMoveTracker pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, JournalPage journal, Movable start, DirtyPageSet dirtyPages)
     {
         this.sheaf = pager;
         this.interimPagePool = interimPagePool;

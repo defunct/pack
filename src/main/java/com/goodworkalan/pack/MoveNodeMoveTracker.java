@@ -1,13 +1,13 @@
 package com.goodworkalan.pack;
 
-final class MoveNodeRecorder
+final class MoveNodeMoveTracker
 implements MoveTracker
 {
     private MoveNode firstMoveNode;
 
     private MoveNode moveNode;
     
-    public MoveNodeRecorder()
+    public MoveNodeMoveTracker()
     {
         firstMoveNode = moveNode = new MoveNode();
     }
