@@ -38,8 +38,10 @@ final class UserPage extends BlockPage
     /**
      * Return the count as it should be written to disk.
      * <p>
-     * Count is stored as a negative value so that the first bit is set
-     * indicating that this is a user page.
+     * Count is stored with the first bit set indicating that this is a user
+     * page.
+     * <p>
+     * @return The integer count value with the first bit set. 
      */
     protected int getDiskCount()
     {
@@ -49,8 +51,11 @@ final class UserPage extends BlockPage
     /**
      * Convert the count written to disk into the actual count value.
      * <p>
-     * Count is stored as a negative value so that the first bit is set
-     * indicating that this is a user page.
+     * Count is stored with the first bit set indicating that this is a user
+     * page.
+     * 
+     * @param count The count read from disk.
+     * @return The count with the first bit off.
      */
     protected int convertDiskCount(int count)
     {
@@ -220,6 +225,63 @@ final class UserPage extends BlockPage
         }
         mirrored = false;
         notifyAll();
+    }
+
+    /**
+     * Vacuum the user page, truncating the block count the given offset, and
+     * copying the blocks from the given mirrored interim block page.
+     * <p>
+     * The given adler32 checksum engine is used to generate a checksum which is
+     * compared against the given checksum to assert that the vacuum preserved
+     * the contents of the page.
+     * 
+     * @param adler32
+     *            A checksum engine.
+     * @param checksum
+     *            The checksum recorded when the user page was mirrored.
+     * @param mirrored
+     *            The interim block page containing the user page blocks.
+     * @param offset
+     *            The offset of the first block contained in the interim block
+     *            page.
+     * @param dirtyPages
+     *            The dirty page set used to track dirty pages.
+     */
+    public void vacuum(Adler32 adler32, long checksum, InterimPage mirrored, int offset, DirtyPageSet dirtyPages)
+    {
+        // When copying, we lock the interim page first. We're the only ones who
+        // know about it, so it shouldn't matter though.
+        synchronized (mirrored.getRawPage())
+        {
+            // Synchronize on the user raw page.
+            synchronized (getRawPage())
+            {
+                // The offset must be less than the count.
+                if (!(offset < count))
+                {
+                    throw new IllegalStateException();
+                }
+                // There interim page must have the correct amount of blocks.
+                if (count - offset != mirrored.getCount())
+                {
+                    throw new IllegalStateException();
+                }
+                // Truncate the user block page.
+                count = offset;
+                // Copy each block from the interim block page.
+                for (long address : mirrored.getAddresses())
+                {
+                    // This will synchronize on the interim then user pages a
+                    // second time.
+                    mirrored.copy(address, this, dirtyPages);
+                }
+                // Assert the checksum.
+                if (checksum != getChecksum(adler32))
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
     }
 
     /**

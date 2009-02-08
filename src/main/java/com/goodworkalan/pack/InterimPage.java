@@ -1,19 +1,42 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
-import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-
+/**
+  * A block page with operations specific to interim block pages such as
+ * synchronization for mirror and vacuum.
+ * <p>
+ *
+ */
 final class InterimPage extends BlockPage
 {
+    /**
+     * Return the block count as it should be written to disk.
+     * <p>
+     * Count is stored as it in interim pages, so this method simply returns the
+     * block count. In user pages count is stored with the first bit set
+     * indicating that this is a user page.
+     * 
+     * @return The block count value as is.
+     */
     protected int getDiskCount()
     {
         return count;
     }
-    
+
+    /**
+     * Return the count as it should be written to disk.
+     * <p>
+     * Count is stored as is. In user block pages the count is stored with the
+     * first bit on indicating that this is a user page.
+     * 
+     * @param count
+     *            The count read from disk.
+     * @return The count unchanged.
+     */
     protected int convertDiskCount(int count)
     {
         if ((count & Pack.COUNT_MASK) != 0)
@@ -80,39 +103,21 @@ final class InterimPage extends BlockPage
         }
     }
 
-    public void vacuum(Adler32 adler32, UserPage user, DirtyPageSet dirtyPages, int offset, long checksum)
-    {
-        if (offset > user.count)
-        {
-            throw new IllegalStateException();
-        }
-        ByteBuffer bytes = user.getBlockRange();
-        int block = 0;
-        while (block < offset)
-        {
-            int blockSize = user.getBlockSize(bytes);
-            assert blockSize > 0;
-            user.advance(bytes, blockSize);
-            block++;
-        }
-        if (user.count - block != count)
-        {
-            throw new IllegalStateException();
-        }
-        user.count = block;
-        for (long address : getAddresses())
-        {
-            copy(address, user, dirtyPages);
-        }
-        if (checksum != user.getChecksum(adler32))
-        {
-            throw new IllegalStateException();
-        }
-    }
-
+    /**
+     * Copy the block at the given address to the given user page tracking dirty
+     * pages in the given dirty page set.
+     * 
+     * @param address
+     *            The address of the block to copy.
+     * @param user
+     *            The user page to copy to.
+     * @param dirtyPages
+     *            The dirty page set used to track dirty pages.
+     */
     public void copy(long address, UserPage user, DirtyPageSet dirtyPages)
     {
-        // TODO Locking a lot. Going to deadlock?
+        // When copying, we lock the interim page first. We're the only ones who
+        // know about it, so it shouldn't matter though.
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getRawPage().getByteBuffer();
@@ -125,13 +130,27 @@ final class InterimPage extends BlockPage
                 bytes.position(offset + Pack.BLOCK_HEADER_SIZE);
                 bytes.limit(offset + blockSize);
 
+                // User copy will lock on the user raw page.
                 user.copy(address, bytes.slice(), dirtyPages);
 
                 bytes.limit(bytes.capacity());
             }
         }
     }
-    
+
+    /**
+     * Write the block in this interim block page with the given address to the
+     * user block page resolved by dereferencing the address from its address
+     * page.
+     * <p>
+     * The method will dereference the address from the address page, then
+     * attempt to write the block to the user block page at the page position.
+     * 
+     * @param address
+     *            The address to write.
+     * @param dirtyPages
+     *            The dirty page set used to track dirty pages.
+     */
     public void write(long address, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())
@@ -149,6 +168,9 @@ final class InterimPage extends BlockPage
                 long lastPosition = 0L;
                 for (;;)
                 {
+                    // FIXME Double checking does not take into account the fact
+                    // that the page type at the moved address is an address
+                    // page and not a user page.
                     long actual = addresses.dereference(address);
                     if (actual == 0L || actual == Long.MAX_VALUE)
                     {
