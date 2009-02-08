@@ -7,6 +7,19 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 /**
  * A page that stores journal entries in the interim region of the pack.
+ * <p>
+ * Journal pages are created through a {@link JournalWriter} which manages the
+ * allocation of journal pages. The pages are read and the operations performed
+ * by a {@link Player}.
+ * <p>
+ * The journal page has an offset into the page where operations are read and
+ * written. The {@link Operation} class has a read and write method and writes
+ * its fields to the journal page itself.
+ * <p>
+ * When writing an operation the operation will write out the type flag for the
+ * operation followed by the operation fields. When reading an operation, the
+ * journal page will read the type flag, create the operation class associated
+ * with the type, then the newly created class will read the fields.
  * 
  * @author Alan Gutierrez
  */
@@ -44,6 +57,8 @@ extends RelocatablePage
     /**
      * Checksum the entire journal page. In order to checksum only journal
      * pages I'll have to keep track of where the journal ends.
+     * <p>
+     * TODO Not using this, but I should.
      * 
      * @param checksum The checksum algorithm.
      */
@@ -59,7 +74,13 @@ extends RelocatablePage
         bytes.putLong(0, checksum.getValue());
         getRawPage().invalidate(0, Pack.CHECKSUM_SIZE);
     }
-    
+
+    /**
+     * Get the underlying byte buffer for the raw page with the position set to
+     * the offset.
+     * 
+     * @return The content at the offset.
+     */
     private ByteBuffer getByteBuffer()
     {
         ByteBuffer bytes = getRawPage().getByteBuffer();
@@ -70,13 +91,33 @@ extends RelocatablePage
         return bytes;
     }
 
-    public boolean write(Operation operation, int overhead, DirtyPageSet dirtyPages)
+    /**
+     * Write the given operation to the journal page ensuring that the page will
+     * have the given remaining count of bytes available for a next journal page
+     * operation.
+     * <p>
+     * The overhead bytes represent the length of a next journal page operation,
+     * or zero if the operation is the final next journal page operation.
+     * <p>
+     * Returns true if the operation is written, false if the operation would
+     * not fit and preserve the given remaining count of bytes.
+     * 
+     * @param operation
+     *            The operation to write.
+     * @param remaining
+     *            The amount of space to reserve for next
+     * @param dirtyPages
+     *            The set of dirty pages.
+     * @return True if the operation is written, false if the operation would
+     *         not fit and preserve the given remaining count of bytes.
+     */
+    public boolean write(Operation operation, int remaining, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getByteBuffer();
 
-            if (operation.length() + overhead < bytes.remaining())
+            if (operation.length() + remaining < bytes.remaining())
             {
                 getRawPage().invalidate(offset, operation.length());
                 operation.write(bytes);
@@ -110,11 +151,9 @@ extends RelocatablePage
      * Set the offset to reference the offset indicated by the given file
      * position. The offset is determined by the difference between the given
      * file position and the file position of the underlying raw page.
-     * <p>
-     * FIXME Left off here.
      * 
      * @param position
-     *            The file position to move to.
+     *            The file position plus offset to move to.
      */
     public void seek(long position)
     {
@@ -162,7 +201,15 @@ extends RelocatablePage
         }
         throw new IllegalStateException("Invalid type: " + type);
     }
-    
+
+    /**
+     * Read the next operation at of the offset from this page journal
+     * operations.
+     * <p>
+     * The offset will be advanced by the length of the operation record.
+     * 
+     * @return The next operation.
+     */
     public Operation next()
     {
         ByteBuffer bytes = getByteBuffer();

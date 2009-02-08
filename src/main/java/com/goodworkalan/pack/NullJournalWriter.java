@@ -7,43 +7,34 @@ import com.goodworkalan.sheaf.Sheaf;
 class NullJournalWriter
 extends JournalWriter
 {
-    public NullJournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
+    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageRecorder pageRecorder, DirtyPageSet dirtyPages)
     {
-        super(pager, interimPagePool, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
+        super(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
     }
 
+    /**
+     * A write operation that always returns false to force the creation of a
+     * new linked list of journal pages.
+     * 
+     * @return False to force the call to {@link extend} to create a new liked
+     *         list of journal pages.
+     */
     public boolean write(Operation operation)
     {
         return false;
     }
 
     /**
-     * Create a new journal to record mutations. The dirty page map will
-     * record the creation of wilderness pages.
-     * <p>
-     * The move node is necessary to create a movable position that will
-     * track the position of journal head. This move node is the same move
-     * node that is at the head of the mutator.
-     * <p>
-     * We will use the page recorder to record which pages we're using as
-     * journal pages.
+     * Create a new journal writer that will write to the first page of a linked
+     * list of journal pages.
      * 
-     * @param pager
-     *            The pager of the mutator for the journal.
-     * @param pageRecorder
-     *            Records the allocation of new journal pages.
-     * @param moveNode
-     *            Needed to create a movable position that will reference
-     *            the first journal page.
-     * @param dirtyPages
-     *            A dirty page map where page writes are cached before
-     *            being written to disk.
+     * @return A new linked list of journal pages.
      */
     public JournalWriter extend()
     {
-        JournalPage journal = interimPagePool.newInterimPage(pager, JournalPage.class, new JournalPage(), dirtyPages);
+        JournalPage journal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
         Movable start = new Movable(moveNodeRecorder.getMoveNode(), journal.getJournalPosition(), 0);
         pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, journal, start, dirtyPages);
+        return new JournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, journal, start, dirtyPages);
     }
 }
