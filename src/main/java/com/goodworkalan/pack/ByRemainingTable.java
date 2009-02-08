@@ -185,7 +185,7 @@ final class ByRemainingTable implements Iterable<Long>
      * Remove the given page position from the table.
      * <p>
      * Returns the amount of blocks remaining rounded down to the nearest
-     * alignment. This is used by the {@link ByRemainingTableRecorder} to relocate
+     * alignment. This is used by the {@link ByRemainingTableTracker} to relocate
      * the page and amount remaining in the table, when the page moves.
      * 
      * @param position
