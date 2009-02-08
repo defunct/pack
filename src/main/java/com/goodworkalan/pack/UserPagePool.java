@@ -1,6 +1,6 @@
 package com.goodworkalan.pack;
 
-public class UserPagePool
+class UserPagePool
 {
     private final int alignment;
     

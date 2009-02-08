@@ -7,7 +7,7 @@ import java.util.Map;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-public class TemporaryNodePool
+class TemporaryNodePool
 {
     /**
      * Map of temporary node addresses to byte buffers containing the address

@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @see MoveLatchIterator
  */
-public class MoveLatchList
+class MoveLatchList
 {
     /**
      * A read write lock that protects the move list itself synchronizing

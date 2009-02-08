@@ -9,7 +9,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * 
  * @author Alan Gutierrez
  */
-public class InterimPagePool
+class InterimPagePool
 {
     /**
      * A sorted set of of free interim pages sorted in descending order so that

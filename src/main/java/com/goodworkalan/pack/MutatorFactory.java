@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-public class MutatorFactory
+class MutatorFactory
 {
     private final Bouquet bouquet;
     

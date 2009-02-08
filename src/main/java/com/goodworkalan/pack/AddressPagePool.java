@@ -7,7 +7,7 @@ import java.util.SortedSet;
 
 import com.goodworkalan.sheaf.Sheaf;
 
-public class AddressPagePool implements Iterable<Long>
+class AddressPagePool implements Iterable<Long>
 {
 
     /** A set of address pages with available free addresses. */
