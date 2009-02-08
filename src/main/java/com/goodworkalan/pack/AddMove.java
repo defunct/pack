@@ -3,11 +3,11 @@ package com.goodworkalan.pack;
 import java.nio.ByteBuffer;
 
 /**
- * Adds a relocatable page move to the list of page moves recorded in the
- * player before replaying a journal.
+ * Adds a relocatable page move to the list of page moves recorded in the player
+ * before replaying a journal.
  * 
  * @author Alan Gutierrez
- *
+ * 
  */
 final class AddMove
 extends Operation

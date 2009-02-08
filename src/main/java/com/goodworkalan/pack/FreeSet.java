@@ -5,27 +5,42 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+/**
+ * A set of the empty block pages that can be used for block allocation. If the
+ * position is in the set of free interim pages, then it is empty and available
+ * for allocations. This class is used to track both user block pages and
+ * interim pages.
+ * <p>
+ * The {@link #reserve(long) reserve} method is used to prevent a page from
+ * being returned to the free set. When a reserved page position is returned
+ * to the set with the {@link #free(long) free} method, it will be held until
+ * it is released by the {@link #release(long) release} method. 
+ * <p>
+ * FIXME Not queuing ignored positions.
+ * 
+ * @author Alan Gutierrez
+ */
 final class FreeSet
 implements Iterable<Long>
 {
-    private final SortedSet<Long> setOfPositions;
+    private final SortedSet<Long> positions;
     
-    private final SortedSet<Long> setToIgnore;
+    private final SortedSet<Long> ignore;
     
     public FreeSet()
     {
-        this.setOfPositions = new TreeSet<Long>();
-        this.setToIgnore = new TreeSet<Long>();
+        this.positions = new TreeSet<Long>();
+        this.ignore = new TreeSet<Long>();
     }
     
     public synchronized int size()
     {
-        return setOfPositions.size();
+        return positions.size();
     }
     
     public Iterator<Long> iterator()
     {
-        return setOfPositions.iterator();
+        return positions.iterator();
     }
     
     /**
@@ -37,25 +52,25 @@ implements Iterable<Long>
      */
     public synchronized boolean reserve(long position)
     {
-        if (setOfPositions.remove(position))
+        if (positions.remove(position))
         {
             return true;
         }
-        setToIgnore.add(position);
+        ignore.add(position);
         return false;
     }
     
     public synchronized void release(Set<Long> setToRelease)
     {
-        setToIgnore.removeAll(setToRelease);
+        ignore.removeAll(setToRelease);
     }
     
     public synchronized long allocate()
     {
-        if (setOfPositions.size() != 0)
+        if (positions.size() != 0)
         {
-            long position = setOfPositions.first();
-            setOfPositions.remove(position);
+            long position = positions.first();
+            positions.remove(position);
             return position;
         }
         return 0L;
@@ -71,9 +86,9 @@ implements Iterable<Long>
 
     public synchronized void free(long position)
     {
-        if (!setToIgnore.contains(position))
+        if (!ignore.contains(position))
         {
-            setOfPositions.add(position);
+            positions.add(position);
         }
     }
 }

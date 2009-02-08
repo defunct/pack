@@ -366,4 +366,50 @@ final class UserPage extends BlockPage
             }
         }
     }
+
+    /**
+     * Generate a checksum of the block contents of the page. This will generate
+     * a checksum of the blocks and block headers, excluding the free blocks and
+     * unallocated bytes.
+     * <p>
+     * This must be called in a synchronized block.
+     * 
+     * @param adler32
+     *            The checksum to use.
+     * 
+     * @return A checksum.
+     */
+    public long getChecksum(Adler32 adler32)
+    {
+        adler32.reset();
+    
+        ByteBuffer bytes = getRawPage().getByteBuffer();
+        bytes.clear();
+        bytes.position(Pack.CHECKSUM_SIZE);
+    
+        for (int i = 0; i < Pack.COUNT_SIZE; i++)
+        {
+            adler32.update(bytes.get());
+        }
+    
+        int block = 0;
+        while (block < count)
+        {
+            int size = getBlockSize(bytes);
+            if (size > 0)
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    adler32.update(bytes.get());
+                }
+                block++;
+            }
+            else
+            {
+                bytes.position(bytes.position() + -size);
+            }
+        }
+    
+        return adler32.getValue();
+    }
 }

@@ -40,7 +40,7 @@ public class MoveLatchList
     private final List<MoveLatch> userMoveLatches;
 
     /**
-     * Construct the main move latch list that is managed by the pager.
+     * Construct the main move latch list that is managed by the pack.
      */
     public MoveLatchList()
     {
@@ -48,7 +48,15 @@ public class MoveLatchList
         this.iterateAppendLock = new ReentrantReadWriteLock();
         this.userMoveLatches = new ArrayList<MoveLatch>();
     }
-    
+
+    /**
+     * Create a new move latch iterator that will iterate the linked list of
+     * move latches recording the moves using the given move recorder.
+     * 
+     * @param recorder
+     *            The move recorder.
+     * @return A move latch iterator over this linked list of move latches.
+     */
     public MoveLatchIterator newIterator(MoveRecorder recorder)
     {
         iterateAppendLock.readLock().lock();
@@ -63,8 +71,13 @@ public class MoveLatchList
     }
 
     /**
-     * This method is only ever called on the <code>MoveList</code> contained in
-     * the <code>Pager</code>.
+     * Append the given move latch to the list of move latches.
+     * <p>
+     * This method will obtain an exclusive lock on the list of move latches and
+     * append the move latch to the end of the linked list of move latches.
+     * <p>
+     * The {@link MoveLatch#isHead() isHead()} method of the given head move
+     * node must return true.
      * 
      * @param next
      *            A list of move latch nodes to append to the per pager move

@@ -93,7 +93,7 @@ public final class Mutator
      *            The per mutator recorder of move nodes that appends the page
      *            moves to a linked list of move nodes.
      * @param pageRecorder
-     *            The per mtuator recorder of move nodes that adjusts the file
+     *            The per mutator recorder of move nodes that adjusts the file
      *            positions of referenced pages.
      * @param journal
      *            A journal to record the isolated mutations of the associated
@@ -791,9 +791,9 @@ public final class Mutator
      * @param moveList
      *            The move list.
      * @param iterimMoveLatches
-     *            Head of list of iterim move latches.
+     *            Head of list of interim move latches.
      * @param userFromInterimPagesToMove
-     *            Set of iterim pages that need to be moved.
+     *            Set of interim pages that need to be moved.
      */
     private void addIterimMoveLatches(MoveLatchIterator moveList, MoveLatch iterimMoveLatches, SortedSet<Long> userFromInterimPagesToMove)
     {

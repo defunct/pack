@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 
 /**
- * A linked list of latches that guard page moves.
+ * An iterator over a linked list of move latches that guard pages.
  * <p>
  * The move list is extended by appending a list of move latch nodes, so that
  * the move latch nodes in the move list itself are chains of related moves.

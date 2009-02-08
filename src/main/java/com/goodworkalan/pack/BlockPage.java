@@ -4,7 +4,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
@@ -165,6 +164,9 @@ abstract class BlockPage extends RelocatablePage
         return consumed;
     }
 
+    /**
+     * Load the block page from the underlying raw page.
+     */
     public void load()
     {
         ByteBuffer bytes = getRawPage().getByteBuffer();
@@ -202,6 +204,15 @@ abstract class BlockPage extends RelocatablePage
         }
     }
 
+    /**
+     * Get the full block size including the block header of the block at the
+     * position of the given byte buffer of the underlying block page.
+     * 
+     * @param bytes
+     *            The content of this block page with the position set to
+     *            reference a block in in the block page.
+     * @return The full block size of the block.
+     */
     protected int getBlockSize(ByteBuffer bytes)
     {
         int blockSize = bytes.getInt(bytes.position());
@@ -238,7 +249,7 @@ abstract class BlockPage extends RelocatablePage
     }
 
     /**
-     * Return the byte buffer associated with this data page with the position
+     * Return the given byte buffer containing a block page with the position
      * set to the range of bytes that contain blocks.
      * 
      * @param bytes
@@ -251,6 +262,14 @@ abstract class BlockPage extends RelocatablePage
         return bytes;
     }
 
+    /**
+     * Return the underlying byte buffer with the position set to the position
+     * of the first free or allocated block in the block page.
+     * <p>
+     * This method must be called while synchronized on the underlying raw page.
+     * 
+     * @return The underlying byte buffer with the position at the first block.
+     */
     protected ByteBuffer getBlockRange()
     {
         return getBlockRange(getRawPage().getByteBuffer());
@@ -288,6 +307,14 @@ abstract class BlockPage extends RelocatablePage
         return false;
     }
 
+    /**
+     * Get the full block size including the block header of the block in this
+     * block page at the given address.
+     * 
+     * @param address
+     *            The address of the block.
+     * @return The full block size of the block.
+     */
     public int getBlockSize(long address)
     {
         synchronized (getRawPage())
@@ -301,6 +328,12 @@ abstract class BlockPage extends RelocatablePage
         throw new IllegalArgumentException();
     }
 
+    /**
+     * Return a list of the addresses recorded in the address back-references
+     * position of each block in the page.
+     * 
+     * @return A list of the addresses of the blocks in this page.
+     */
     public List<Long> getAddresses()
     {
         List<Long> listOfAddresses = new ArrayList<Long>(getCount());
@@ -323,6 +356,25 @@ abstract class BlockPage extends RelocatablePage
     }
 
     /**
+     * Write the given data to the page at the block referenced by the given
+     * block address if the block exists in the this block page. If the block
+     * does not exist in this block page, this method does not alter the
+     * underlying page.
+     * <p>
+     * The given dirty page set is used to record the underlying raw page as
+     * dirty, if the method writes the block.
+     * <p>
+     * Returns true if the block exists in this page and is written, false if
+     * the block does not exist.
+     * 
+     * @param address
+     *            The block address.
+     * @param data
+     *            The data to write.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     * @return True if the block exists in this page and is written, false if
+     *         the block does not exist.
      * @throws BufferOverflowException
      *             If there is insufficient space in the block for the remaining
      *             bytes in the source buffer.
@@ -409,51 +461,5 @@ abstract class BlockPage extends RelocatablePage
             }
         }
         return null;
-    }
-
-    /**
-     * Generate a checksum of the block contents of the page. This will generate
-     * a checksum of the blocks and block headers, excluding the free blocks and
-     * unallocated bytes.
-     * <p>
-     * This must be called in a synchronized block.
-     * 
-     * @param checksum
-     *            The checksum to use.
-     * 
-     * @return A checksum.
-     */
-    public long getChecksum(Checksum checksum)
-    {
-        checksum.reset();
-
-        ByteBuffer bytes = getRawPage().getByteBuffer();
-        bytes.clear();
-        bytes.position(Pack.CHECKSUM_SIZE);
-
-        for (int i = 0; i < Pack.COUNT_SIZE; i++)
-        {
-            checksum.update(bytes.get());
-        }
-
-        int block = 0;
-        while (block < count)
-        {
-            int size = getBlockSize(bytes);
-            if (size > 0)
-            {
-                for (int i = 0; i < size; i++)
-                {
-                    checksum.update(bytes.get());
-                }
-                block++;
-            }
-            else
-            {
-                bytes.position(bytes.position() + -size);
-            }
-        }
-
-        return checksum.getValue();
     }
 }

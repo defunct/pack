@@ -4,6 +4,11 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
+/**
+ * Manages a pool of free interim pages.
+ * 
+ * @author Alan Gutierrez
+ */
 public class InterimPagePool
 {
     /**
@@ -29,6 +34,9 @@ public class InterimPagePool
      */
     private final FreeSet freeInterimPages;
     
+    /**
+     * Create an empty interim page pool.
+     */
     public InterimPagePool()
     {
         this.freeInterimPages = new FreeSet();

@@ -5,12 +5,22 @@ import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-
+/**
+ * A page that stores journal entries in the interim region of the pack.
+ * 
+ * @author Alan Gutierrez
+ */
 final class JournalPage
 extends RelocatablePage
 {
+    /** The offset form which to read the next journal entry. */
     private int offset;
 
+    /**
+     * Create a new journal page on the underlying raw page.
+     * 
+     * @param dirtyPages The set of dirty pages.
+     */
     public void create(DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = getRawPage().getByteBuffer();
@@ -19,11 +29,13 @@ extends RelocatablePage
         bytes.putLong(0);
         bytes.putInt(0);
 
+        getRawPage().invalidate(0, Pack.JOURNAL_PAGE_HEADER_SIZE);
         dirtyPages.add(getRawPage());
         
         this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
     }
 
+    /** Load a journal page from the underlying raw page. */
     public void load()
     {
         this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
@@ -77,6 +89,15 @@ extends RelocatablePage
         }
     }
 
+    /**
+     * Get the file position of the current offset into the journal page.
+     * <p>
+     * This method is used to determine the file position of the journal when
+     * recording {@link NextOperation} jumps in the journal playback.
+     * 
+     * @return The file position of the journal page plus the offset into the
+     *         journal page.
+     */
     public long getJournalPosition()
     {
         synchronized (getRawPage())
@@ -85,6 +106,16 @@ extends RelocatablePage
         }
     }
 
+    /**
+     * Set the offset to reference the offset indicated by the given file
+     * position. The offset is determined by the difference between the given
+     * file position and the file position of the underlying raw page.
+     * <p>
+     * FIXME Left off here.
+     * 
+     * @param position
+     *            The file position to move to.
+     */
     public void seek(long position)
     {
         synchronized (getRawPage())
@@ -93,6 +124,15 @@ extends RelocatablePage
         }
     }
 
+    /**
+     * Create a blank operation of a type corresponding to the given type flag.
+     * The blank operation is then loaded from the journal page at the current
+     * offset into the journal page.
+     * 
+     * @param type
+     *            The type of operation.
+     * @return An operation corresponding to the given type flag.
+     */
     private Operation newOperation(short type)
     {
         switch (type)
