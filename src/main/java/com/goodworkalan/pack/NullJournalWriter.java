@@ -7,7 +7,7 @@ import com.goodworkalan.sheaf.Sheaf;
 class NullJournalWriter
 extends JournalWriter
 {
-    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageTracker pageRecorder, DirtyPageSet dirtyPages)
+    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageMoveTracker pageRecorder, DirtyPageSet dirtyPages)
     {
         super(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
     }

@@ -21,7 +21,7 @@ public class MutatorFactory
      */
     public Mutator mutate()
     {
-        final PageTracker pageRecorder = new PageTracker();
+        final PageMoveTracker pageRecorder = new PageMoveTracker();
         final MoveLatchIterator moveLatchIterator = bouquet.getMoveLatchList().newIterator(pageRecorder);
         return moveLatchIterator.mutate(new Guarded<Mutator>()
         {

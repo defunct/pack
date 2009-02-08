@@ -27,7 +27,7 @@ final class Commit extends CompositeMoveTracker
 
     private final SortedMap<Long, Movable> movingUserPageMirrors;
 
-    public Commit(PageTracker pageRecorder, Journal journal,
+    public Commit(PageMoveTracker pageRecorder, Journal journal,
             MoveNodeRecorder moveNodeRecorder)
     {
         this.userFromInterimPages = new TreeSet<Long>();

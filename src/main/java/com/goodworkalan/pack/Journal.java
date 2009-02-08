@@ -7,7 +7,7 @@ class Journal
 {
     private JournalWriter writer;
     
-    public Journal(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageTracker pageRecorder, DirtyPageSet dirtyPages)
+    public Journal(Sheaf pager, InterimPagePool interimPagePool, MoveNodeRecorder moveNodeRecorder, PageMoveTracker pageRecorder, DirtyPageSet dirtyPages)
     {
         writer = new NullJournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, dirtyPages);
     }

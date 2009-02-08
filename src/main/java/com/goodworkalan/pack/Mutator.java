@@ -55,7 +55,7 @@ public final class Mutator
      * The per mutator recorder of move nodes that adjusts the file positions of
      * referenced pages.
      */
-    private final PageTracker pageRecorder;
+    private final PageMoveTracker pageRecorder;
 
     /**
      * An iterator over the per pager linked list of latched page moves.
@@ -101,7 +101,7 @@ public final class Mutator
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    Mutator(Bouquet bouquet, MoveLatchIterator moveLatchList, MoveNodeRecorder moveNodeRecorder, PageTracker pageRecorder,
+    Mutator(Bouquet bouquet, MoveLatchIterator moveLatchList, MoveNodeRecorder moveNodeRecorder, PageMoveTracker pageRecorder,
         Journal journal, DirtyPageSet dirtyPages)
     {
         ByRemainingTable allocPagesBySize = new ByRemainingTable(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
