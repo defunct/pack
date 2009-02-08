@@ -4,7 +4,7 @@ import java.util.TreeSet;
 
 final class SetRecorder
 extends TreeSet<Long>
-implements MoveRecorder
+implements MoveTracker
 {
     private static final long serialVersionUID = 1L;
 

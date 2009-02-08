@@ -1,7 +1,7 @@
 package com.goodworkalan.pack;
 
 final class MoveNodeRecorder
-implements MoveRecorder
+implements MoveTracker
 {
     private MoveNode firstMoveNode;
 

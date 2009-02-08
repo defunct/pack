@@ -7,7 +7,7 @@ package com.goodworkalan.pack;
  * 
  * @author Alan Gutierrez
  */
-interface MoveRecorder
+interface MoveTracker
 {
     /**
      * Return true if the move recorder is tracking the given position.

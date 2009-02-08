@@ -4,23 +4,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 class CompositeMoveRecorder
-implements MoveRecorder
+implements MoveTracker
 {
-    private final List<MoveRecorder> listOfMoveRecorders;
+    private final List<MoveTracker> listOfMoveRecorders;
     
     public CompositeMoveRecorder()
     {
-        this.listOfMoveRecorders = new ArrayList<MoveRecorder>();
+        this.listOfMoveRecorders = new ArrayList<MoveTracker>();
     }
     
-    public void add(MoveRecorder recorder)
+    public void add(MoveTracker recorder)
     {
         listOfMoveRecorders.add(recorder);
     }
     
     public boolean involves(long position)
     {
-        for (MoveRecorder recorder: listOfMoveRecorders)
+        for (MoveTracker recorder: listOfMoveRecorders)
         {
             if (recorder.involves(position))
             {
@@ -32,7 +32,7 @@ implements MoveRecorder
     
     public boolean record(Move move, boolean moved)
     {
-        for (MoveRecorder recorder: listOfMoveRecorders)
+        for (MoveTracker recorder: listOfMoveRecorders)
         {
             moved = recorder.record(move, moved);
         }
@@ -41,7 +41,7 @@ implements MoveRecorder
     
     public void clear()
     {
-        for (MoveRecorder recorder: listOfMoveRecorders)
+        for (MoveTracker recorder: listOfMoveRecorders)
         {
             recorder.clear();
         }

@@ -7,7 +7,7 @@ package com.goodworkalan.pack;
  * @author Alan Gutierrez
  */
 final class NullMoveRecorder
-implements MoveRecorder
+implements MoveTracker
 {
     /**
      * Always returns false since this move recorder tracks no pages.

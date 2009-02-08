@@ -31,7 +31,7 @@ final class MoveLatchIterator
      * Records the moves encountered while running guarded methods through this
      * move latch list.
      */
-    private final MoveRecorder recorder;
+    private final MoveTracker recorder;
 
     /**
      * A read write lock that protects the move list itself synchronizing
@@ -66,7 +66,7 @@ final class MoveLatchIterator
      * Construct a move latch list that records move using the given move
      * recorder and begins at the head of the given move latch list.
      */
-    public MoveLatchIterator(MoveRecorder recorder, ReadWriteLock iterateAppendLock, MoveLatch headMoveLatch, List<MoveLatch> userMoveLatches)
+    public MoveLatchIterator(MoveTracker recorder, ReadWriteLock iterateAppendLock, MoveLatch headMoveLatch, List<MoveLatch> userMoveLatches)
     {
         this.recorder = recorder;
         this.headMoveLatch = headMoveLatch;

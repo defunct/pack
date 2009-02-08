@@ -57,7 +57,7 @@ public class MoveLatchList
      *            The move recorder.
      * @return A move latch iterator over this linked list of move latches.
      */
-    public MoveLatchIterator newIterator(MoveRecorder recorder)
+    public MoveLatchIterator newIterator(MoveTracker recorder)
     {
         iterateAppendLock.readLock().lock();
         try

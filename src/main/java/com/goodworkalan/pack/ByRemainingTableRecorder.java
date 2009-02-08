@@ -1,7 +1,7 @@
 package com.goodworkalan.pack;
 
 final class ByRemainingTableRecorder
-implements MoveRecorder
+implements MoveTracker
 {
     private final ByRemainingTable bySizeTable;
     

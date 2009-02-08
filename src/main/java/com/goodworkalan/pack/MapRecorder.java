@@ -4,7 +4,7 @@ import java.util.TreeMap;
 
 final class MapRecorder
 extends TreeMap<Long, Movable>
-implements MoveRecorder
+implements MoveTracker
 {
     private static final long serialVersionUID = 1L;
 

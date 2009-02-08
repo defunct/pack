@@ -1,7 +1,7 @@
 package com.goodworkalan.pack;
 
 final class JournalRecorder
-implements MoveRecorder
+implements MoveTracker
 {
     private final Journal journal;
     
