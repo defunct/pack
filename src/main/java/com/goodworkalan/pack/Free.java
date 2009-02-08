@@ -26,8 +26,6 @@ extends Operation
     public void commit(Player player)
     {
         Bouquet bouquet = player.getBouquet();
-        // TODO Someone else can allocate the address and even the block
-        // now that it is free and the replay ruins it. 
         Sheaf pager = bouquet.getSheaf();
         bouquet.getAddressLocker().lock(address);
         player.getAddressSet().add(address);
@@ -38,7 +36,6 @@ extends Operation
         addresses.free(address, player.getDirtyPages());
         UserPage user = pager.getPage(player.adjust(position), UserPage.class, new UserPage());
         user.waitOnMirrored();
-        // TODO What is reserve and release about here?
         bouquet.getUserPagePool().getFreePageBySize().reserve(user.getRawPage().getPosition());
         user.free(address, player.getDirtyPages());
         bouquet.getUserPagePool().getFreePageBySize().release(user.getRawPage().getPosition(), user.getRawPage().getPosition());

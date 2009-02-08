@@ -36,7 +36,7 @@ final class Bouquet
     /**  Round block allocations to this alignment. */
     private final int alignment;
 
-    private final TemporaryServer temporaryFactory;
+    private final TemporaryNodePool temporaryFactory;
     
     private final AddressPagePool addressPagePool;
     
@@ -92,8 +92,6 @@ final class Bouquet
     private final MutatorFactory mutatorFactory;
 
     /**
-     * @param file
-     *            The file where this pager writes its contents.
      * @param alignment
      *            The alignment to which all block allocations are rounded.
      * @param sheaf
@@ -112,7 +110,7 @@ final class Bouquet
      * @param interimBoundary
      *            The boundary between user data pages and interim data pages.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryServer temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryNodePool temporaryFactory)
     {
         this.pack = new Pack(this);
         this.alignment = header.getAlignment();
@@ -209,7 +207,7 @@ final class Bouquet
         return journalHeaders;
     }
 
-    public TemporaryServer getTemporaryFactory()
+    public TemporaryNodePool getTemporaryFactory()
     {
         return temporaryFactory;
     }

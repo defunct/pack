@@ -65,7 +65,7 @@ extends Operation
      * @param pager
      *            The pager.
      */
-    public void rollback(TemporaryServer temporaryNodes)
+    public void rollback(TemporaryNodePool temporaryNodes)
     {
         temporaryNodes.rollbackTemporary(address, temporary);
     }

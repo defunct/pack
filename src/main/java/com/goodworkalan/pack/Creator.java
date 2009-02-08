@@ -139,7 +139,7 @@ public final class Creator
                 header.getUserBoundary(), header.getUserBoundary(),
                 sheaf,
                 new AddressPagePool(addressPages),
-                new TemporaryServer(temporaryNodes));
+                new TemporaryNodePool(temporaryNodes));
         
         long user = bouquet.getInterimBoundary().getPosition();
         bouquet.getInterimBoundary().increment();

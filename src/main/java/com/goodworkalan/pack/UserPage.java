@@ -336,10 +336,11 @@ final class UserPage extends BlockPage
             }
             
             // If the block exists in the page, overwrite the block. Otherwise,
-            // append the block to the end of the user page.
-            
-            // FIXME Does not work. It will skip freed blocks, recreating the
-            // bad mojo.
+            // append the block to the end of the user page. Note that if this
+            // is called from vacuum and the block count is truncated, so that
+            // the copies are appended. The check to see if it already exists
+            // is for new allocations copied from interim pages, in the case
+            // of a hard shutdown in the middle of a new allocation copy.
             ByteBuffer bytes = getRawPage().getByteBuffer();
             if (seek(bytes, address))
             {

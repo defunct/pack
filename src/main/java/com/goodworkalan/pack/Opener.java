@@ -152,7 +152,7 @@ public final class Opener
         Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
         Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryServer(temporaryNodes));
+        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryNodePool(temporaryNodes));
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
@@ -212,6 +212,6 @@ public final class Opener
         return new Bouquet(header, staticBlocks,
                     header.getUserBoundary(), openBoundary, pager,
                     new AddressPagePool(addressPages),
-                    new TemporaryServer(temporaryNodes)).getPack();
+                    new TemporaryNodePool(temporaryNodes)).getPack();
     }
 }

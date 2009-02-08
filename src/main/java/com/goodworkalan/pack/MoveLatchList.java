@@ -19,6 +19,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * {@link MoveLatchIterator}. That method will iterate over the move latches,
  * and if it encounters a page involved in its mutation, it adjusts its page
  * references, and waits on the latch by calling {@link MoveLatch#enter()}.
+ * <p>
+ * TODO For move everywhere, you can keep the thing from leaking by only holding
+ * onto iterators for the duration of life of the tacked pages. That is, for
+ * reads, you can create a new iterator, just for the read. It goes out of scope
+ * once the read method has completed.
+ * <p>
+ * In this way, the move list is only a little more disruptive than the current
+ * implementation. The lists get long with the temporary head, but the user
+ * is encouraged to make their mutations short and sweet.
  * 
  * @see MoveLatchIterator
  */

@@ -7,16 +7,16 @@ import java.util.Map;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Rename.
-public class TemporaryServer
+public class TemporaryNodePool
 {
     /**
      * Map of temporary node addresses to byte buffers containing the address
      * value at the temporary node position.
      */
     private final Map<Long, ByteBuffer> temporaryNodes;
+
     /**
-     * Map of temporary block addresses to temporary reference node addreses.
+     * Map of temporary block addresses to temporary reference node addresses.
      */
     private final Map<Long, Long> temporaries;
 
@@ -27,7 +27,7 @@ public class TemporaryServer
      *            Map of temporary node addresses to byte buffers containing the
      *            address value at the temporary node position.
      */
-    public TemporaryServer(Map<Long, ByteBuffer> temporaryNodes)
+    public TemporaryNodePool(Map<Long, ByteBuffer> temporaryNodes)
     {
         this.temporaryNodes = temporaryNodes;
         this.temporaries = temporaries(temporaryNodes);

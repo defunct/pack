@@ -80,8 +80,6 @@ public class UserPagePool
      * space remaining for blocks. If the block page is empty, it is added
      * to the set of empty user pages. If it has block space remaining that
      * is greater than the alignment, then it is added to by size lookup table.
-     * <p>
-     * TODO Pull this out and create a pool.
      * 
      * @param userPage The user block page.
      */

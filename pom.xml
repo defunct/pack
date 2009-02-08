@@ -61,6 +61,11 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <site.javadoc.show>protected</site.javadoc.show>
+        <site.javadoc.visiblity>public</site.javadoc.visiblity>
+    </properties>
+
     <build>
         <resources>
             <resource>
@@ -159,11 +164,15 @@
                 <reportSet>
                     <id>html</id>
                     <configuration>
-                        <show>private</show>
+                        <show>${site.javadoc.show}</show>
                         <offlineLinks>
                             <offlineLink>
                                 <url>http://java.sun.com/j2se/1.5.0/docs/api/</url>
                                 <location>etc/javadoc/jdk-5.0/</location>
+                            </offlineLink>
+                            <offlineLink>
+                                <url>http://curlybraces.org/documentation/sheaf/api/${site.javadoc.visiblity}/</url>
+                                <location>etc/javadoc/sheaf/</location>
                             </offlineLink>
                         </offlineLinks>
                     </configuration>
