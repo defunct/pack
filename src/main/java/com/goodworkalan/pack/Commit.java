@@ -38,7 +38,7 @@ final class Commit extends CompositeMoveTracker
         add(interimToSharedUserPage = new MapTracker());
         add(interimToEmptyUserPage = new MapTracker());
         add(moveNodeRecorder);
-        add(new JournalRecorder(journal));
+        add(new JournalMoveTracker(journal));
     }
 
     /**

@@ -1,11 +1,11 @@
 package com.goodworkalan.pack;
 
-final class JournalRecorder
+final class JournalMoveTracker
 implements MoveTracker
 {
     private final Journal journal;
     
-    public JournalRecorder(Journal journal)
+    public JournalMoveTracker(Journal journal)
     {
         this.journal = journal;
     }
@@ -17,7 +17,7 @@ implements MoveTracker
     
     public boolean record(Move move, boolean moved)
     {
-        // TODO Does involves take care of this?
+        // TODO Does involves take care of this? Yes. It will. It should.
         if (moved)
         {
             journal.write(new ShiftMove());

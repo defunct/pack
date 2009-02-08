@@ -146,7 +146,7 @@ public final class Mutator
             moveRecorder.add(moveNodeRecorder);
             moveRecorder.add(new ByRemainingTableTracker(allocPagesBySize));
             moveRecorder.add(new ByRemainingTableTracker(writePagesBySize));
-            moveRecorder.add(new JournalRecorder(journal));
+            moveRecorder.add(new JournalMoveTracker(journal));
             
             moveLatches = bouquet.getMoveLatchList().newIterator(moveRecorder);
         }
