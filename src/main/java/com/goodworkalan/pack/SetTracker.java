@@ -2,7 +2,7 @@ package com.goodworkalan.pack;
 
 import java.util.TreeSet;
 
-final class SetRecorder
+final class SetTracker
 extends TreeSet<Long>
 implements MoveTracker
 {

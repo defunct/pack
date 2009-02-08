@@ -5,20 +5,20 @@ import java.util.Set;
 final class PageTracker
 extends CompositeMoveRecorder
 {
-    private final SetRecorder trackedUserPages;
+    private final SetTracker trackedUserPages;
 
-    private final SetRecorder journalPages;
+    private final SetTracker journalPages;
     
-    private final SetRecorder writeBlockPages;
+    private final SetTracker writeBlockPages;
     
-    private final SetRecorder allocBlockPages;
+    private final SetTracker allocBlockPages;
     
     public PageTracker()
     {
-        add(this.trackedUserPages = new SetRecorder());
-        add(this.journalPages = new SetRecorder());
-        add(this.writeBlockPages = new SetRecorder());
-        add(this.allocBlockPages = new SetRecorder());
+        add(this.trackedUserPages = new SetTracker());
+        add(this.journalPages = new SetTracker());
+        add(this.writeBlockPages = new SetTracker());
+        add(this.allocBlockPages = new SetTracker());
     }
     
     public Set<Long> getTrackedUserPages()

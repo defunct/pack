@@ -23,7 +23,7 @@ final class Commit extends CompositeMoveRecorder
 
     private final SortedSet<Long> addressFromUserPagesToMove;
 
-    private final SetRecorder unassignedInterimBlockPages;
+    private final SetTracker unassignedInterimBlockPages;
 
     private final SortedMap<Long, Movable> movingUserPageMirrors;
 
@@ -33,7 +33,7 @@ final class Commit extends CompositeMoveRecorder
         this.userFromInterimPages = new TreeSet<Long>();
         this.addressFromUserPagesToMove = new TreeSet<Long>();
         this.movingUserPageMirrors = new TreeMap<Long, Movable>();
-        add(unassignedInterimBlockPages = new SetRecorder());
+        add(unassignedInterimBlockPages = new SetTracker());
         add(pageRecorder);
         add(interimToSharedUserPage = new MapTracker());
         add(interimToEmptyUserPage = new MapTracker());
