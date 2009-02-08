@@ -5,7 +5,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-final class Commit extends CompositeMoveTracker
+final class CommitMoveTracker extends CompositeMoveTracker
 {
     /**
      * A map of interim pages containing new allocations to destination user
@@ -27,7 +27,7 @@ final class Commit extends CompositeMoveTracker
 
     private final SortedMap<Long, Movable> movingUserPageMirrors;
 
-    public Commit(PageMoveTracker pageRecorder, Journal journal,
+    public CommitMoveTracker(PageMoveTracker pageRecorder, Journal journal,
             MoveNodeRecorder moveNodeRecorder)
     {
         this.userFromInterimPages = new TreeSet<Long>();

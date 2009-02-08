@@ -643,7 +643,7 @@ public final class Mutator
      *
      * @param commit The state of the commit.
      */
-    private void clear(Commit commit)
+    private void clear(CommitMoveTracker commit)
     {
         journal.reset();
         allocPagesBySize.clear();
@@ -684,7 +684,7 @@ public final class Mutator
         {
             bouquet.getCompactLock().readLock().unlock();
         }
-        clear(new Commit(pageRecorder, journal, moveNodeRecorder));
+        clear(new CommitMoveTracker(pageRecorder, journal, moveNodeRecorder));
     }
 
     /**
@@ -726,7 +726,7 @@ public final class Mutator
      *            A set of the interim pages currently in user whose contents
      *            needs to be moved to a new interim page.
      */
-    private void expandUser(MoveLatchIterator moveLatchList, Commit commit, int count, SortedSet<Long> userFromInterimPagesToMove)
+    private void expandUser(MoveLatchIterator moveLatchList, CommitMoveTracker commit, int count, SortedSet<Long> userFromInterimPagesToMove)
     {
         // This invocation is to flush the move list for the current mutator.
         // You may think that this is pointless, but it's not. It will ensure
@@ -825,7 +825,7 @@ public final class Mutator
      *
      * @param commit The state of the current commit.
      */
-    private void allocMovingUserPageMirrors(Commit commit)
+    private void allocMovingUserPageMirrors(CommitMoveTracker commit)
     {
         // For each user page that need to move to create an address page.
         for (long position: commit.getAddressFromUserPagesToMove())
@@ -865,7 +865,7 @@ public final class Mutator
      * @param newAddressPageCount
      *            The number of address pages to allocate.
      */
-    private SortedSet<Long> tryNewAddressPage(MoveLatchIterator moveList, final Commit commit, int newAddressPageCount)
+    private SortedSet<Long> tryNewAddressPage(MoveLatchIterator moveList, final CommitMoveTracker commit, int newAddressPageCount)
     {
         final MoveLatch userMoveLatchHead = new MoveLatch(false);
 
@@ -1028,7 +1028,7 @@ public final class Mutator
         
         try
         {
-            final Commit commit = new Commit(pageRecorder, journal, moveNodeRecorder);
+            final CommitMoveTracker commit = new CommitMoveTracker(pageRecorder, journal, moveNodeRecorder);
             return tryNewAddressPage(bouquet.getMoveLatchList().newIterator(commit), commit, count); 
         }
         finally
@@ -1107,7 +1107,7 @@ public final class Mutator
      * @param commit
      *            The state of the commit.
      */
-    private void asssignAllocations(Commit commit)
+    private void asssignAllocations(CommitMoveTracker commit)
     {
         // Create a copy of the set of user from interim pages so you can use
         // it as a queue.
@@ -1154,7 +1154,7 @@ public final class Mutator
      * @param userMoveLatches
      *            The head of a linked list of move latches.
      */
-    private void expandAddress(Commit commit, MoveLatch userMoveLatches)
+    private void expandAddress(CommitMoveTracker commit, MoveLatch userMoveLatches)
     {
         // A map of user pages to copy.
         Map<Long, Long> copies = new TreeMap<Long, Long>();
@@ -1204,7 +1204,7 @@ public final class Mutator
      *            A set of user pages to record the user pages mirrored by this
      *            method.
      */
-    private void mirrorUserPagesForMove(Commit commit, Set<UserPage> userPagesMirroredForMove)
+    private void mirrorUserPagesForMove(CommitMoveTracker commit, Set<UserPage> userPagesMirroredForMove)
     {
         // For each moving user page, mirror the page into the interim block
         // page allocated for mirroring.
@@ -1300,7 +1300,7 @@ public final class Mutator
      * @param commit
      *            The state of this commit.
      */
-    private void tryCommit(MoveLatchIterator moveLatchList, final Commit commit)
+    private void tryCommit(MoveLatchIterator moveLatchList, final CommitMoveTracker commit)
     {
         // Start by adding all of the interim block pages to the set of interim
         // block pages whose blocks have not been assigned to a user block page.
@@ -1610,7 +1610,7 @@ public final class Mutator
     public void commit()
     {
         // Create a commit structure to track the state of the commit.
-        final Commit commit = new Commit(pageRecorder, journal, moveNodeRecorder);
+        final CommitMoveTracker commit = new CommitMoveTracker(pageRecorder, journal, moveNodeRecorder);
 
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
