@@ -140,7 +140,7 @@ public final class Mutator
     {
         if (moveLatches == null)
         {
-            CompositeMoveRecorder moveRecorder = new CompositeMoveRecorder();
+            CompositeMoveTracker moveRecorder = new CompositeMoveTracker();
             
             moveRecorder.add(pageRecorder);
             moveRecorder.add(moveNodeRecorder);

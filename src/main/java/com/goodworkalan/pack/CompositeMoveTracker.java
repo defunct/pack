@@ -3,12 +3,12 @@ package com.goodworkalan.pack;
 import java.util.ArrayList;
 import java.util.List;
 
-class CompositeMoveRecorder
+class CompositeMoveTracker
 implements MoveTracker
 {
     private final List<MoveTracker> listOfMoveRecorders;
     
-    public CompositeMoveRecorder()
+    public CompositeMoveTracker()
     {
         this.listOfMoveRecorders = new ArrayList<MoveTracker>();
     }

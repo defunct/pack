@@ -3,7 +3,7 @@ package com.goodworkalan.pack;
 import java.util.Set;
 
 final class PageTracker
-extends CompositeMoveRecorder
+extends CompositeMoveTracker
 {
     private final SetTracker trackedUserPages;
 

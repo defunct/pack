@@ -5,7 +5,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-final class Commit extends CompositeMoveRecorder
+final class Commit extends CompositeMoveTracker
 {
     /**
      * A map of interim pages containing new allocations to destination user
