@@ -10,16 +10,13 @@ extends Operation
 {
     private long address;
     
-    private long position;
-    
     public Free()
     {
     }
 
-    public Free(long address, long position)
+    public Free(long address)
     {
         this.address = address;
-        this.position = position;
     }
 
     @Override
@@ -27,25 +24,42 @@ extends Operation
     {
         Bouquet bouquet = player.getBouquet();
         Sheaf pager = bouquet.getSheaf();
+        
         bouquet.getAddressLocker().lock(address);
-        player.getAddressSet().add(address);
-        // TODO Same problem with addresses as with temporary headers,
-        // someone can reuse when we're scheduled to release.
-        player.getBouquet().getTemporaryFactory().freeTemporary(player.getBouquet().getSheaf(), address, player.getDirtyPages());
+        player.getAddresses().add(address);
+
+        if (bouquet.getTemporaryFactory().freeTemporary(player.getBouquet().getSheaf(), address, bouquet.getTemporaryAddressLocker(), player.getDirtyPages()))
+        {
+            player.getTemporaryAddresses().add(address);
+        }
+        
+        long previous = 0L;
+        for (;;)
+        {
+            UserPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+            if (user.free(address, player.getDirtyPages()) || user.getRawPage().getPosition() == previous)
+            {
+                // FIXME Moving will work this way, lock from page, lock to
+                // page. Free from form page, add to to page. Then lock and
+                // update address page, free lock. Then free user locks.
+
+                // So, when we are here, the page is free because it moved, then
+                // we try again. If we try again, it is free, and it hasn't
+                // moved, then we've freed it already in a previous attempt to
+                // playback the journal.
+                break;
+            }
+            previous = user.getRawPage().getPosition();
+        }
+        
         AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
         addresses.free(address, player.getDirtyPages());
-        UserPage user = pager.getPage(player.adjust(position), UserPage.class, new UserPage());
-        user.waitOnMirrored();
-        bouquet.getUserPagePool().getFreePageBySize().reserve(user.getRawPage().getPosition());
-        user.free(address, player.getDirtyPages());
-        bouquet.getUserPagePool().getFreePageBySize().release(user.getRawPage().getPosition(), user.getRawPage().getPosition());
-        bouquet.getUserPagePool().returnUserPage(user);
     }
 
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE + Pack.POSITION_SIZE;
+        return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE;
     }
 
     @Override
@@ -53,13 +67,11 @@ extends Operation
     {
         bytes.putShort(Pack.FREE);
         bytes.putLong(address);
-        bytes.putLong(position);
     }
 
     @Override
     public void read(ByteBuffer bytes)
     {
         address = bytes.getLong();
-        position = bytes.getLong();
     }
 }

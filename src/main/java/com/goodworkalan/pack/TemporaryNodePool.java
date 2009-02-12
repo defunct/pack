@@ -160,7 +160,7 @@ class TemporaryNodePool
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void freeTemporary(Sheaf pager, long address, DirtyPageSet dirtyPages)
+    public boolean freeTemporary(Sheaf pager, long address, AddressLocker locker, DirtyPageSet dirtyPages)
     {
         // Synchronize temporary list manipulation on the temporary node map. 
         synchronized (temporaryNodes)
@@ -168,9 +168,13 @@ class TemporaryNodePool
             Long temporary = temporaries.get(address);
             if (temporary != null)
             {
+                locker.lock(temporary);
                 setTemporary(pager, 0L, temporary, dirtyPages);
+                return true;
             }
         }
+        
+        return false;
     }
 
     /**

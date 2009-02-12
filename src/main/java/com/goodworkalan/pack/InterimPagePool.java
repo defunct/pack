@@ -56,12 +56,12 @@ class InterimPagePool
      * @return A blank position in the interim area that for use as the target
      *         of a move.
      */
-    public long newBlankInterimPage(Sheaf pager)
+    public long newBlankInterimPage(Sheaf sheaf)
     {
         long position = getFreeInterimPages().allocate();
         if (position == 0L)
         {
-            position = pager.extend();
+            position = sheaf.extend();
         }
         return position;
     }

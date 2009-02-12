@@ -5,7 +5,7 @@ package com.goodworkalan.pack;
  * 
  * @author Alan Gutierrez
  */
-final class Boundary
+class Boundary
 {
     /** The size of a page in the Pack.  */
     private final int pageSize;
@@ -37,6 +37,11 @@ final class Boundary
     public long getPosition()
     {
         return position;
+    }
+    
+    public int getPageSize()
+    {
+        return pageSize;
     }
     
     /**

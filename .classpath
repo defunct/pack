@@ -3,13 +3,15 @@
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry excluding="**/*.java" kind="src" path="src/main/resources"/>
 	<classpathentry kind="src" output="target/test-classes" path="src/test/java"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/sheaf"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="var" path="M2_REPO/args4j/args4j/2.0.8/args4j-2.0.8.jar" sourcepath="M2_REPO/args4j/args4j/2.0.8/args4j-2.0.8-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/junit/junit/4.4/junit-4.4.jar" sourcepath="M2_REPO/junit/junit/4.4/junit-4.4-sources.jar">
+	<classpathentry kind="var" path="M2_REPO/junit/junit/3.8.1/junit-3.8.1.jar" sourcepath="M2_REPO/junit/junit/3.8.1/junit-3.8.1-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/goodworkalan/sheaf/0.1.X/sheaf-0.1.X.jar" sourcepath="M2_REPO/com/goodworkalan/sheaf/0.1.X/sheaf-0.1.X-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/Users/alan/.m2/repository/junit/junit/4.4/junit-4.4-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:file:/Users/alan/.m2/repository/com/goodworkalan/sheaf/0.1.X/sheaf-0.1.X-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/sheaf"/>
+	<classpathentry kind="var" path="M2_REPO/org/testng/testng/5.8/testng-5.8-jdk15.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

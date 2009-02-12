@@ -151,8 +151,9 @@ final class InterimPage extends BlockPage
      * @param dirtyPages
      *            The dirty page set used to track dirty pages.
      */
-    public void write(long address, DirtyPageSet dirtyPages)
+    public void write(long address, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
+        
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getRawPage().getByteBuffer();

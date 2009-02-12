@@ -399,7 +399,7 @@ final class UserPage extends BlockPage
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public void free(long address, DirtyPageSet dirtyPages)
+    public boolean free(long address, DirtyPageSet dirtyPages)
     {
         // Synchronize on the raw page.
         synchronized (getRawPage())
@@ -426,8 +426,12 @@ final class UserPage extends BlockPage
                 bytes.putInt(Pack.CHECKSUM_SIZE, getDiskCount());
 
                 dirtyPages.add(getRawPage());
+                
+                return true;
             }
         }
+        
+        return false;
     }
 
     /**

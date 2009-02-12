@@ -1,7 +1,6 @@
 package com.goodworkalan.pack;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,6 +31,8 @@ final class Bouquet
      * from overwriting reallocations.
      */
     private final AddressLocker addressLocker;
+    
+    private final AddressLocker temporaryAddressLocker;
 
     /**  Round block allocations to this alignment. */
     private final int alignment;
@@ -47,22 +48,6 @@ final class Bouquet
 
     private final UserPagePool userPagePool;
     
-    /**
-     * A reference to linked list of move nodes used as a prototype for the per
-     * mutator move list reference.
-     */
-    private final MoveLatchList moveLatchList;
-
-    /**
-     * A read/write lock that coordinates rewind of area boundaries and the
-     * wilderness.
-     * <p>
-     * The compact lock locks the entire file exclusively and block any other
-     * moves or commits. Ordinary commits can run in parallel so long as blocks
-     * are moved forward and not backward in in the file.
-     */
-    private final ReadWriteLock compactLock;
-
     /**
      * A mutex to ensure that only one mutator at a time is moving pages in the
      * interim page area.
@@ -84,7 +69,9 @@ final class Bouquet
     private final PositionSet journalHeaders;
 
     /** The boundary between address pages and user data pages. */
-    private final Boundary userBoundary;
+    private final UserBoundary userBoundary;
+    
+    private final ReadWriteLock pageMoveLock;
     
     /** Housekeeping information stored at the head of the file. */
     private final Header header;
@@ -117,18 +104,18 @@ final class Bouquet
         this.header = header;
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
-        this.userBoundary = new Boundary(sheaf.getPageSize(), userBoundary);
+        this.userBoundary = new UserBoundary(sheaf.getPageSize(), userBoundary);
         this.interimBoundary = new Boundary(sheaf.getPageSize(), interimBoundary);
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.userPagePool = new UserPagePool(sheaf.getPageSize(), alignment);
         this.interimPagePool = new InterimPagePool();
         this.temporaryFactory = temporaryFactory;
-        this.moveLatchList = new MoveLatchList();
-        this.compactLock = new ReentrantReadWriteLock();
         this.expandMutex = new Object();
         this.addressLocker = new AddressLocker();
+        this.temporaryAddressLocker = new AddressLocker();
         this.mutatorFactory = new MutatorFactory(this);
+        this.pageMoveLock = new ReentrantReadWriteLock();
     }
     
     public Pack getPack()
@@ -181,6 +168,11 @@ final class Bouquet
     {
         return addressLocker;
     }
+    
+    public AddressLocker getTemporaryAddressLocker()
+    {
+        return temporaryAddressLocker;
+    }
 
     public Sheaf getSheaf()
     {
@@ -218,22 +210,6 @@ final class Bouquet
     }
 
     /**
-     * Return the linked list of move latches used to block pages from reading
-     * pages while they are moving. Pages are moved during during commit or
-     * address region expansion. To prevent mutators from writing blocks to
-     * moving pages, a linked list of move latches are appended to this master
-     * linked list of move latches. This list is the per pager list. The move
-     * latch lists are appended here and iterators are created using this move
-     * latch list.
-     * 
-     * @return The per pager move latch list.
-     */
-    public MoveLatchList getMoveLatchList()
-    {
-        return moveLatchList;
-    }
-
-    /**
      * Get the boundary between user pages and interim pages.
      *
      * @return The boundary between user pages and interim pages.
@@ -248,39 +224,16 @@ final class Bouquet
      *
      * @return The boundary between address pages and user data pages.
      */
-    public Boundary getUserBoundary()
+    public UserBoundary getUserBoundary()
     {
         return userBoundary;
     }
 
-    /**
-     * Return a file position based on the given file position adjusted by page
-     * moves in the given list of move node.
-     * <p>
-     * The adjustment will account for offset into the page position. This is
-     * necessary for next operations in journals, which may jump to any
-     * operation in a journal, which may be at any location in a page.
-     * 
-     * @param moveList
-     *            The list of page moves.
-     * @param position
-     *            The file position to track.
-     * @return The file position adjusted by the recorded page moves.
-     */
-    public long adjust(List<Move> moveList, long position)
+    public ReadWriteLock getPageMoveLock()
     {
-        int offset = (int) (position % sheaf.getPageSize());
-        position = position - offset;
-        for (Move move: moveList)
-        {
-            if (move.getFrom() == position)
-            {
-                position = move.getTo();
-            }
-        }
-        return position + offset;
+        return pageMoveLock;
     }
-
+    
     /**
      * Return the per pack mutex used to ensure that only one mutator at a time
      * is moving pages in the interim page area.
@@ -290,21 +243,5 @@ final class Bouquet
     public Object getUserExpandMutex()
     {
         return expandMutex;
-    }
-
-    /**
-     * A read/write lock on the pager used to prevent compaction during rollback
-     * or commit. Compaction is not yet implemented, but it is expected to wreck
-     * havoc on normal operation, and should be done exclusively.
-     * <p>
-     * The complact lock is also held exclusively while closing the file, in
-     * order to wait for any rollbacks or commits to complete, and to prevent
-     * any rollbacks or commits to initiate during close.
-     * 
-     * @return The compact read/write lock.
-     */
-    public ReadWriteLock getCompactLock()
-    {
-        return compactLock;
     }
 }

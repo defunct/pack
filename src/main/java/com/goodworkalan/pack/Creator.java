@@ -68,17 +68,6 @@ public final class Creator
      */
     public Pack create(FileChannel fileChannel)
     {
-        Offsets offsets = new Offsets(pageSize, internalJournalCount, getStaticBlockMapSize());
-        ByteBuffer fullSize = ByteBuffer.allocateDirect((int) (offsets.getFirstAddressPage() + pageSize));
-        try
-        {
-            fileChannel.write(fullSize, 0L);
-        }
-        catch (IOException e)
-        {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
-        }
-        
         // Initialize the header.
         
         Header header = new Header(ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE));
@@ -90,8 +79,8 @@ public final class Creator
         header.setInternalJournalCount(internalJournalCount);
         header.setStaticPageSize(getStaticBlockMapSize());
         header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
-        header.setUserBoundary(0L);
-        header.setInterimBoundary(0L);
+        header.setUserBoundary(pageSize);
+        header.setInterimBoundary(pageSize);
 
         try
         {
@@ -133,24 +122,18 @@ public final class Creator
         Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
         SortedSet<Long> addressPages = new TreeSet<Long>();
-        addressPages.add(offsets.getFirstAddressPage());
+        addressPages.add(0L);
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        
+        DirtyPageSet dirtyPages = new DirtyPageSet(0);
+        sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages, false);
+        dirtyPages.flush();
+        
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 header.getUserBoundary(), header.getUserBoundary(),
                 sheaf,
                 new AddressPagePool(addressPages),
                 new TemporaryNodePool(temporaryNodes));
-        
-        long user = bouquet.getInterimBoundary().getPosition();
-        bouquet.getInterimBoundary().increment();
-        
-        DirtyPageSet dirtyPages = new DirtyPageSet(0);
-        bouquet.getSheaf().setPage(user, UserPage.class, new UserPage(), dirtyPages, false);
-        UserPage blocks = bouquet.getSheaf().getPage(user, UserPage.class, new UserPage());
-        blocks.getRawPage().invalidate(0, pageSize);
-        dirtyPages.flush();
-        
-        bouquet.getUserPagePool().returnUserPage(blocks);
         
         Mutator mutator = bouquet.getMutatorFactory().mutate();
         
@@ -205,7 +188,7 @@ public final class Creator
             throw new PackException(Pack.ERROR_IO_WRITE, e);
         }
 
-        new Pack(bouquet).close();
+        new Pack(bouquet).shutdown();
         
         return new Opener().open(fileChannel);
     }

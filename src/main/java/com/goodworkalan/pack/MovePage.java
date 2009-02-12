@@ -2,24 +2,18 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-/**
- * Adds a relocatable page move to the list of page moves recorded in the player
- * before replaying a journal.
- * 
- * @author Alan Gutierrez
- * 
- */
-final class AddMove
+public class MovePage
 extends Operation
 {
-    /** The relocatable page move to restore. */
-    private Move move;
+    private long from;
+    
+    private long to;
 
     /**
      * Default constructor builds an empty instance that can be populated
      * with the <code>read</code> method.
      */
-    public AddMove()
+    public MovePage()
     {
     }
 
@@ -27,12 +21,13 @@ extends Operation
      * Construct an instance that will write the relocatable page move to the
      * journal using the <code>write</code> method.
      * 
-     * @param move
-     *            The page move.
+     * @param from The position to move from.
+     * @param to The position to move to.
      */
-    public AddMove(Move move)
+    public MovePage(long from, long to)
     {
-        this.move = move;
+        this.from = from;
+        this.to = to;
     }
 
     /**
@@ -44,7 +39,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        player.getMoveList().add(move);
+        player.getBouquet().getSheaf().move(from, to);
     }
 
     /**
@@ -69,7 +64,8 @@ extends Operation
     @Override
     public void read(ByteBuffer bytes)
     {
-        move = new Move(bytes.getLong(), bytes.getLong());
+        from = bytes.getLong();
+        to = bytes.getLong();
     }
 
     /**
@@ -82,8 +78,9 @@ extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.ADD_MOVE);
-        bytes.putLong(move.getFrom());
-        bytes.putLong(move.getTo());
+        bytes.putShort(Pack.MOVE_PAGE);
+        bytes.putLong(from);
+        bytes.putLong(to);
     }
+
 }

@@ -121,7 +121,7 @@ final class Header extends DirtyRegionMap
      */
     public int getHeaderSize()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
+        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5);
     }
 
     /**
@@ -133,8 +133,8 @@ final class Header extends DirtyRegionMap
      */    
     public void setHeaderSize(int headerSize)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, headerSize);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, headerSize);
+        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, Pack.COUNT_SIZE);
     }
 
     /**

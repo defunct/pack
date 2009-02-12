@@ -1,10 +1,13 @@
 package com.goodworkalan.pack;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
- * A null journal writer used to initated a linked list of journal pages.
+ * A null journal writer used to initiated a linked list of journal pages.
  * <p>
  * The {@link NullJournalWriter#write(Operation) write} method of implementation
  * of journal writer always returns false so that the caller will in turn call
@@ -33,19 +36,12 @@ extends JournalWriter
      *            The sheaf from which to allocate pages.
      * @param interimPagePool
      *            The interim page pool from which to allocate pages.
-     * @param moveNodeRecorder
-     *            A move node recorder to obtain the move node necessary to
-     *            create the movable reference to the first page in the linked
-     *            list of journal pages.
-     * @param pageRecorder
-     *            New journal page allocations are reported to this page
-     *            tracker.
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, DirtyPageSet dirtyPages)
+    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
     {
-        super(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, null, null, dirtyPages);
+        super(sheaf, interimPagePool, 0L, null, null, dirtyPages);
     }
 
     /**
@@ -68,9 +64,9 @@ extends JournalWriter
      */
     public JournalWriter extend()
     {
+        Set<Long> journalPages = new HashSet<Long>();
         JournalPage journal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
-        Movable start = new Movable(moveNodeRecorder.getMoveNode(), journal.getJournalPosition(), 0);
-        pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, start, journal, dirtyPages);
+        journalPages.add(journal.getRawPage().getPosition());
+        return new JournalWriter(sheaf, interimPagePool, journal.getJournalPosition(), journal, journalPages, dirtyPages);
     }
 }

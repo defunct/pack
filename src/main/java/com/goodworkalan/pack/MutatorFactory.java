@@ -1,7 +1,5 @@
 package com.goodworkalan.pack;
 
-import java.util.List;
-
 import com.goodworkalan.sheaf.DirtyPageSet;
 
 class MutatorFactory
@@ -21,17 +19,8 @@ class MutatorFactory
      */
     public Mutator mutate()
     {
-        final PageMoveTracker pageRecorder = new PageMoveTracker();
-        final MoveLatchIterator moveLatchIterator = bouquet.getMoveLatchList().newIterator(pageRecorder);
-        return moveLatchIterator.mutate(new Guarded<Mutator>()
-        {
-            public Mutator run(List<MoveLatch> listOfMoveLatches)
-            {
-                MoveNodeMoveTracker moveNodeRecorder = new MoveNodeMoveTracker();
-                DirtyPageSet dirtyPages = new DirtyPageSet(16);
-                Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), moveNodeRecorder, pageRecorder, dirtyPages);
-                return new Mutator(bouquet, moveLatchIterator, moveNodeRecorder, pageRecorder, journal, dirtyPages);
-            }
-        });
+        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
+        return new Mutator(bouquet, journal, dirtyPages);
     }
 }

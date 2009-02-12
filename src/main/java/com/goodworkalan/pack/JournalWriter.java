@@ -1,9 +1,12 @@
 package com.goodworkalan.pack;
 
+import java.util.Set;
+
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
+ * A container for a last page in a linked list of journal pages.
  * <p>
  * When writing an operation, the journal page write method can be asked to
  * ensure that there is enough space for a next journal page operation. If there
@@ -22,20 +25,13 @@ class JournalWriter
     /** The interim page pool from which to allocate pages. */
     protected final InterimPagePool interimPagePool;
     
+    /** The set of page positions used by this journal. */
+    protected final Set<Long> journalPages;
+ 
     /**
-     * A move node recorder to obtain the move node necessary to create the
-     * movable reference to the first page in the linked list of journal pages.
+     * The position of the first journal operation on the first journal page.  
      */
-    protected final MoveNodeMoveTracker moveNodeRecorder;
-
-    /** New journal page allocations are reported to this page tracker. */
-    protected final PageMoveTracker pageRecorder;
-    
-    /**
-     * A movable reference to the first page in the linked list of journal
-     * pages.
-     */
-    protected final Movable start;
+    protected long start;
 
     /** The current journal page. */
     protected final JournalPage journal;
@@ -44,8 +40,9 @@ class JournalWriter
     protected final DirtyPageSet dirtyPages;
 
     /**
-     * Create a journal writer that will allocate pages from the given sheaf and
-     * given interim page pool.
+     * Create a journal writer that will write to the given journal page and
+     * allocate subsequent pages from the given sheaf and given interim page
+     * pool.
      * <p>
      * The given move node recorder is used by reset to create a
      * {@link NullJournalWriter} which in turn uses it to create a movable
@@ -57,38 +54,34 @@ class JournalWriter
      *            The sheaf from which to allocate pages.
      * @param interimPagePool
      *            The interim page pool from which to allocate pages.
-     * @param moveNodeRecorder
-     *            A move node recorder to obtain the move node necessary to
-     *            create the movable reference to the first page in the linked
-     *            list of journal pages.
-     * @param pageRecorder
-     *            New journal page allocations are reported to this page
-     *            tracker.
      * @param start
-     *            A movable reference to the first page in the linked list of
-     *            journal pages.
-     * @param journal
+     *            The position of the first operation on the first page of the
+     *            journal.
+     * @param journalPage
      *            The current journal page.
+     * @param journalPages
+     *            The set of page positions used by this journal.
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public JournalWriter(Sheaf pager, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, Movable start, JournalPage journal, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, long start, JournalPage journalPage, Set<Long> journalPages, DirtyPageSet dirtyPages)
     {
-        this.sheaf = pager;
+        this.sheaf = sheaf;
         this.interimPagePool = interimPagePool;
-        this.pageRecorder = pageRecorder;
-        this.journal = journal;
+        this.journal = journalPage;
+        this.journalPages = journalPages;
         this.start = start;
         this.dirtyPages = dirtyPages;
-        this.moveNodeRecorder = moveNodeRecorder;
     }
 
     /**
-     * Get a movable reference to the first journal operation.
+     * Get the position of the first journal operation on the first journal
+     * page. This position will not have been adjusted for any page moves.
      * 
-     * @return A movable reference to the first journal operation.
+     * @return The position of the first journal operation on the first journal
+     *         page.
      */
-    public Movable getJournalStart()
+    public long getJournalStart()
     {
         return start;
     }
@@ -106,6 +99,16 @@ class JournalWriter
     public long getJournalPosition()
     {
         return journal.getJournalPosition();
+    }
+
+    /**
+     * Get the set of page positions used by this journal.
+     * 
+     * @return The set of page positions used by this journal.
+     */
+    public Set<Long> getJournalPages()
+    {
+        return journalPages;
     }
 
     /**
@@ -145,8 +148,8 @@ class JournalWriter
     {
         JournalPage nextJournal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
         journal.write(new NextOperation(nextJournal.getJournalPosition()), 0, dirtyPages);
-        pageRecorder.getJournalPages().add(journal.getRawPage().getPosition());
-        return new JournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, start, nextJournal, dirtyPages);
+        journalPages.add(nextJournal.getRawPage().getPosition());
+        return new JournalWriter(sheaf, interimPagePool, start, nextJournal, journalPages, dirtyPages);
     }
 
     /**
@@ -157,6 +160,6 @@ class JournalWriter
      */
     public JournalWriter reset()
     {
-        return new NullJournalWriter(sheaf, interimPagePool, moveNodeRecorder, pageRecorder, dirtyPages);
+        return new NullJournalWriter(sheaf, interimPagePool, dirtyPages);
     }
 }

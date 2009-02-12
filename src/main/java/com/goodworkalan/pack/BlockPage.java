@@ -128,8 +128,7 @@ abstract class BlockPage extends RelocatablePage
     public void create(DirtyPageSet dirtyPages)
     {
         this.count = 0;
-        this.remaining = getRawPage().getSheaf().getPageSize()
-                - Pack.BLOCK_PAGE_HEADER_SIZE;
+        this.remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
 
         ByteBuffer bytes = getRawPage().getByteBuffer();
 
@@ -309,7 +308,8 @@ abstract class BlockPage extends RelocatablePage
 
     /**
      * Get the full block size including the block header of the block in this
-     * block page at the given address.
+     * block page at the given address. Returns zero if the block is not in
+     * this block page.
      * 
      * @param address
      *            The address of the block.
@@ -325,7 +325,7 @@ abstract class BlockPage extends RelocatablePage
                 return getBlockSize(bytes);
             }
         }
-        throw new IllegalArgumentException();
+        return 0;
     }
 
     /**
@@ -444,9 +444,7 @@ abstract class BlockPage extends RelocatablePage
             {
                 if (destination == null)
                 {
-                    destination = ByteBuffer
-                            .allocateDirect(getBlockSize(address)
-                                    - Pack.BLOCK_HEADER_SIZE);
+                    destination = ByteBuffer.allocateDirect(getBlockSize(address) - Pack.BLOCK_HEADER_SIZE);
                 }
                 int offset = bytes.position();
                 int size = bytes.getInt();

@@ -18,8 +18,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.testng.annotations.Test;
 
 import com.goodworkalan.sheaf.DirtyRegionMap;
 import com.goodworkalan.sheaf.Page;
@@ -56,7 +55,7 @@ public class PackTestCase
         new Creator().create(newFile()).close();
     }
 
-    @Test(expected=java.lang.IllegalStateException.class) public void regionalLowerRange()
+    @Test(expectedExceptions=java.lang.IllegalStateException.class) public void regionalLowerRange()
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
@@ -71,7 +70,7 @@ public class PackTestCase
         regional.invalidate(-1, 10);
     }
 
-    @Test(expected=java.lang.IllegalStateException.class) public void regionalUpperRange()
+    @Test(expectedExceptions=java.lang.IllegalStateException.class) public void regionalUpperRange()
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
@@ -499,7 +498,7 @@ public class PackTestCase
         pack.close();
     }
     
-    @Test(expected=java.lang.UnsupportedOperationException.class)
+    @Test(expectedExceptions=java.lang.UnsupportedOperationException.class)
     public void bySizeTableIteratorRemove()
     {
         List<SortedSet<Long>> listOfListsOfSizes = new ArrayList<SortedSet<Long>>();
@@ -508,7 +507,7 @@ public class PackTestCase
         iterator.remove();
     }
     
-    @Test(expected=java.lang.ArrayIndexOutOfBoundsException.class)
+    @Test(expectedExceptions=java.lang.ArrayIndexOutOfBoundsException.class)
     public void bySizeTableIteratorOutOfBounds()
     {
         List<SortedSet<Long>> listOfListsOfSizes = new ArrayList<SortedSet<Long>>();
@@ -529,7 +528,7 @@ public class PackTestCase
         mutator.commit();
     }
     
-    @Ignore @Test public void moveInterimPageForAddress()
+    public void moveInterimPageForAddress()
     {
         FileChannel file = newFile();
         Pack pack = new Creator().create(file);

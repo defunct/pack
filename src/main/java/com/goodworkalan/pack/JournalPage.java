@@ -176,14 +176,8 @@ extends RelocatablePage
     {
         switch (type)
         {
-            case Pack.ADD_VACUUM:
-                return new Vacuum();
-            case Pack.VACUUM:
-                return new VacuumCheckpoint();
-            case Pack.ADD_MOVE: 
-                return new AddMove();
-            case Pack.SHIFT_MOVE:
-                return new ShiftMove();
+            case Pack.MOVE_PAGE: 
+                return new MovePage();
             case Pack.CREATE_ADDRESS_PAGE:
                 return new CreateAddressPage();
             case Pack.WRITE:

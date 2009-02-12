@@ -1,5 +1,7 @@
 package com.goodworkalan.pack;
 
+import java.util.Set;
+
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
@@ -7,12 +9,12 @@ class Journal
 {
     private JournalWriter writer;
     
-    public Journal(Sheaf pager, InterimPagePool interimPagePool, MoveNodeMoveTracker moveNodeRecorder, PageMoveTracker pageRecorder, DirtyPageSet dirtyPages)
+    public Journal(Sheaf sheaf, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
     {
-        writer = new NullJournalWriter(pager, interimPagePool, moveNodeRecorder, pageRecorder, dirtyPages);
+        writer = new NullJournalWriter(sheaf, interimPagePool, dirtyPages);
     }
     
-    public Movable getJournalStart()
+    public long getJournalStart()
     {
         return writer.getJournalStart();
     }
@@ -20,6 +22,11 @@ class Journal
     public long getJournalPosition()
     {
         return writer.getJournalPosition();
+    }
+
+    public Set<Long> getJournalPages()
+    {
+        return writer.getJournalPages();
     }
 
     public void write(Operation operation)

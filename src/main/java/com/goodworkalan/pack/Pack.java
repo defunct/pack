@@ -66,19 +66,13 @@ public class Pack
 
     public final static int ADDRESS_SIZE = Long.SIZE / Byte.SIZE;
 
-    final static int FILE_HEADER_SIZE = COUNT_SIZE * 5 + ADDRESS_SIZE * 5;
+    final static int FILE_HEADER_SIZE = COUNT_SIZE * 6 + ADDRESS_SIZE * 4;
 
     public final static int BLOCK_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
 
     final static int BLOCK_HEADER_SIZE = POSITION_SIZE + COUNT_SIZE;
     
-    final static short ADD_VACUUM = 1;
-
-    final static short VACUUM = 2;
-
-    final static short ADD_MOVE = 3;
-
-    final static short SHIFT_MOVE = 4;
+    final static short MOVE_PAGE = 3;
 
     final static short CREATE_ADDRESS_PAGE = 5;
     
@@ -143,15 +137,23 @@ public class Pack
         // Grab the exclusive compact lock, which will wait for any concurrent
         // commits to complete.
     
-        bouquet.getCompactLock().writeLock().lock();
+        bouquet.getPageMoveLock().writeLock().lock();
     
         try
         {
-            tryClose();
+            shutdown();
+            try
+            {
+                bouquet.getSheaf().getFileChannel().close();
+            }
+            catch(IOException e)
+            {
+                throw new PackException(Pack.ERROR_IO_CLOSE, e);
+            }
         }
         finally
         {
-            bouquet.getCompactLock().writeLock().unlock();
+            bouquet.getPageMoveLock().writeLock().unlock();
         }
     }
     
@@ -184,7 +186,7 @@ public class Pack
      * <p>
      * Close will wait for any concurrent commits to complete.
      */
-    private void tryClose()
+    void shutdown()
     {
         // Write the set of address pages, the set of empty user pages and
         // the set of pages with space remaining to a byte buffer.
@@ -244,11 +246,10 @@ public class Pack
         try
         {
             bouquet.getHeader().write(bouquet.getSheaf().getFileChannel(), 0);
-            bouquet.getSheaf().getFileChannel().close();
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_CLOSE, e);
+            throw new PackException(Pack.ERROR_IO_WRITE, e);
         }
     }
 }

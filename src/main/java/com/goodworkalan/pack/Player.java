@@ -3,7 +3,6 @@ package com.goodworkalan.pack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -23,11 +22,9 @@ final class Player
 
     private final DirtyPageSet dirtyPages;
     
-    private final SortedSet<Long> setOfAddresses;
+    private final SortedSet<Long> addresses;
     
-    private final Set<Vacuum> setOfVacuums; 
-    
-    private final LinkedList<Move> listOfMoves;
+    private final Set<Long> temporaryAddresses;
     
     private final Adler32 adler32;
     
@@ -41,10 +38,9 @@ final class Player
         this.header = header;
         this.entryPosition = bytes.getLong();
         this.dirtyPages = dirtyPages;
-        this.setOfAddresses = new TreeSet<Long>();
-        this.setOfVacuums = new HashSet<Vacuum>();
-        this.listOfMoves = new LinkedList<Move>();
+        this.addresses = new TreeSet<Long>();
         this.adler32 = new Adler32();
+        this.temporaryAddresses = new HashSet<Long>();
     }
     
     public Bouquet getBouquet()
@@ -67,26 +63,16 @@ final class Player
         return dirtyPages;
     }
     
-    public SortedSet<Long> getAddressSet()
+    public SortedSet<Long> getAddresses()
     {
-        return setOfAddresses;
+        return addresses;
     }
     
-    public Set<Vacuum> getVacuumSet()
+    public Set<Long> getTemporaryAddresses()
     {
-        return setOfVacuums;
+        return temporaryAddresses;
     }
     
-    public LinkedList<Move> getMoveList()
-    {
-        return listOfMoves;
-    }
-    
-    public long adjust(long position)
-    {
-        return bouquet.adjust(getMoveList(), position);
-    }
-
     private void execute()
     {
         JournalPage journalPage = bouquet.getSheaf().getPage(entryPosition, JournalPage.class, new JournalPage());
