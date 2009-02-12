@@ -80,7 +80,7 @@ public final class Creator
         header.setStaticPageSize(getStaticBlockMapSize());
         header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
         header.setUserBoundary(pageSize);
-        header.setInterimBoundary(pageSize);
+        header.setEndOfSheaf(0L);
 
         try
         {
@@ -130,7 +130,7 @@ public final class Creator
         dirtyPages.flush();
         
         Bouquet bouquet = new Bouquet(header, staticBlocks,
-                header.getUserBoundary(), header.getUserBoundary(),
+                header.getUserBoundary(),
                 sheaf,
                 new AddressPagePool(addressPages),
                 new TemporaryNodePool(temporaryNodes));

@@ -161,29 +161,12 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
 
-    /**
-     * Get the interim boundary of the pack file, which in the case of a closed
-     * file that was shutdown softly, is the beginning of the storage of the
-     * free page information. The interim boundary is position of the first
-     * interim page, less the file header offset.
-     * 
-     * @return The position of the interim boundary.
-     */
-    public long getInterimBoundary()
+    public long getEndOfSheaf()
     {
         return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6);
     }
 
-    /**
-     * Get the interim boundary of the pack file, which in the case of a closed
-     * file that was shutdown softly, is the beginning of the storage of the
-     * free page information. The interim boundary is position of the first
-     * interim page, less the file header offset.
-     * 
-     * @param interimBoundary
-     *            The position of the interim boundary.
-     */
-    public void setInterimBoundary(long interimBoundary)
+    public void setEndOfSheaf(long interimBoundary)
     {
         bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, interimBoundary);
         invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);

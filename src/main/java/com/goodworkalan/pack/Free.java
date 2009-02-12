@@ -36,7 +36,7 @@ extends Operation
         long previous = 0L;
         for (;;)
         {
-            UserPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+            BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
             if (user.free(address, player.getDirtyPages()) || user.getRawPage().getPosition() == previous)
             {
                 // FIXME Moving will work this way, lock from page, lock to

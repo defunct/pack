@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Segment;
@@ -26,8 +25,6 @@ final class Player
     
     private final Set<Long> temporaryAddresses;
     
-    private final Adler32 adler32;
-    
     public Player(Bouquet bouquet, Segment header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
@@ -39,18 +36,12 @@ final class Player
         this.entryPosition = bytes.getLong();
         this.dirtyPages = dirtyPages;
         this.addresses = new TreeSet<Long>();
-        this.adler32 = new Adler32();
         this.temporaryAddresses = new HashSet<Long>();
     }
     
     public Bouquet getBouquet()
     {
         return bouquet;
-    }
-    
-    public Adler32 getAdler32()
-    {
-        return adler32;
     }
     
     public Segment getJournalHeader()

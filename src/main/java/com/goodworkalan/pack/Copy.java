@@ -2,8 +2,6 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-import com.goodworkalan.sheaf.Sheaf;
-
 /**
  * Copy does not wait on mirrored pages, since it is called only on pages that
  * it has vacuumed and mirrored. In the cases of address expansion, copy will be
@@ -38,11 +36,11 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        Sheaf pager = player.getBouquet().getSheaf();
-        player.getBouquet().getAddressLocker().bide(address);
-        InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
-        UserPage user = pager.getPage(to, UserPage.class, new UserPage());
-        interim.copy(address, user, player.getDirtyPages());
+//        Sheaf pager = player.getBouquet().getSheaf();
+//        player.getBouquet().getAddressLocker().bide(address);
+//        InterimPage interim = pager.getPage(from, InterimPage.class, new InterimPage());
+//        BlockPage user = pager.getPage(to, BlockPage.class, new BlockPage());
+//        interim.copy(address, user, player.getDirtyPages());
     }
 
     @Override

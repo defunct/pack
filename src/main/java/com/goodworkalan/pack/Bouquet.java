@@ -43,16 +43,12 @@ final class Bouquet
     
     private final InterimPagePool interimPagePool;
     
-    /** The boundary between user data pages and interim data pages. */
-    private final Boundary interimBoundary;
-
     private final UserPagePool userPagePool;
     
     /**
-     * A mutex to ensure that only one mutator at a time is moving pages in the
-     * interim page area.
+     * A mutex to ensure that only one thread at a time is vacuuming the pack.
      */
-    private final Object expandMutex;
+    private final Object vacuumMutex;
 
     /**
      * A map of URIs that identify the addresses of static blocks specified
@@ -97,7 +93,7 @@ final class Bouquet
      * @param interimBoundary
      *            The boundary between user data pages and interim data pages.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, long interimBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryNodePool temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryNodePool temporaryFactory)
     {
         this.pack = new Pack(this);
         this.alignment = header.getAlignment();
@@ -105,13 +101,12 @@ final class Bouquet
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
         this.userBoundary = new UserBoundary(sheaf.getPageSize(), userBoundary);
-        this.interimBoundary = new Boundary(sheaf.getPageSize(), interimBoundary);
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.userPagePool = new UserPagePool(sheaf.getPageSize(), alignment);
         this.interimPagePool = new InterimPagePool();
         this.temporaryFactory = temporaryFactory;
-        this.expandMutex = new Object();
+        this.vacuumMutex = new Object();
         this.addressLocker = new AddressLocker();
         this.temporaryAddressLocker = new AddressLocker();
         this.mutatorFactory = new MutatorFactory(this);
@@ -210,16 +205,6 @@ final class Bouquet
     }
 
     /**
-     * Get the boundary between user pages and interim pages.
-     *
-     * @return The boundary between user pages and interim pages.
-     */
-    public Boundary getInterimBoundary()
-    {
-        return interimBoundary;
-    }
-
-    /**
      * Get the boundary between address pages and user data pages.
      *
      * @return The boundary between address pages and user data pages.
@@ -233,15 +218,15 @@ final class Bouquet
     {
         return pageMoveLock;
     }
-    
+
     /**
-     * Return the per pack mutex used to ensure that only one mutator at a time
-     * is moving pages in the interim page area.
+     * Return the per pack mutex used to ensure that only one thread at a time
+     * is vacuuming the pack.
      * 
-     * @return The user region expand expand mutex.
+     * @return The vacuum expand mutex.
      */
-    public Object getUserExpandMutex()
+    public Object getVacuumMutex()
     {
-        return expandMutex;
+        return vacuumMutex;
     }
 }

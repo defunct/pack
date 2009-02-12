@@ -31,11 +31,8 @@ public final class Mutator
     private final Journal journal;
 
     /** A table that orders allocation pages by the size of bytes remaining. */
-    private final ByRemainingTable allocPagesBySize;
+    private final ByRemainingTable allocByRemaining;
     
-    /** A table that orders write pages by the size of bytes remaining. */
-    private final ByRemainingTable writePagesBySize;
-
     /**
      * A map of addresses to movable position references to the blocks the
      * addresses reference. Address keys stored as negative values indicate that
@@ -85,13 +82,11 @@ public final class Mutator
      */
     Mutator(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
-        ByRemainingTable allocPagesBySize = new ByRemainingTable(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
-        ByRemainingTable writePagesBySize = new ByRemainingTable(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
+        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
 
         this.bouquet = bouquet;
         this.journal = journal;
-        this.allocPagesBySize = allocPagesBySize;
-        this.writePagesBySize = writePagesBySize;
+        this.allocByRemaining = allocByRemaining;
         this.dirtyPages = dirtyPages;
         this.addresses = new TreeMap<Long, Long>();
         this.temporaries = new ArrayList<Temporary>();
@@ -187,22 +182,22 @@ public final class Mutator
             // it will move after this operation. It would not be in the
             // set of free interim pages if it was also scheduled to move.
     
-            InterimPage interim = null;
-            long bestFit = allocPagesBySize.bestFit(fullSize);
+            BlockPage interim = null;
+            long bestFit = allocByRemaining.bestFit(fullSize);
             if (bestFit == 0L)
             {
-                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), InterimPage.class, new InterimPage(), dirtyPages);
+                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages);
             }
             else
             {
-                interim = bouquet.getSheaf().getPage(bestFit, InterimPage.class, new InterimPage());
+                interim = bouquet.getSheaf().getPage(bestFit, BlockPage.class, new BlockPage());
             }
             
             // Allocate a block from the wilderness data page.
             
             interim.allocate(address, fullSize, dirtyPages);
             
-            allocPagesBySize.add(interim);
+            allocByRemaining.add(interim);
             
             addresses.put(-address, interim.getRawPage().getPosition());
             
@@ -237,7 +232,7 @@ public final class Mutator
         {
             // For now, the first test will write to an allocated block, so
             // the write buffer is already there.
-            InterimPage interim = null;
+            BlockPage interim = null;
             Long isolated = getIsolated(address);
 
             if (isolated == null)
@@ -257,14 +252,14 @@ public final class Mutator
                 }
                 while (blockSize == 0);
                
-                long bestFit = allocPagesBySize.bestFit(blockSize);
+                long bestFit = allocByRemaining.bestFit(blockSize);
                 if (bestFit == 0L)
                 {
-                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), InterimPage.class, new InterimPage(), dirtyPages);
+                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages);
                 }
                 else
                 {
-                    interim = bouquet.getSheaf().getPage(bestFit, InterimPage.class, new InterimPage());
+                    interim = bouquet.getSheaf().getPage(bestFit, BlockPage.class, new BlockPage());
                 }
                 
                 interim.allocate(address, blockSize, dirtyPages);
@@ -287,7 +282,7 @@ public final class Mutator
             }
             else
             {
-                interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, InterimPage.class, new InterimPage());
+                interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
             }
 
             if (!interim.write(address, source, dirtyPages))
@@ -378,14 +373,14 @@ public final class Mutator
             {
                 do
                 {
-                    UserPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
                     read = user.read(address, destination);
                 }
                 while (read == null);
             }
             else
             {
-                InterimPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, InterimPage.class, new InterimPage());
+                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
                 read = interim.read(address, destination);
             }
     
@@ -451,17 +446,17 @@ public final class Mutator
                 // Figure out which by size table contains the page.  We
                 // will not reinsert the page if it is not already in the by
                 // size table.
-                boolean reinsert = allocPagesBySize.remove(isolated) != 0;
+                boolean reinsert = allocByRemaining.remove(isolated) != 0;
                 
                 // Free the block from the interim page.
-                InterimPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, InterimPage.class, new InterimPage());
-                interim.free(address, dirtyPages);
+                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                interim.unallocate(address, dirtyPages);
                 
                 // We remove and reinsert because if we free from the end of
                 // the block, the bytes remaining will change.
                 if (reinsert)
                 {
-                    allocPagesBySize.add(interim);
+                    allocByRemaining.add(interim);
                 }
             }
 
@@ -537,8 +532,7 @@ public final class Mutator
     private void clear()
     {
         journal.reset();
-        allocPagesBySize.clear();
-        writePagesBySize.clear();
+        allocByRemaining.clear();
         addresses.clear();
         dirtyPages.clear();
         temporaries.clear();
@@ -690,7 +684,7 @@ public final class Mutator
         bouquet.getInterimPagePool().getFreeInterimPages().free(interimPages);
         for (long userPage : userPages)
         {
-            bouquet.getUserPagePool().returnUserPage(bouquet.getSheaf().getPage(userPage, UserPage.class, new UserPage()));
+            bouquet.getUserPagePool().returnUserPage(bouquet.getSheaf().getPage(userPage, BlockPage.class, new BlockPage()));
         }
         
         return newAddressPages;
@@ -782,7 +776,6 @@ public final class Mutator
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
         bouquet.getPageMoveLock().readLock().lock();
-
         try
         {
             // Create a move latch list from our move latch list, with the

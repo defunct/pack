@@ -127,6 +127,22 @@ public class Pack
     {
         return bouquet.getAlignment();
     }
+    
+    public void vacuum()
+    {
+        synchronized (bouquet.getVacuumMutex())
+        {
+            bouquet.getPageMoveLock().readLock().lock();
+            try
+            {
+                
+            }
+            finally
+            {
+                bouquet.getPageMoveLock().readLock().unlock();
+            }
+        }
+    }
 
     /**
      * Soft close of the pack will wait until all mutators commit or rollback
@@ -217,11 +233,21 @@ public class Pack
         
         reopen.flip();
 
+        long endOfSheaf;
+        try
+        {
+            endOfSheaf = bouquet.getSheaf().getFileChannel().size();
+        }
+        catch(IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_SIZE, e);
+        }
+        
         // Write the variable data at the interim page positions.
         
         try
         {
-            bouquet.getSheaf().getFileChannel().write(reopen, bouquet.getInterimBoundary().getPosition());
+            bouquet.getSheaf().getFileChannel().write(reopen, endOfSheaf);
         }
         catch (IOException e)
         {
@@ -232,7 +258,7 @@ public class Pack
         
         try
         {
-            bouquet.getSheaf().getFileChannel().truncate(bouquet.getInterimBoundary().getPosition() + reopen.capacity());
+            bouquet.getSheaf().getFileChannel().truncate(endOfSheaf + reopen.capacity());
         }
         catch (IOException e)
         {
@@ -240,7 +266,7 @@ public class Pack
         }
         
         bouquet.getHeader().setUserBoundary(bouquet.getUserBoundary().getPosition());
-        bouquet.getHeader().setInterimBoundary(bouquet.getInterimBoundary().getPosition());
+        bouquet.getHeader().setEndOfSheaf(endOfSheaf);
 
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
         try

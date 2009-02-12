@@ -123,7 +123,7 @@ public final class Opener
         int reopenSize = 0;
         try
         {
-            reopenSize = (int) (fileChannel.size() - header.getInterimBoundary());
+            reopenSize = (int) (fileChannel.size() - header.getEndOfSheaf());
         }
         catch (IOException e)
         {
@@ -133,7 +133,7 @@ public final class Opener
         ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
         try
         {
-            fileChannel.read(reopen, header.getInterimBoundary());
+            fileChannel.read(reopen, header.getEndOfSheaf());
         }
         catch (IOException e)
         {
@@ -151,29 +151,29 @@ public final class Opener
         
         Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
         
-        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), header.getInterimBoundary(), pager, new AddressPagePool(addressPages), new TemporaryNodePool(temporaryNodes));
-        
-        int blockPageCount = reopen.getInt();
-        for (int i = 0; i < blockPageCount; i++)
-        {
-            long position = reopen.getLong();
-            UserPage blockPage = pager.getPage(position, UserPage.class, new UserPage());
-            bouquet.getUserPagePool().returnUserPage(blockPage);
-        }
         
         try
         {
-            fileChannel.truncate(header.getInterimBoundary());
+            fileChannel.truncate(header.getEndOfSheaf());
         }
         catch (IOException e)
         {
             throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
         }
         
-        long openBoundary = header.getInterimBoundary();
+        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), pager, new AddressPagePool(addressPages), new TemporaryNodePool(temporaryNodes));
+        
+        int blockPageCount = reopen.getInt();
+        for (int i = 0; i < blockPageCount; i++)
+        {
+            long position = reopen.getLong();
+            BlockPage user = pager.getPage(position, BlockPage.class, new BlockPage());
+            bouquet.getUserPagePool().returnUserPage(user);
+        }
+
         header.setShutdown(Pack.HARD_SHUTDOWN);
-        header.setInterimBoundary(0L);
+        header.setEndOfSheaf(0L);
 
         try
         {
@@ -210,7 +210,7 @@ public final class Opener
         while (temporaries != 0L);
 
         return new Bouquet(header, staticBlocks,
-                    header.getUserBoundary(), openBoundary, pager,
+                    header.getUserBoundary(), pager,
                     new AddressPagePool(addressPages),
                     new TemporaryNodePool(temporaryNodes)).getPack();
     }

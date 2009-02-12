@@ -31,12 +31,12 @@ extends Operation
             long previous = 0L;
             for (;;)
             {
-                UserPage user = userBoundary.dereference(sheaf, address);
+                BlockPage user = userBoundary.dereference(sheaf, address);
                 synchronized (user.getRawPage())
                 {
                     if (user.free(address, dirtyPages) || previous == user.getRawPage().getPosition())
                     {
-                        InterimPage interim = sheaf.getPage(position, InterimPage.class, new InterimPage());
+                        BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
                         synchronized (interim.getRawPage())
                         {
                             addresses.set(address, position, dirtyPages);

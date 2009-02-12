@@ -66,7 +66,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * ever vacuum a data page, because only one mutator at a time can use a data
  * page for block allocation.
  */
-abstract class BlockPage extends RelocatablePage
+class BlockPage extends RelocatablePage
 {
     /** The count of blocks in this page. */
     protected int count;
@@ -98,25 +98,6 @@ abstract class BlockPage extends RelocatablePage
     }
 
     /**
-     * Return an integer value to write to disk to store the block count. User
-     * block pages store a negative value to indicate block count, interim pages
-     * store a positive value.
-     * <p>
-     * TODO Why so clever? We got rid of checksums. That is eight bytes saved.
-     * Why not use the first byte, short or integer as a set of flags instead?
-     * <p>
-     * Guess we won't know until recovery is implemented.
-     */
-    protected abstract int getDiskCount();
-
-    /**
-     * Convert an integer value read from to disk to store the block count into
-     * an actual block count. User block pages store a negative value to
-     * indicate block count, interim pages store a positive value.
-     */
-    protected abstract int convertDiskCount(int count);
-
-    /**
      * Create a block page under the given raw page.
      * 
      * @param rawPage
@@ -136,7 +117,7 @@ abstract class BlockPage extends RelocatablePage
 
         getRawPage().invalidate(0, Pack.BLOCK_PAGE_HEADER_SIZE);
         bytes.putLong(0L);
-        bytes.putInt(getDiskCount());
+        bytes.putInt(getBlockCount());
 
         dirtyPages.add(getRawPage());
     }
@@ -173,7 +154,7 @@ abstract class BlockPage extends RelocatablePage
         bytes.clear();
         bytes.getLong();
 
-        this.count = convertDiskCount(bytes.getInt());
+        this.count = bytes.getInt();
         this.remaining = getRawPage().getSheaf().getPageSize() - getAllocated();
     }
 
@@ -356,6 +337,63 @@ abstract class BlockPage extends RelocatablePage
     }
 
     /**
+     * Allocate a block that is referenced by the specified address.
+     * 
+     * @param address
+     *            The address that will reference the newly allocated block.
+     * @param blockSize
+     *            The full block size including the block header.
+     * @param dirtyPages
+     *            A dirty page map to record the block page if it changes.
+     * @return True if the allocation is successful.
+     */
+    public void allocate(long address, int blockSize, DirtyPageSet dirtyPages)
+    {
+        if (blockSize < Pack.BLOCK_HEADER_SIZE)
+        {
+            throw new IllegalArgumentException();
+        }
+    
+        synchronized (getRawPage())
+        {
+            ByteBuffer bytes = getBlockRange();
+            boolean found = false;
+            int block = 0;
+            // TODO Not finding anymore. That's taken care of in commit.
+            while (block != count && !found)
+            {
+                int size = getBlockSize(bytes);
+                if (size > 0)
+                {
+                    block++;
+                    if(getAddress(bytes) == address)
+                    {
+                        found = true;
+                    }
+                }
+                bytes.position(bytes.position() + Math.abs(size));
+            }
+    
+            if (!found)
+            {
+                getRawPage().invalidate(bytes.position(), blockSize);
+    
+                bytes.putInt(blockSize);
+                bytes.putLong(address);
+    
+                count++;
+                remaining -= blockSize;
+    
+                bytes.clear();
+                bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+                getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+    
+                dirtyPages.add(getRawPage());
+            }
+        }
+    }
+
+    /**
      * Write the given data to the page at the block referenced by the given
      * block address if the block exists in the this block page. If the block
      * does not exist in this block page, this method does not alter the
@@ -459,5 +497,118 @@ abstract class BlockPage extends RelocatablePage
             }
         }
         return null;
+    }
+
+    /**
+     * Free a user block page.
+     * <p>
+     * The page is altered so that the block is skipped when the list of blocks
+     * is iterated. If the block is the last block, then the bytes are 
+     * immediately available for reallocation. If teh block is followed by one
+     * or more blocks, the bytes are not available for reallocation until the
+     * user page is vacuumed (or until all the blocks after this block are
+     * freed, but that is not at all predictable.)
+     * 
+     * @param address
+     *            The address of the block to free.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     */
+    public boolean free(long address, DirtyPageSet dirtyPages)
+    {
+        // Synchronize on the raw page.
+        synchronized (getRawPage())
+        {
+            // If the block is found, negate the block size, indicating that the
+            // absolute value of the block size should be skipped when iterating
+            // the blocks.
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            if (seek(bytes, address))
+            {
+                int offset = bytes.position();
+    
+                int size = bytes.getInt();
+                if (size > 0)
+                {
+                    size = -size;
+                }
+    
+                getRawPage().invalidate(offset, Pack.COUNT_SIZE);
+                bytes.putInt(offset, size);
+                
+                count--;
+                getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+                bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+    
+                dirtyPages.add(getRawPage());
+                
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    public void unallocate(long address, DirtyPageSet dirtyPages)
+    {
+        synchronized (getRawPage())
+        {
+            ByteBuffer bytes = getBlockRange();
+            int blockSize = 0;
+            int block = 0;
+            while (block < count)
+            {
+                blockSize = getBlockSize(bytes);
+    
+                assert blockSize > 0;
+    
+                if (getAddress(bytes) == address)
+                {
+                    break;
+                }
+    
+                advance(bytes, blockSize);
+    
+                block++;
+            }
+    
+            assert block != count;
+            
+            int to = bytes.position();
+            advance(bytes, blockSize);
+            int from = bytes.position();
+            
+            remaining += (from - to);
+    
+            block++;
+    
+            while (block < count)
+            {
+                blockSize = getBlockSize(bytes);
+                
+                assert blockSize > 0;
+                
+                advance(bytes, blockSize);
+                
+                block++;
+            }
+            
+            int length = bytes.position() - from;
+            
+            for (int i = 0; i < length; i++)
+            {
+                bytes.put(to + i, bytes.get(from + i));
+            }
+            
+            if (length != 0)
+            {
+                getRawPage().invalidate(to, length);
+            }
+    
+             count--;
+    
+            getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+            bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+        }
     }
 }

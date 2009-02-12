@@ -138,7 +138,7 @@ class TemporaryNodePool
                 {
                     throw new IllegalStateException();
                 }
-                UserPage user = pager.getPage(position, UserPage.class, new UserPage());
+                BlockPage user = pager.getPage(position, BlockPage.class, new BlockPage());
                 synchronized (user.getRawPage())
                 {
                     if (user.write(temporary, bytes, dirtyPages))

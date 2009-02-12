@@ -81,17 +81,17 @@ class UserPagePool
      * to the set of empty user pages. If it has block space remaining that
      * is greater than the alignment, then it is added to by size lookup table.
      * 
-     * @param userPage The user block page.
+     * @param user The user block page.
      */
-    public void returnUserPage(UserPage userPage)
+    public void returnUserPage(BlockPage user)
     {
-        if (userPage.getBlockCount() == 0)
+        if (user.getBlockCount() == 0)
         {
-            emptyUserPages.free(userPage.getRawPage().getPosition());
+            emptyUserPages.free(user.getRawPage().getPosition());
         }
-        else if (userPage.getRemaining() > alignment)
+        else if (user.getRemaining() > alignment)
         {
-            getFreePageBySize().add(userPage);
+            getFreePageBySize().add(user);
         }
     }
 }

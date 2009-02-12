@@ -65,7 +65,7 @@ public class UserBoundary extends Boundary
      *            page moves.
      * @return The user block page.
      */
-    public UserPage dereference(Sheaf sheaf, long address)
+    public BlockPage dereference(Sheaf sheaf, long address)
     {
         // Get the address page.
         AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
@@ -82,7 +82,7 @@ public class UserBoundary extends Boundary
             position = getMoveMap().get(position);
         }
     
-        return sheaf.getPage(position, UserPage.class, new UserPage());
+        return sheaf.getPage(position, BlockPage.class, new BlockPage());
     }
     
     public <P extends Page> P load(Sheaf sheaf, long position, Class<P> pageClass, P page)
