@@ -66,7 +66,7 @@ public class Pack
 
     public final static int ADDRESS_SIZE = Long.SIZE / Byte.SIZE;
 
-    final static int FILE_HEADER_SIZE = COUNT_SIZE * 6 + ADDRESS_SIZE * 4;
+    final static int FILE_HEADER_SIZE = COUNT_SIZE * 6 + ADDRESS_SIZE * 5;
 
     public final static int BLOCK_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
 
@@ -87,6 +87,8 @@ public class Pack
     final static short TERMINATE = 10;
     
     final static short TEMPORARY = 11;
+
+    final static short WRITE_VACUUM_NODE = 12;
 
     final static int NEXT_PAGE_SIZE = FLAG_SIZE + ADDRESS_SIZE;
 

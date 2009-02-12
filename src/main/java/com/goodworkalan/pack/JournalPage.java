@@ -192,6 +192,8 @@ extends RelocatablePage
                 return new Terminate();
             case Pack.TEMPORARY:
                 return new Temporary();
+            case Pack.WRITE_VACUUM_NODE:
+                return new WriteVacuumNode();
         }
         throw new IllegalStateException("Invalid type: " + type);
     }

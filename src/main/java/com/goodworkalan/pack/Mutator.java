@@ -674,7 +674,7 @@ public final class Mutator
         
         // Run the commit.
 
-        tryCommit();
+        tryCommit(0L);
         
         bouquet.getUserBoundary().getMoveMap().putAll(moves);
         
@@ -724,13 +724,22 @@ public final class Mutator
      * @param commit
      *            The state of this commit.
      */
-    private void tryCommit()
+    private void tryCommit(long vacuumNode)
     {
+        DirtyPageSet journalDirtyPages = new DirtyPageSet(16);
+        
         for (Map.Entry<Long, Long> entry : addresses.entrySet())
         {
             journal.write(new Write(entry.getKey(), entry.getValue()));
         }
         
+        Journal vacuumJournal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), journalDirtyPages);
+
+        if (vacuumNode != 0L)
+        {
+            journal.write(new WriteVacuumNode(vacuumNode, vacuumJournal.getJournalStart()));
+        }
+
         journal.write(new Terminate());
         
         // Create a next pointer to point at the start of operations.
@@ -749,8 +758,9 @@ public final class Mutator
             throw new PackException(Pack.ERROR_IO_FORCE, e);
         }
                 
+        
         // Create a journal player.
-        Player player = new Player(bouquet, header, dirtyPages);
+        Player player = new Player(bouquet, vacuumJournal, header, journalDirtyPages);
                                 
         // Then do everything else.
         player.commit();
@@ -765,6 +775,21 @@ public final class Mutator
         bouquet.getInterimPagePool().getFreeInterimPages().free(journalPages);
     }
 
+    void commitVacuumNodes()
+    {
+        long vacuumNode = bouquet.getVacuumNodePool().getVacuumNode();
+        bouquet.getPageMoveLock().readLock().lock();
+        try
+        {
+            tryCommit(vacuumNode);
+        }
+        finally
+        {
+            bouquet.getPageMoveLock().readLock().unlock();
+        }
+        clear();
+    }
+    
     /**
      * Commit the changes made to the file by this mutator. Commit will make the
      * changes made by this mutator visible to all other mutators.
@@ -773,6 +798,8 @@ public final class Mutator
      */
     public void commit()
     {
+        long vacuumNode = bouquet.getVacuumNodePool().getVacuumNode(bouquet.getMutatorFactory(), bouquet.getHeader());
+
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
         bouquet.getPageMoveLock().readLock().lock();
@@ -782,13 +809,12 @@ public final class Mutator
             // commit structure as the move recorder, so that page moves by
             // other committing mutators will be reflected in state of the
             // commit.
-            tryCommit();
+            tryCommit(vacuumNode);
         }
         finally
         {
             bouquet.getPageMoveLock().readLock().unlock();
         }
-
         clear();
     }
 }

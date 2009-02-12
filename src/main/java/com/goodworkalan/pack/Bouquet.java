@@ -73,6 +73,8 @@ final class Bouquet
     private final Header header;
 
     private final MutatorFactory mutatorFactory;
+    
+    private final VacuumNodePool vacuumNodePool;
 
     /**
      * @param alignment
@@ -111,6 +113,7 @@ final class Bouquet
         this.temporaryAddressLocker = new AddressLocker();
         this.mutatorFactory = new MutatorFactory(this);
         this.pageMoveLock = new ReentrantReadWriteLock();
+        this.vacuumNodePool = new VacuumNodePool();
     }
     
     public Pack getPack()
@@ -228,5 +231,10 @@ final class Bouquet
     public Object getVacuumMutex()
     {
         return vacuumMutex;
+    }
+    
+    public VacuumNodePool getVacuumNodePool()
+    {
+        return vacuumNodePool;
     }
 }

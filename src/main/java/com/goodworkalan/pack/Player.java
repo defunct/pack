@@ -21,11 +21,13 @@ final class Player
 
     private final DirtyPageSet dirtyPages;
     
+    private final Journal vacuumJournal;
+    
     private final SortedSet<Long> addresses;
     
     private final Set<Long> temporaryAddresses;
     
-    public Player(Bouquet bouquet, Segment header, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, Journal vacuumJournal, Segment header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
@@ -36,6 +38,7 @@ final class Player
         this.entryPosition = bytes.getLong();
         this.dirtyPages = dirtyPages;
         this.addresses = new TreeSet<Long>();
+        this.vacuumJournal = vacuumJournal;
         this.temporaryAddresses = new HashSet<Long>();
     }
     
@@ -47,6 +50,11 @@ final class Player
     public Segment getJournalHeader()
     {
         return header;
+    }
+    
+    public Journal getVacuumJournal()
+    {
+        return vacuumJournal;
     }
 
     public DirtyPageSet getDirtyPages()

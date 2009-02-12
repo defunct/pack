@@ -16,6 +16,10 @@ class Journal
     
     public long getJournalStart()
     {
+        if (writer.getJournalStart() == 0L)
+        {
+            writer = writer.extend();
+        }
         return writer.getJournalStart();
     }
     
