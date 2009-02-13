@@ -72,6 +72,8 @@ public class Pack
     
     final static short MOVE_PAGE = 3;
 
+    final static short COMMIT = 4;
+    
     final static short CREATE_ADDRESS_PAGE = 5;
     
     final static short WRITE = 6;
@@ -86,7 +88,7 @@ public class Pack
     
     final static short TEMPORARY = 11;
 
-    final static short WRITE_VACUUM_NODE = 12;
+    final static short CHECKPOINT = 12;
 
     final static int NEXT_PAGE_SIZE = FLAG_SIZE + ADDRESS_SIZE;
 
@@ -243,7 +245,7 @@ public class Pack
 
         int size = 0;
         
-        int userPageSize = bouquet.getUserPagePool().getEmptyUserPages().size() + bouquet.getUserPagePool().getFreePageBySize().getSize();
+        int userPageSize = bouquet.getUserPagePool().getSize();
         size += Pack.COUNT_SIZE + bouquet.getAddressPagePool().size() * Pack.POSITION_SIZE;
         size += Pack.COUNT_SIZE + userPageSize * Pack.POSITION_SIZE;
         
@@ -256,11 +258,7 @@ public class Pack
         }
        
         reopen.putInt(userPageSize);
-        for (long position: bouquet.getUserPagePool().getEmptyUserPages())
-        {
-            reopen.putLong(position);
-        }
-        for (long position: bouquet.getUserPagePool().getFreePageBySize())
+        for (long position: bouquet.getUserPagePool())
         {
             reopen.putLong(position);
         }

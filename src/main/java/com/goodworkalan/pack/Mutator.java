@@ -502,10 +502,6 @@ public final class Mutator
             interims.add(entry.getValue());
         }
 
-        interims = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interims);
-        
-        Set<Long> journalPages = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages());
-        
         // Each of the allocations of temporary blocks, blocks that are returned
         // by the opener when the file is reopened, needs to be rolled back. 
         for (long temporary : temporaries)
@@ -518,8 +514,17 @@ public final class Mutator
         
         // Put the interim pages we used back into the set of free interim
         // pages.
-        bouquet.getInterimPagePool().getFreeInterimPages().free(interims);
-        bouquet.getInterimPagePool().getFreeInterimPages().free(journalPages);
+        for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interims))
+        {
+            bouquet.getSheaf().free(position);
+            bouquet.getInterimPagePool().free(position);
+        }
+        
+        for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages()))
+        {
+            bouquet.getSheaf().free(position);
+            bouquet.getInterimPagePool().free(position);
+        }
     }
     
     /**
@@ -569,6 +574,8 @@ public final class Mutator
         {
             journal.write(new Write(entry.getKey(), entry.getValue()));
         }
+        
+        journal.write(new Commit());
         
         // The vacuum journal could get lost, but so could any uncommitted
         // transaction. Block pages outstanding, no user address reference.

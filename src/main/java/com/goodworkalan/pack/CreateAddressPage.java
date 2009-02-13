@@ -2,6 +2,9 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 final class CreateAddressPage
 extends Operation
@@ -20,11 +23,16 @@ extends Operation
         this.movedTo = movedTo;
     }
     
+    private void commit(Sheaf sheaf, DirtyPageSet dirtyPages)
+    {
+        AddressPage addresses = sheaf.setPage(position, AddressPage.class, new AddressPage(), dirtyPages);
+        addresses.set(0, movedTo, dirtyPages);
+    }
+
     @Override
     public void commit(Player player)
     {
-        AddressPage addresses = player.getBouquet().getSheaf().setPage(position, AddressPage.class, new AddressPage(), player.getDirtyPages(), true);
-        addresses.set(0, movedTo, player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getDirtyPages());
     }
     
     @Override

@@ -1,27 +1,65 @@
 package com.goodworkalan.pack;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
-public class UserBoundary extends Boundary
+public class UserBoundary
 {
+    /** The size of a page in the Pack.  */
+    private final int pageSize;
+    
+    /** The position of the boundary.  */
+    private long position;
+    
+    /**
+     * Create a boundary tracker for pages of the given size that is set at the
+     * given position.
+     * 
+     * @param pageSize
+     *            The size of a page used to increment and decrement the
+     *            position.
+     * @param position
+     *            The initial position.
+     */
     public UserBoundary(int pageSize, long position)
     {
-        super(pageSize, position);
+        this.pageSize = pageSize;
+        this.position = position;
     }
     
-    public void putAll(Sheaf sheaf, Map<Long, Long> moves, DirtyPageSet dirtyPages)
+    
+    /**
+     * Get the position of the boundary.
+     * 
+     * @return The position of the boundary.
+     */
+    public long getPosition()
     {
-        for (Map.Entry<Long, Long> move : moves.entrySet())
-        {
-            AddressPage addresses = sheaf.getPage(move.getKey(), AddressPage.class, new AddressPage());
-            addresses.set(0, move.getValue(), dirtyPages);
-        }
+        return position;
+    }
+    
+    public int getPageSize()
+    {
+        return pageSize;
+    }
+    
+    /**
+     * Increment the boundary position by one page.
+     */
+    public void increment()
+    {
+        position += pageSize;
+    }
+    
+    /**
+     * Decrement the boundary position by one page.
+     */
+    public void decrement()
+    {
+        position -= pageSize;
     }
 
     /**

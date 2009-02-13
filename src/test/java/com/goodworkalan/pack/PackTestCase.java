@@ -1,9 +1,9 @@
 /* Copyright Alan Gutierrez 2006 */
 package com.goodworkalan.pack;
 
-import static org.testng.AssertJUnit.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,8 +21,6 @@ import java.util.TreeSet;
 import org.testng.annotations.Test;
 
 import com.goodworkalan.sheaf.DirtyRegionMap;
-import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.Sheaf;
 
 public class PackTestCase
 {
@@ -180,23 +178,6 @@ public class PackTestCase
         }
 
         fail("Expected exception not thrown.");
-    }
-
-    @Test public void relocatable()
-    {
-        File file = newFile();
-        FileChannel fileChannel = newFileChannel(file);
-        Pack pack = new Creator().create(fileChannel);
-        Mutator mutator = pack.mutate();
-        mutator.allocate(64);
-        mutator.commit();
-        pack.close();
-        
-        fileChannel = newFileChannel(file);
-        Sheaf pager = new Opener().open(fileChannel).bouquet.getSheaf();
-        Page page = pager.getPage(8192, RelocatablePage.class, new RelocatablePage());
-        page = pager.getPage(8192, BlockPage.class, new BlockPage());
-        assertEquals(8192, page.getRawPage().getPosition());
     }
 
     private ByteBuffer get64bytes()
@@ -566,8 +547,8 @@ public class PackTestCase
         Creator creator = new Creator();
         creator.addStaticPage(URI.create("http://one.com/"), 64);
         creator.addStaticPage(URI.create("http://two.com/"), 64);
-        FileChannel file = newFileChannel();
-        Pack pack = creator.create(file);
+        FileChannel fileChannel = newFileChannel();
+        Pack pack = creator.create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.write(mutator.getPack().getStaticBlocks().get(URI.create("http://one.com/")), get64bytes());
         mutator.commit();

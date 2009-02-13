@@ -1,5 +1,9 @@
 package com.goodworkalan.pack;
 
+import java.util.Collections;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
@@ -11,35 +15,15 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class InterimPagePool
 {
-    /**
-     * A sorted set of of free interim pages sorted in descending order so that
-     * we can quickly obtain the last free interim page within interim page
-     * space.
-     * <p>
-     * This set of free interim pages guards against overwrites by a simple
-     * method. If the position is in the set of free interim pages, then it is
-     * free, if not it is not free. System pages must be allocated while the
-     * move lock is locked for reading, or locked for writing in the case of
-     * removing free pages from the start of the interim page area when the user
-     * area expands.
-     * <p>
-     * Question: Can't an interim page allocated from the set of free pages be
-     * moved while we are first writing to it?
-     * <p>
-     * Answer: No, because the moving mutator will have to add the moves to the
-     * move list before it can move the pages. Adding to move list requires an
-     * exclusive lock on the move list.
-     * <p>
-     * Remember: Only one mutator can move pages in the interim area at a time.
-     */
-    private final FreeSet freeInterimPages;
+    /** The set of free interim pages. */
+    private final SortedSet<Long> freeInterimPages;
     
     /**
      * Create an empty interim page pool.
      */
     public InterimPagePool()
     {
-        this.freeInterimPages = new FreeSet();
+        this.freeInterimPages = Collections.synchronizedSortedSet(new TreeSet<Long>());
     }
 
     /**
@@ -58,7 +42,15 @@ class InterimPagePool
      */
     public long newBlankInterimPage(Sheaf sheaf)
     {
-        long position = getFreeInterimPages().allocate();
+        long position = 0L;
+        synchronized (freeInterimPages)
+        {
+            if (freeInterimPages.size() != 0)
+            {
+                position = freeInterimPages.first();
+                freeInterimPages.remove(position);
+            }
+        }
         if (position == 0L)
         {
             position = sheaf.extend();
@@ -66,24 +58,20 @@ class InterimPagePool
         return position;
     }
 
-    /**
-     * Return the set of completely empty interim pages available for block
-     * allocation. The set returned is a class that not only contains the set of
-     * pages available, but will also prevent a page from being returned to the
-     * set of free pages, if that page is in the midst of relocation.
-     * <p>
-     * A user page is used by one mutator commit at a time. Removing the page
-     * from this table prevents it from being used by another commit.
-     * <p>
-     * Removing a page from this set, prevents it from being used as an interim
-     * page for an allocation or write. Removing a page from the available pages
-     * sets is the first step in relocating a page.
-     *
-     * @return The set of free user pages.
-     */
-    public FreeSet getFreeInterimPages()
+    public void free(long position)
     {
-        return freeInterimPages;
+        synchronized (freeInterimPages)
+        {
+            freeInterimPages.add(position);
+        }
+    }
+    
+    public boolean remove(long position)
+    {
+        synchronized (freeInterimPages)
+        {
+            return freeInterimPages.remove(position);
+        }
     }
 
     /**
@@ -104,7 +92,7 @@ class InterimPagePool
      *            A map of dirty pages.
      * @return A new interim page.
      */
-    public <T extends Page> T newInterimPage(Sheaf pager, Class<T> pageClass, T page, DirtyPageSet dirtyPages)
+    public <T extends Page> T newInterimPage(Sheaf sheaf, Class<T> pageClass, T page, DirtyPageSet dirtyPages)
     {
         // We pull from the end of the interim space to take pressure of of
         // the durable pages, which are more than likely multiply in number
@@ -113,16 +101,16 @@ class InterimPagePool
         // from the front of the interim page space, if we want to rewind
         // the interim page space and shrink the file more frequently.
     
-        long position = getFreeInterimPages().allocate();
+        long position = newBlankInterimPage(sheaf);
     
         // If we do not have a free interim page available, we will obtain
         // create one out of the wilderness.
     
         if (position == 0L)
         {
-            position = pager.extend();
+            position = sheaf.extend();
         }
     
-        return pager.setPage(position, pageClass, page, dirtyPages, false);
+        return sheaf.setPage(position, pageClass, page, dirtyPages);
     }
 }

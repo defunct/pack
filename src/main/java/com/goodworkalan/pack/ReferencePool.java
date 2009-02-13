@@ -67,7 +67,7 @@ public abstract class ReferencePool
         {
             DirtyPageSet allocDirtyPages = new DirtyPageSet(16);
             long position = interimPagePool.newBlankInterimPage(sheaf);
-            AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages, false);
+            AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages);
             synchronized (header)
             {
                 references.set(position, getHeaderField(header), dirtyPages);

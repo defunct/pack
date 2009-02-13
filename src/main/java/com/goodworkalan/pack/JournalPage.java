@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Page;
 
 /**
  * A page that stores journal entries in the interim region of the pack.
@@ -24,7 +25,7 @@ import com.goodworkalan.sheaf.DirtyPageSet;
  * @author Alan Gutierrez
  */
 final class JournalPage
-extends RelocatablePage
+extends Page
 {
     /** The offset form which to read the next journal entry. */
     private int offset;
@@ -190,8 +191,12 @@ extends RelocatablePage
                 return new Move();
             case Pack.TERMINATE:
                 return new Terminate();
+            case Pack.COMMIT:
+                return new Commit();
             case Pack.TEMPORARY:
                 return new Temporary();
+            case Pack.CHECKPOINT:
+                return new Checkpoint();
         }
         throw new IllegalStateException("Invalid type: " + type);
     }

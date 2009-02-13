@@ -5,6 +5,10 @@ import java.nio.ByteBuffer;
 final class Terminate
 extends Operation
 {
+    public Terminate()
+    {
+    }
+
     @Override
     public boolean terminate()
     {

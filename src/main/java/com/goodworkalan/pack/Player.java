@@ -8,14 +8,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Segment;
 
 
 final class Player
 {
     private final Bouquet bouquet;
 
-    private final Segment header;
+    private final JournalHeader header;
 
     private long entryPosition;
 
@@ -31,7 +30,7 @@ final class Player
     
     private final Set<Long> allocatedBlockPages;
     
-    public Player(Bouquet bouquet, Segment header, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, JournalHeader header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
@@ -53,9 +52,9 @@ final class Player
         this(bouquet, allocateHeader(journal, bouquet, dirtyPages), dirtyPages);
     }
     
-    private static Segment allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
+    private static JournalHeader allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
     {
-        Segment header = bouquet.getJournalHeaders().allocate();
+        JournalHeader header = bouquet.getJournalHeaders().allocate();
         header.getByteBuffer().putLong(bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalStart()));
         
         // Write and force our journal.
@@ -78,7 +77,7 @@ final class Player
         return bouquet;
     }
     
-    public Segment getJournalHeader()
+    public JournalHeader getJournalHeader()
     {
         return header;
     }
@@ -129,20 +128,6 @@ final class Player
     public void commit()
     {
         execute();
-
-        header.getByteBuffer().clear();
-        header.getByteBuffer().putLong(0, 0L);
-
-        dirtyPages.flush();
-        header.write(bouquet.getSheaf().getFileChannel());
-        try
-        {
-            bouquet.getSheaf().getFileChannel().force(true);
-        }
-        catch (IOException e)
-        {
-            throw new PackException(Pack.ERROR_IO_FORCE, e);
-        }
         
         bouquet.getJournalHeaders().free(header);
 
@@ -156,7 +141,7 @@ final class Player
         for(long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journalPages))
         {
             bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().getFreeInterimPages().free(position);
+            bouquet.getInterimPagePool().free(position);
         }
         
         bouquet.getUserPagePool().add(getFreedBlockPages(), getAllocatedBlockPages());

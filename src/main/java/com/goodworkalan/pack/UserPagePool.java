@@ -8,23 +8,11 @@ import java.util.Set;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-class UserPagePool
+class UserPagePool implements Iterable<Long>
 {
     private final Set<Long> freedBlockPages;
     
     private final Set<Long> allocatedBlockPages;
-    
-    private final int alignment;
-    
-    /**
-     * Set of empty user pages. This set is checked for empty pages to store
-     * allocations during commit. To reuse an empty user page, the page is
-     * removed from the set, so that no other mutator will attempt to use it to
-     * write block allocations. Once the commit is complete, all user pages with
-     * space remaining are added to the free page by size table, or the free
-     * page set if the user page is completely empty.
-     */
-    private final FreeSet emptyUserPages;
     
     /**
      * A table that orders user pages with block space available by the size of
@@ -35,79 +23,13 @@ class UserPagePool
      * remaining are added to the free page by size table, or the free page set
      * if the user page is completely empty.
      */
-    private final ByRemainingTable freePageBySize;
+    private final ByRemainingTable byRemaining;
 
     public UserPagePool(int pageSize, int alignment)
     {
-        this.alignment = alignment;
-        this.freePageBySize = new ByRemainingTable(pageSize, alignment);
-        this.emptyUserPages = new FreeSet();
+        this.byRemaining = new ByRemainingTable(pageSize, alignment);
         this.freedBlockPages = new HashSet<Long>();
         this.allocatedBlockPages = new HashSet<Long>();
-
-    }
-
-    /**
-     * Return the set of completely empty user pages available for block
-     * allocation. The set returned is a class that not only contains the set of
-     * pages available, but will also prevent a page from being returned to the
-     * set of free pages, if that page is midst of relocation.
-     * <p>
-     * A user page is used by one mutator commit at a time. Removing the page
-     * from this table prevents it from being used by another commit.
-     * <p>
-     * Removing a page from this set, prevents it from being used by an
-     * destination for allocations or writes. Removing a page from the available
-     * pages sets is the first step in relocating a page.
-     * 
-     * @return The set of free user pages.
-     */
-    public FreeSet getEmptyUserPages()
-    {
-        return emptyUserPages;
-    }
-
-    /**
-     * Return a best fit lookup table of user pages with space remaining for
-     * block allocation. This lookup table is used to find destinations for
-     * newly allocated user blocks during commit.
-     * <p>
-     * A user page is used by one mutator commit at a time. Removing the page
-     * from this table prevents it from being used by another commit.
-     * <p>
-     * Removing a page from this set, prevents it from being used by an
-     * allocation. Removing a page from the available pages sets is the first
-     * step in relocating a page.
-     * <p>
-     * Note that here is no analgous list of free interim pages by size, since
-     * interim block pages are not shared between mutators and they are
-     * completely reclaimed at the end of a mutation.
-     * 
-     * @return The best fit lookup table of user pages.
-     */
-    public ByRemainingTable getFreePageBySize()
-    {
-        return freePageBySize;
-    }
-
-    /**
-     * Return a user page to the free page accounting, if the page has any 
-     * space remaining for blocks. If the block page is empty, it is added
-     * to the set of empty user pages. If it has block space remaining that
-     * is greater than the alignment, then it is added to by size lookup table.
-     * 
-     * @param user The user block page.
-     */
-    public void returnUserPage(BlockPage user)
-    {
-        if (user.getBlockCount() == 0)
-        {
-            emptyUserPages.free(user.getRawPage().getPosition());
-        }
-        else if (user.getRemaining() > alignment)
-        {
-            getFreePageBySize().add(user);
-        }
     }
     
     public void add(Set<Long> freedBlockPages, Set<Long> allocatedBlockPages)
@@ -136,6 +58,16 @@ class UserPagePool
         return copy;
     }
     
+    public int getSize()
+    {
+        return byRemaining.getSize();
+    }
+    
+    public Iterator<Long> iterator()
+    {
+        return byRemaining.iterator();
+    }
+    
     public synchronized void vacuum(Bouquet bouquet)
     {
         Set<Long> allocatedBlockPages = getAllocatedBlockPages();
@@ -161,7 +93,7 @@ class UserPagePool
 
         for (long position : freedBlockPages)
         {
-            freePageBySize.remove(position);
+            byRemaining.remove(position);
         }
         
         int pageSize = bouquet.getSheaf().getPageSize();
@@ -171,7 +103,7 @@ class UserPagePool
         {
             long position = discontinuous.next();
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            long bestFit = freePageBySize.bestFit(pageSize - blocks.getRemaining());
+            long bestFit = byRemaining.bestFit(pageSize - blocks.getRemaining());
             if (bestFit != 0)
             {
                 moves.put(position, bestFit);
@@ -190,7 +122,7 @@ class UserPagePool
         {
             long position = allocated.next();
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            long bestFit = freePageBySize.bestFit(pageSize - blocks.getRemaining());
+            long bestFit = byRemaining.bestFit(pageSize - blocks.getRemaining());
             if (bestFit != 0)
             {
                 moves.put(position, bestFit);
@@ -204,6 +136,7 @@ class UserPagePool
             journal.write(new Move(move.getKey(), move.getValue(), destination.getLastAddress()));
         }
 
+        journal.write(new Commit());
         journal.write(new Terminate());
 
         Player player = new Player(bouquet, journal, dirtyPages);
@@ -212,19 +145,19 @@ class UserPagePool
         for (long position : allocatedBlockPages)
         {
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            freePageBySize.add(blocks);
+            byRemaining.add(blocks);
         }
         
         for (long position : moves.values())
         {
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            freePageBySize.add(blocks);
+            byRemaining.add(blocks);
         }
         
         for (long position : moves.keySet())
         {
             bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().getFreeInterimPages().free(position);
+            bouquet.getInterimPagePool().free(position);
         }
     }
 }

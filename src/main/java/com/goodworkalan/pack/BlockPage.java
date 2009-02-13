@@ -66,7 +66,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * ever vacuum a data page, because only one mutator at a time can use a data
  * page for block allocation.
  */
-class BlockPage extends RelocatablePage
+class BlockPage extends Page
 {
     /** The count of blocks in this page. */
     protected int count;

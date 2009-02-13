@@ -86,8 +86,6 @@ class AddressPagePool implements Iterable<Long>
         // The set of newly created address pages.
         SortedSet<Long> newAddressPages = new TreeSet<Long>();
         Set<Long> pagesToMove = new HashSet<Long>();
-        Set<Long> interimPages = new HashSet<Long>();
-        Set<Long> userPages = new HashSet<Long>();
         
         // Now we know we have enough user pages to accommodate our creation of
         // address pages. That is we have enough user pages, full stop. We have
@@ -112,30 +110,11 @@ class AddressPagePool implements Iterable<Long>
             // If the position is not in the free page by size, then we'll
             // attempt to reserve it from the list of free user pages.
 
-            if (bouquet.getUserPagePool().getFreePageBySize().reserve(position))
-            {
-                // This user page needs to be moved.
-                pagesToMove.add(position);
-                
-                // Remember that free user pages is a FreeSet which will
-                // remove from a set of available, or add to a set of
-                // positions that should not be made available. 
-                bouquet.getUserPagePool().getEmptyUserPages().reserve(position);
-            }
-            else if (bouquet.getInterimPagePool().getFreeInterimPages().reserve(position))
+            if (!bouquet.getInterimPagePool().remove(position))
             {
                 // FIXME Reserve in FreeSet should now prevent a page from
                 // ever returning, but the page position will be adjusted?
                 pagesToMove.add(position);
-            }
-            else
-            {
-                // Was not in set of pages by size. FIXME Outgoing.
-                if (!bouquet.getUserPagePool().getEmptyUserPages().reserve(position))
-                {
-                    // Was not in set of empty, so it is in use.
-                    pagesToMove.add(position);
-                }
             }
 
             // Move the boundary for user pages.
@@ -174,23 +153,18 @@ class AddressPagePool implements Iterable<Long>
             moves.put(from, to);
         }
         
+        journal.write(new Checkpoint(journal.getJournalPosition()));
+        
         for (long position : newAddressPages)
         {
             long to = moves.containsKey(position) ? moves.get(position) : 0L;
             journal.write(new CreateAddressPage(position, to));
         }
         
-        // Run the commit.
+        journal.write(new Commit());
+        journal.write(new Terminate());
+        
         new Player(bouquet, journal, dirtyPages).commit();
-        
-        interimPages = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interimPages);
-        userPages = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), userPages);
-        
-        bouquet.getInterimPagePool().getFreeInterimPages().free(interimPages);
-        for (long userPage : userPages)
-        {
-            bouquet.getUserPagePool().returnUserPage(bouquet.getSheaf().getPage(userPage, BlockPage.class, new BlockPage()));
-        }
         
         return newAddressPages;
     }
@@ -207,9 +181,7 @@ class AddressPagePool implements Iterable<Long>
     {
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
-
         bouquet.getPageMoveLock().writeLock().lock();
-        
         try
         {
             return tryNewAddressPage(bouquet, count); 
@@ -238,7 +210,6 @@ class AddressPagePool implements Iterable<Long>
     {
         // Lock on the set of address pages, which protects the set of
         // address pages and the set of returning address pages.
-        
         synchronized (addressPages)
         {
             long position = 0L;         // The position of the new address page.

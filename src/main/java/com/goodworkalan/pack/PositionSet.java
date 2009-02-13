@@ -2,7 +2,6 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-import com.goodworkalan.sheaf.Segment;
 
 /**
  * Maintains a set of allocated and free positions that reference a
@@ -54,9 +53,9 @@ final class PositionSet
      * @return A position in which to store a position value from the
      * range covered by this position set.
      */
-    public synchronized Segment allocate()
+    public synchronized JournalHeader allocate()
     {
-        Segment segment = null;
+        JournalHeader segment = null;
         for (;;)
         {
             for (int i = 0; i < reserved.length && segment == null; i++)
@@ -64,7 +63,7 @@ final class PositionSet
                 if (!reserved[i])
                 {
                     reserved[i] = true;
-                    segment = new Segment(ByteBuffer.allocateDirect(Pack.POSITION_SIZE), position + i * Pack.POSITION_SIZE, this);
+                    segment = new JournalHeader(ByteBuffer.allocateDirect(Pack.POSITION_SIZE), position + i * Pack.POSITION_SIZE, this);
                 }
             }
             if (segment == null)
@@ -92,7 +91,7 @@ final class PositionSet
      *
      * @pointer A structure containing the position the free.
      */
-    public synchronized void free(Segment pointer)
+    public synchronized void free(JournalHeader pointer)
     {
         int offset = (int) (pointer.getPosition() - position) / Pack.POSITION_SIZE;
         reserved[offset] = false;

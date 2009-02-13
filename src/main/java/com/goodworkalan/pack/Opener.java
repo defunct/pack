@@ -160,14 +160,14 @@ public final class Opener
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
         TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
         temporaryBlocks.addAll(temporaryPool.toMap().keySet());
-        Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf, new AddressPagePool(addressPages), temporaryPool);
         
+        Set<Long> freedBlockPages = new HashSet<Long>();
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
         {
             long position = reopen.getLong();
             BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
-            bouquet.getUserPagePool().returnUserPage(user);
+            freedBlockPages.add(user.getRawPage().getPosition());
         }
 
         header.setShutdown(Pack.HARD_SHUTDOWN);
@@ -191,9 +191,10 @@ public final class Opener
             throw new PackException(Pack.ERROR_IO_FORCE, e);
         }
 
-        return new Bouquet(header, staticBlocks,
-                    userBoundary, sheaf,
+        Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
                     new AddressPagePool(addressPages),
-                    temporaryPool).getPack();
+                    temporaryPool);
+        bouquet.getUserPagePool().vacuum(bouquet);
+        return bouquet.getPack();
     }
 }
