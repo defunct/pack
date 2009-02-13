@@ -70,8 +70,6 @@ final class Bouquet
     /** Housekeeping information stored at the head of the file. */
     private final Header header;
 
-    private final MutatorFactory mutatorFactory;
-    
     /**
      * @param alignment
      *            The alignment to which all block allocations are rounded.
@@ -106,7 +104,6 @@ final class Bouquet
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
         this.addressLocker = new AddressLocker();
-        this.mutatorFactory = new MutatorFactory(this);
         this.pageMoveLock = new ReentrantReadWriteLock();
     }
     
@@ -130,11 +127,6 @@ final class Bouquet
         return alignment;
     }
     
-    public MutatorFactory getMutatorFactory()
-    {
-        return mutatorFactory;
-    }
-
     /**
      * Return a map of named pages that maps a URI to the address of a static
      * page.

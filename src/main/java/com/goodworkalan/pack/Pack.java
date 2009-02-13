@@ -6,6 +6,8 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
  */
@@ -176,7 +178,9 @@ public class Pack
     
     public Mutator mutate()
     {
-        return bouquet.getMutatorFactory().mutate();
+        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
+        return new Mutator(bouquet, journal, dirtyPages);
     }
 
     /**

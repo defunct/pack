@@ -152,7 +152,7 @@ public final class Creator
         
         if (mapOfStaticPageSizes.size() != 0)
         {
-            Mutator mutator = bouquet.getMutatorFactory().mutate();
+            Mutator mutator = new Pack(bouquet).mutate();
             for (Map.Entry<URI, Integer> entry: mapOfStaticPageSizes.entrySet())
             {
                 String uri = entry.getKey().toString();
