@@ -69,7 +69,6 @@ public final class Creator
     public Pack create(FileChannel fileChannel)
     {
         // Initialize the header.
-        
         Header header = new Header(ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE));
         
         header.setSignature(Pack.SIGNATURE);
@@ -81,6 +80,8 @@ public final class Creator
         header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
         header.setUserBoundary(pageSize);
         header.setEndOfSheaf(0L);
+        header.setFirstTemporaryNode(Long.MIN_VALUE);
+        header.setFirstReferencePage(Long.MIN_VALUE);
 
         try
         {
@@ -119,8 +120,6 @@ public final class Creator
 
         Map<URI, Long> staticBlocks = new HashMap<URI, Long>();
 
-        Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
-        
         SortedSet<Long> addressPages = new TreeSet<Long>();
         addressPages.add(0L);
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
@@ -129,22 +128,13 @@ public final class Creator
         sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages, false);
         dirtyPages.flush();
         
+        UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
+        TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
+        
         Bouquet bouquet = new Bouquet(header, staticBlocks,
-                header.getUserBoundary(),
+                userBoundary,
                 sheaf,
-                new AddressPagePool(addressPages),
-                new TemporaryNodePool(temporaryNodes));
-        
-        Mutator mutator = bouquet.getMutatorFactory().mutate();
-        
-        header.setFirstTemporaryNode(mutator.allocate(Pack.ADDRESS_SIZE * 2));
-        ByteBuffer temporaries = mutator.read(header.getFirstTemporaryNode());
-        while (temporaries.remaining() != 0)
-        {
-            temporaries.putLong(0L);
-        }
-        temporaries.flip();
-        mutator.write(header.getFirstTemporaryNode(), temporaries);
+                new AddressPagePool(addressPages), temporaryPool);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         
@@ -152,6 +142,7 @@ public final class Creator
         
         if (mapOfStaticPageSizes.size() != 0)
         {
+            Mutator mutator = bouquet.getMutatorFactory().mutate();
             for (Map.Entry<URI, Integer> entry: mapOfStaticPageSizes.entrySet())
             {
                 String uri = entry.getKey().toString();
@@ -164,9 +155,8 @@ public final class Creator
                 }
                 statics.putLong(address);
             }
+            mutator.commit();
         }
-        
-        mutator.commit();
 
         statics.flip();
         

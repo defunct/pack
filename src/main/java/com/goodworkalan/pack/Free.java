@@ -28,7 +28,7 @@ extends Operation
         bouquet.getAddressLocker().lock(address);
         player.getAddresses().add(address);
 
-        if (bouquet.getTemporaryFactory().freeTemporary(player.getBouquet().getSheaf(), address, bouquet.getTemporaryAddressLocker(), player.getDirtyPages()))
+        if (bouquet.getTemporaryPool().free(address, player.getBouquet().getSheaf(), bouquet.getUserBoundary(), player.getDirtyPages()))
         {
             player.getTemporaryAddresses().add(address);
         }
@@ -39,6 +39,8 @@ extends Operation
             BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
             if (user.free(address, player.getDirtyPages()) || user.getRawPage().getPosition() == previous)
             {
+                player.getFreedBlockPages().add(user.getRawPage().getPosition());
+
                 // FIXME Moving will work this way, lock from page, lock to
                 // page. Free from form page, add to to page. Then lock and
                 // update address page, free lock. Then free user locks.
@@ -47,6 +49,7 @@ extends Operation
                 // we try again. If we try again, it is free, and it hasn't
                 // moved, then we've freed it already in a previous attempt to
                 // playback the journal.
+            
                 break;
             }
             previous = user.getRawPage().getPosition();

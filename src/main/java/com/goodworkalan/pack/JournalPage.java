@@ -186,14 +186,12 @@ extends RelocatablePage
                 return new Free();
             case Pack.NEXT_PAGE:
                 return new NextOperation();
-            case Pack.COPY:
-                return new Copy();
+            case Pack.MOVE:
+                return new Move();
             case Pack.TERMINATE:
                 return new Terminate();
             case Pack.TEMPORARY:
                 return new Temporary();
-            case Pack.WRITE_VACUUM_NODE:
-                return new WriteVacuumNode();
         }
         throw new IllegalStateException("Invalid type: " + type);
     }

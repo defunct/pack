@@ -1,7 +1,7 @@
 /* Copyright Alan Gutierrez 2006 */
 package com.goodworkalan.pack;
 
-import static junit.framework.Assert.assertEquals;
+import static org.testng.AssertJUnit.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
@@ -113,13 +113,20 @@ public class PackTestCase
         regional.invalidate(0, 65);
     }
 
+    @Test public void header()
+    {
+        ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
+        Header header = new Header(bytes);
+        header.setSignature(0);
+        assertEquals(header.getSignature(), 0);
+    }
 
     @Test public void reopen()
     {
-        FileChannel file = newFileChannel();
-        new Creator().create(file).close();
-        new Opener().open(file).close();
-        new Opener().open(file).close();
+        FileChannel fileChannel = newFileChannel();
+        new Creator().create(fileChannel).close();
+        new Opener().open(fileChannel).close();
+        new Opener().open(fileChannel).close();
     }
 
     @Test public void commit()
@@ -400,8 +407,8 @@ public class PackTestCase
 
     @Test public void free()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        FileChannel fileChannel = newFileChannel();
+        Pack pack = new Creator().create(fileChannel);
         
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
@@ -618,8 +625,9 @@ public class PackTestCase
     
     @Test public void rollback() 
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
         mutator.commit();
@@ -627,8 +635,10 @@ public class PackTestCase
         long address = mutator.allocate(64);
         mutator.rollback();
         pack.close();
-        new Opener().open(file).close();
-        pack = new Opener().open(file);
+        fileChannel = newFileChannel(file);
+        new Opener().open(fileChannel).close();
+        fileChannel = newFileChannel(file);
+        pack = new Opener().open(fileChannel);
         mutator = pack.mutate();
         assertEquals(address, mutator.allocate(64));
         mutator.rollback();
@@ -636,6 +646,19 @@ public class PackTestCase
     }
     
     @Test public void vacuum()
+    {
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
+        Mutator mutator = pack.mutate();
+        mutator.allocate(64);
+        mutator.commit();
+        pack.vacuum();
+        pack.close();
+        new Opener().open(newFileChannel(file)).close();
+    }
+
+    @Test public void vacuum2()
     {
         FileChannel file = newFileChannel();
         Pack pack = new Creator().create(file);

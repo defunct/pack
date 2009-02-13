@@ -1,11 +1,14 @@
 package com.goodworkalan.pack;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
-import com.goodworkalan.sheaf.Sheaf;
+import com.goodworkalan.sheaf.DirtyPageSet;
 
 class AddressPagePool implements Iterable<Long>
 {
@@ -65,6 +68,159 @@ class AddressPagePool implements Iterable<Long>
     }
 
     /**
+     * Create address pages, extending the address page region by moving the
+     * user pages immediately follow after locking the pager to prevent
+     * compaction and close.
+     * <p>
+     * Remember that this method is already guarded in <code>Pager</code> by
+     * synchronizing on the set of free addresses.
+     * 
+     * @param newAddressPageCount
+     *            The number of address pages to allocate.
+     */
+    private SortedSet<Long> tryNewAddressPage(Bouquet bouquet, int newAddressPageCount)
+    {
+        // TODO These pages that you are creating, are they getting into 
+        // the free lists, or are they getting lost?
+        
+        // The set of newly created address pages.
+        SortedSet<Long> newAddressPages = new TreeSet<Long>();
+        Set<Long> pagesToMove = new HashSet<Long>();
+        Set<Long> interimPages = new HashSet<Long>();
+        Set<Long> userPages = new HashSet<Long>();
+        
+        // Now we know we have enough user pages to accommodate our creation of
+        // address pages. That is we have enough user pages, full stop. We have
+        // not looked at whether they are free or in use.
+        
+        // Some of those user block pages may not yet exist. We are going to
+        // have to wait until they exist before we do anything with with the
+        // block pages.
+
+        for (int i = 0; i < newAddressPageCount; i++)
+        {
+            // The new address page is the user page at the user page boundary.
+            long position = bouquet.getUserBoundary().getPosition();
+            
+            // Record the new address page.
+            newAddressPages.add(position);
+            
+            
+            // If new address page was not just created by relocating an interim
+            // page, then we do not need to reserve it.
+        
+            // If the position is not in the free page by size, then we'll
+            // attempt to reserve it from the list of free user pages.
+
+            if (bouquet.getUserPagePool().getFreePageBySize().reserve(position))
+            {
+                // This user page needs to be moved.
+                pagesToMove.add(position);
+                
+                // Remember that free user pages is a FreeSet which will
+                // remove from a set of available, or add to a set of
+                // positions that should not be made available. 
+                bouquet.getUserPagePool().getEmptyUserPages().reserve(position);
+            }
+            else if (bouquet.getInterimPagePool().getFreeInterimPages().reserve(position))
+            {
+                // FIXME Reserve in FreeSet should now prevent a page from
+                // ever returning, but the page position will be adjusted?
+                pagesToMove.add(position);
+            }
+            else
+            {
+                // Was not in set of pages by size. FIXME Outgoing.
+                if (!bouquet.getUserPagePool().getEmptyUserPages().reserve(position))
+                {
+                    // Was not in set of empty, so it is in use.
+                    pagesToMove.add(position);
+                }
+            }
+
+            // Move the boundary for user pages.
+            bouquet.getUserBoundary().increment();
+        }
+
+        // To move a data page to make space for an address page, we simply copy
+        // over the block pages that need to move, verbatim into an interim
+        // block page and create a commit. The commit method will see these
+        // interim block pages will as allocations, it will allocate the
+        // necessary user pages and move them into a new place in the user
+        // region.
+
+        // The way that journals are written, vacuums and copies are written
+        // before the operations gathered during mutation are written, so we
+        // write out our address page initializations now and they will occur
+        // after the blocks are copied.
+
+        
+        // If the new address page is in the set of free block pages or if it is
+        // a block page we've just created the page does not have to be moved.
+        
+        // TODO When you expand, are you putting the user pages back? Are you
+        // releasing them from ignore in the by remaining and empty tables?
+
+        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
+        Map<Long, Long> moves = new HashMap<Long, Long>();
+        for (long from : pagesToMove)
+        {
+            // Allocate mirrors for the user pages and place them in
+            // the alloc page by size table and the allocation page set
+            // so the commit method will assign a destination user page.
+            long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getSheaf());
+            journal.write(new MovePage(from, to));
+            moves.put(from, to);
+        }
+        
+        for (long position : newAddressPages)
+        {
+            long to = moves.containsKey(position) ? moves.get(position) : 0L;
+            journal.write(new CreateAddressPage(position, to));
+        }
+        
+        // Run the commit.
+        new Player(bouquet, journal, dirtyPages).commit();
+        
+        interimPages = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interimPages);
+        userPages = bouquet.getUserBoundary().adjust(bouquet.getSheaf(), userPages);
+        
+        bouquet.getInterimPagePool().getFreeInterimPages().free(interimPages);
+        for (long userPage : userPages)
+        {
+            bouquet.getUserPagePool().returnUserPage(bouquet.getSheaf().getPage(userPage, BlockPage.class, new BlockPage()));
+        }
+        
+        return newAddressPages;
+    }
+
+    /**
+     * Create address pages, extending the address page region by moving the
+     * user pages immediately follow after locking the pager to prevent
+     * compaction and close.
+     * 
+     * @param count
+     *            The number of address pages to create.
+     */
+    SortedSet<Long> newAddressPages(Bouquet bouquet, int count)
+    {
+        // Obtain shared lock on the compact lock, preventing pack file
+        // vacuum for the duration of the address page allocation.
+
+        bouquet.getPageMoveLock().writeLock().lock();
+        
+        try
+        {
+            return tryNewAddressPage(bouquet, count); 
+        }
+        finally
+        {
+            bouquet.getPageMoveLock().readLock().unlock();
+        }
+    }
+    
+    /**
      * Try to get an address page from the set of available address pages or
      * create address pages by moving user pages if there are none available or
      * outstanding.
@@ -78,7 +234,7 @@ class AddressPagePool implements Iterable<Long>
      * 
      * @return An address page with at least one free position.
      */
-    private AddressPage getOrCreateAddressPage(MutatorFactory mutators, Sheaf pager, long lastSelected)
+    private AddressPage getOrCreateAddressPage(Bouquet bouquet, long lastSelected)
     {
         // Lock on the set of address pages, which protects the set of
         // address pages and the set of returning address pages.
@@ -97,10 +253,8 @@ class AddressPagePool implements Iterable<Long>
                 // Create a mutator to move the user page immediately
                 // following the address page region  to a new user
                 // page.
-                Mutator mutator = mutators.mutate();
-    
                 // See the source of Mutator.newAddressPage.
-                addressPages.addAll(mutator.newAddressPages(1));
+                newAddressPages(bouquet, 1);
                 
                 // There are more pages now, return null indicating we need to
                 // try again.
@@ -147,8 +301,7 @@ class AddressPagePool implements Iterable<Long>
             }
     
             // Get the address page.
-    
-            AddressPage addressPage = pager.getPage(position, AddressPage.class, new AddressPage());
+            AddressPage addressPage = bouquet.getSheaf().getPage(position, AddressPage.class, new AddressPage());
     
             // If the address page has two or more addresses available,
             // then we add it to the set of returning address pages, the
@@ -211,11 +364,11 @@ class AddressPagePool implements Iterable<Long>
      * @return An address page with one or more free addresses available for
      *         allocation.
      */
-    public AddressPage getAddressPage(MutatorFactory mutatorFactory, Sheaf sheaf, long lastSelected)
+    public AddressPage getAddressPage(Bouquet bouquet, long lastSelected)
     {
         for (;;)
         {
-            AddressPage addressPage = getOrCreateAddressPage(mutatorFactory, sheaf, lastSelected);
+            AddressPage addressPage = getOrCreateAddressPage(bouquet, lastSelected);
             if (addressPage != null)
             {
                 return addressPage;

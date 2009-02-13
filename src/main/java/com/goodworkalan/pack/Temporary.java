@@ -2,6 +2,9 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
+
 
 /**
  * Acts a both a journal entry to write the temporary reference node and a
@@ -31,19 +34,26 @@ extends Operation
     public Temporary()
     {
     }
-    
+
     /**
      * Construct an instance of a temporary allocation journal entry that will
      * write the allocation of the temporary black at the given address into the
      * temporary reference node at the given address.
-     *
-     * @param address The address of the temporary block.
-     * @param temporary The address of the temporary reference node.
+     * 
+     * @param address
+     *            The address of the temporary block.
+     * @param temporary
+     *            The address of the temporary reference node.
      */
     public Temporary(long address, long temporary)
     {
         this.address = address;
         this.temporary = temporary;
+    }
+    
+    private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryNodePool temporaryPool, DirtyPageSet dirtyPages)
+    {
+        temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);
     }
     
     /**
@@ -54,20 +64,7 @@ extends Operation
     @Override
     public void commit(Player player)
     {
-        player.getBouquet().getTemporaryFactory().setTemporary(player.getBouquet().getSheaf(), address, temporary, player.getDirtyPages());
-    }
-
-    /**
-     * Called by a mutator during a rollback to return the temporary reference
-     * node to the set of free temporary reference nodes maintained by the
-     * pager.
-     * 
-     * @param pager
-     *            The pager.
-     */
-    public void rollback(TemporaryNodePool temporaryNodes)
-    {
-        temporaryNodes.rollbackTemporary(address, temporary);
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getBouquet().getTemporaryPool(), player.getDirtyPages());
     }
 
     /**

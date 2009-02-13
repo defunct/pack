@@ -20,8 +20,8 @@ extends Operation
     @Override
     public JournalPage getJournalPage(Player player, JournalPage journalPage)
     {
-        journalPage = player.getBouquet().getSheaf().getPage(player.getBouquet().getUserBoundary().adjust(position), JournalPage.class, new JournalPage());
-        journalPage.seek(player.getBouquet().getUserBoundary().adjust(position));
+        journalPage = player.getBouquet().getSheaf().getPage(player.getBouquet().getUserBoundary().adjust(player.getBouquet().getSheaf(), position), JournalPage.class, new JournalPage());
+        journalPage.seek(player.getBouquet().getUserBoundary().adjust(player.getBouquet().getSheaf(), position));
         return journalPage;
     }
 

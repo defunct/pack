@@ -1,11 +1,12 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-
+// FIXME Maybe position address to erase? Ah, but a vacuum might change that. 
 final class Write
 extends Operation
 {
@@ -23,7 +24,7 @@ extends Operation
         this.position = position;
     }
     
-    private void commit(Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, UserBoundary userBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
     {
         AddressPage addresses = sheaf.getPage(address < 0 ? -address : address, AddressPage.class, new AddressPage());
         if (address > 0L && addresses.dereference(address) != 0)
@@ -34,7 +35,18 @@ extends Operation
                 BlockPage user = userBoundary.dereference(sheaf, address);
                 synchronized (user.getRawPage())
                 {
-                    if (user.free(address, dirtyPages) || previous == user.getRawPage().getPosition())
+                    // FIXME Free could also mean back reference points not back to address.
+                    // Remember, here you're not copying, just re-pointing.
+                    boolean freed = user.getRawPage().getPosition() == position;
+                    if (!freed)
+                    {
+                        freed = user.free(address, dirtyPages);
+                        if (freed)
+                        {
+                            freedBlockPages.add(user.getRawPage().getPosition());
+                        }
+                    }
+                    if (freed || previous == user.getRawPage().getPosition())
                     {
                         BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
                         synchronized (interim.getRawPage())
@@ -52,12 +64,13 @@ extends Operation
         {
             addresses.set(address < 0 ? -address : address, position, dirtyPages);
         }
+        allocatedBlockPages.add(position);
     }
 
     @Override
     public void commit(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getFreedBlockPages(), player.getAllocatedBlockPages(), player.getDirtyPages());
     }
     
     @Override

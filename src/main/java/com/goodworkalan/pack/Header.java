@@ -196,14 +196,14 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
     
-    public long getFirstVacuumNode()
+    public long getFirstReferencePage()
     {
         return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6);
     }
     
-    public void setFirstVacuumNode(long vaccumNode)
+    public void setFirstReferencePage(long vacuumNode)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6, vacuumNode);
         invalidate(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
     }
 }

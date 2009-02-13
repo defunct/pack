@@ -1,24 +1,27 @@
 package com.goodworkalan.pack;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
 public class UserBoundary extends Boundary
 {
-    private final MoveMap moveMap;
-    
     public UserBoundary(int pageSize, long position)
     {
         super(pageSize, position);
-        moveMap = new MoveMap();
     }
     
-    public MoveMap getMoveMap()
+    public void putAll(Sheaf sheaf, Map<Long, Long> moves, DirtyPageSet dirtyPages)
     {
-        return moveMap;
+        for (Map.Entry<Long, Long> move : moves.entrySet())
+        {
+            AddressPage addresses = sheaf.getPage(move.getKey(), AddressPage.class, new AddressPage());
+            addresses.set(0, move.getValue(), dirtyPages);
+        }
     }
 
     /**
@@ -33,25 +36,31 @@ public class UserBoundary extends Boundary
      *            The file position to track.
      * @return The file position adjusted by the recorded page moves.
      */
-    public long adjust(long position)
+    public long adjust(Sheaf sheaf, long position)
     {
         int offset = (int) (position % getPageSize());
         position = position - offset;
         if (position < getPosition())
         {
-            position = getMoveMap().get(position);
+            position = get(sheaf, position);
         }
         return position + offset;
     }
 
-    public Set<Long> adjust(Set<Long> positions)
+    public Set<Long> adjust(Sheaf sheaf, Set<Long> positions)
     {
         Set<Long> adjusted = new HashSet<Long>();
         for (long position : positions)
         {
-            adjusted.add(adjust(position));
+            adjusted.add(adjust(sheaf, position));
         }
         return adjusted;
+    }
+    
+    private long get(Sheaf sheaf, long position)
+    {
+        AddressPage addresses = sheaf.getPage(position, AddressPage.class, new AddressPage());
+        return addresses.dereference(0);
     }
 
     /**
@@ -79,7 +88,7 @@ public class UserBoundary extends Boundary
         
         while (position < getPosition())
         {
-            position = getMoveMap().get(position);
+            position = get(sheaf, position);
         }
     
         return sheaf.getPage(position, BlockPage.class, new BlockPage());
@@ -89,7 +98,7 @@ public class UserBoundary extends Boundary
     {
         while (position < getPosition())
         {
-            position = getMoveMap().get(position);
+            position = get(sheaf, position);
         }
         
         return sheaf.getPage(position, pageClass, page);

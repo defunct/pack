@@ -1,6 +1,8 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
@@ -70,8 +72,6 @@ final class AddressPage extends Page
 
         bytes.position(0);
 
-        bytes.getLong();
-        
         while (bytes.remaining() > Long.SIZE / Byte.SIZE)
         {
             long position = bytes.getLong();
@@ -95,8 +95,6 @@ final class AddressPage extends Page
         ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
-        
-        bytes.putLong(0L);
         
         while (bytes.remaining() > Long.SIZE / Byte.SIZE)
         {
@@ -146,7 +144,7 @@ final class AddressPage extends Page
             // Iterate the page buffer looking for a zeroed address that has
             // not been reserved, reserving it and returning it if found.
             
-            for (int offset = Pack.ADDRESS_PAGE_HEADER_SIZE; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
+            for (int offset = 0; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
             {
                 if (bytes.getLong(offset) == 0L)
                 {
@@ -227,5 +225,25 @@ final class AddressPage extends Page
                 freeCount++;
             }
         }
+    }
+    
+    public Map<Long, Long> toMap(int skip)
+    {
+        Map<Long, Long> map = new HashMap<Long, Long>();
+        synchronized (getRawPage())
+        {
+            long position = getRawPage().getPosition();
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            bytes.clear();
+            for (int offset = skip * Pack.ADDRESS_SIZE; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
+            {
+                long value = bytes.getLong(offset);
+                if (value != 0L && value != Long.MAX_VALUE)
+                {
+                    map.put(position + offset, value);
+                }
+            }
+        }
+        return map;
     }
 }

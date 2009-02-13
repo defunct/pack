@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,6 +55,12 @@ extends JournalWriter
     public boolean write(Operation operation)
     {
         return false;
+    }
+
+    @Override
+    public Set<Long> getJournalPages()
+    {
+        return Collections.<Long>emptySet();
     }
 
     /**

@@ -21,13 +21,17 @@ final class Player
 
     private final DirtyPageSet dirtyPages;
     
-    private final Journal vacuumJournal;
-    
     private final SortedSet<Long> addresses;
     
     private final Set<Long> temporaryAddresses;
     
-    public Player(Bouquet bouquet, Journal vacuumJournal, Segment header, DirtyPageSet dirtyPages)
+    private final Set<Long> journalPages;
+    
+    private final Set<Long> freedBlockPages;
+    
+    private final Set<Long> allocatedBlockPages;
+    
+    public Player(Bouquet bouquet, Segment header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
         
@@ -38,8 +42,35 @@ final class Player
         this.entryPosition = bytes.getLong();
         this.dirtyPages = dirtyPages;
         this.addresses = new TreeSet<Long>();
-        this.vacuumJournal = vacuumJournal;
         this.temporaryAddresses = new HashSet<Long>();
+        this.journalPages = new HashSet<Long>();
+        this.freedBlockPages = new HashSet<Long>();
+        this.allocatedBlockPages = new HashSet<Long>();
+    }
+    
+    public Player(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
+    {
+        this(bouquet, allocateHeader(journal, bouquet, dirtyPages), dirtyPages);
+    }
+    
+    private static Segment allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
+    {
+        Segment header = bouquet.getJournalHeaders().allocate();
+        header.getByteBuffer().putLong(bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalStart()));
+        
+        // Write and force our journal.
+        dirtyPages.flush();
+        header.write(bouquet.getSheaf().getFileChannel());
+        try
+        {
+            bouquet.getSheaf().getFileChannel().force(true);
+        }
+        catch (IOException e)
+        {
+            throw new PackException(Pack.ERROR_IO_FORCE, e);
+        }
+        
+        return header;
     }
     
     public Bouquet getBouquet()
@@ -52,11 +83,6 @@ final class Player
         return header;
     }
     
-    public Journal getVacuumJournal()
-    {
-        return vacuumJournal;
-    }
-
     public DirtyPageSet getDirtyPages()
     {
         return dirtyPages;
@@ -72,6 +98,16 @@ final class Player
         return temporaryAddresses;
     }
     
+    public Set<Long> getFreedBlockPages()
+    {
+        return freedBlockPages;
+    }
+    
+    public Set<Long> getAllocatedBlockPages()
+    {
+        return allocatedBlockPages;
+    }
+    
     private void execute()
     {
         JournalPage journalPage = bouquet.getSheaf().getPage(entryPosition, JournalPage.class, new JournalPage());
@@ -83,15 +119,11 @@ final class Player
         {
             operation.commit(this);
             journalPage = operation.getJournalPage(this, journalPage);
+            journalPages.add(journalPage.getRawPage().getPosition());
             operation = journalPage.next();
         }
 
         entryPosition = journalPage.getJournalPosition();
-    }
-
-    public void vacuum()
-    {
-        execute();
     }
 
     public void commit()
@@ -113,5 +145,20 @@ final class Player
         }
         
         bouquet.getJournalHeaders().free(header);
+
+        // Unlock any addresses that were returned as free to their
+        // address pages, but were locked to prevent the commit of a
+        // reallocation until this commit completed.
+        bouquet.getAddressLocker().unlock(getAddresses());
+        bouquet.getTemporaryPool().unlock(getTemporaryAddresses());
+        
+        
+        for(long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journalPages))
+        {
+            bouquet.getSheaf().free(position);
+            bouquet.getInterimPagePool().getFreeInterimPages().free(position);
+        }
+        
+        bouquet.getUserPagePool().add(getFreedBlockPages(), getAllocatedBlockPages());
     }
 }

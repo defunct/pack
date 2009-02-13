@@ -286,6 +286,54 @@ class BlockPage extends RelocatablePage
         }
         return false;
     }
+    
+    public void truncate(long address, DirtyPageSet dirtyPages)
+    {
+        synchronized (getRawPage())
+        {
+            dirtyPages.add(getRawPage());
+            count = 0;
+            if (address != 0L)
+            {
+                ByteBuffer bytes = getBlockRange();
+                for (;;)
+                {
+                    int size = getBlockSize(bytes);
+                    if (size > 0)
+                    {
+                        count++;
+                    }
+                    if (getAddress(bytes) == address)
+                    {
+                        break;
+                    }
+                    advance(bytes, size);
+                }
+            }
+            getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+            getRawPage().getByteBuffer().putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+        }
+    }
+    
+    public boolean isContinuous()
+    {
+        ByteBuffer bytes = getBlockRange();
+        int block = 0;
+        while (block < count)
+        {
+            int size = getBlockSize(bytes);
+            if (size > 0)
+            {
+                block++;
+            }
+            else
+            {
+                return true;
+            }
+            advance(bytes, size);
+        }
+        return false;
+    }
 
     /**
      * Get the full block size including the block header of the block in this
@@ -335,6 +383,27 @@ class BlockPage extends RelocatablePage
         }
         return listOfAddresses;
     }
+    
+    public long getLastAddress()
+    {
+        long last = 0L;
+        synchronized (getRawPage())
+        {
+            ByteBuffer bytes = getBlockRange();
+            int block = 0;
+            while (block < getBlockCount())
+            {
+                int size = getBlockSize(bytes);
+                if (size > 0)
+                {
+                    block++;
+                    last = getAddress(bytes);
+                }
+                advance(bytes, size);
+            }
+        }
+        return last;
+    }
 
     /**
      * Allocate a block that is referenced by the specified address.
@@ -357,39 +426,22 @@ class BlockPage extends RelocatablePage
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getBlockRange();
-            boolean found = false;
-            int block = 0;
-            // TODO Not finding anymore. That's taken care of in commit.
-            while (block != count && !found)
-            {
-                int size = getBlockSize(bytes);
-                if (size > 0)
-                {
-                    block++;
-                    if(getAddress(bytes) == address)
-                    {
-                        found = true;
-                    }
-                }
-                bytes.position(bytes.position() + Math.abs(size));
-            }
-    
-            if (!found)
-            {
-                getRawPage().invalidate(bytes.position(), blockSize);
-    
-                bytes.putInt(blockSize);
-                bytes.putLong(address);
-    
-                count++;
-                remaining -= blockSize;
-    
-                bytes.clear();
-                bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
-                getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
-    
-                dirtyPages.add(getRawPage());
-            }
+            
+            seek(bytes, address);
+
+            getRawPage().invalidate(bytes.position(), blockSize);
+
+            bytes.putInt(blockSize);
+            bytes.putLong(address);
+
+            count++;
+            remaining -= blockSize;
+
+            bytes.clear();
+            bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+            getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+
+            dirtyPages.add(getRawPage());
         }
     }
 

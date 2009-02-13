@@ -82,7 +82,7 @@ public class Pack
 
     final static short NEXT_PAGE = 8;
 
-    final static short COPY = 9;
+    final static short MOVE = 9;
 
     final static short TERMINATE = 10;
     
@@ -91,8 +91,6 @@ public class Pack
     final static short WRITE_VACUUM_NODE = 12;
 
     final static int NEXT_PAGE_SIZE = FLAG_SIZE + ADDRESS_SIZE;
-
-    final static int ADDRESS_PAGE_HEADER_SIZE = CHECKSUM_SIZE;
 
     final static int JOURNAL_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
     
@@ -137,7 +135,7 @@ public class Pack
             bouquet.getPageMoveLock().readLock().lock();
             try
             {
-                
+                bouquet.getUserPagePool().vacuum(bouquet);
             }
             finally
             {
@@ -194,9 +192,45 @@ public class Pack
     {
         return bouquet.getStaticBlocks();
     }
+
+    /**
+     * This method would keep a page bitset. It would go through every address
+     * page and mark a bit for each user page. It would ask the vacuum for an
+     * accounting of all the free pages. Hmm... OK. Lock down allocations and
+     * commits, so addresses don't change, read through all the addresses, then
+     * you, resume, but you turn off page reuse, by zeroing out the empty pages,
+     * then you can leisurely survey the pages in between.
+     * <p>
+     * Ah, you could zero out the reuse structures, know that new pages come off
+     * the wilderness, so your bit set survey ignores pages off the top. Then
+     * walk through the address pages, knowing that if you encounter a reference
+     * then it is accounted for, at the end, you will have a set of missing
+     * pages, you can give those to free list, it can read through them at each
+     * vacuum and reintroduce them.
+     * <p>
+     * Alternatively, I could keep a journal page pool. Track references to the
+     * journal pages. Oh, I'm doing that already. Hmm, not quite.
+     * <p>
+     * What about quitting by writing an instruction, to a next pointer that
+     * says, these journal pages, don't run them, just ask them which pages were
+     * involved. Which next operations to the start, but only reports on what
+     * pages were jostled. This means that headers are not a fixed number, but
+     * that the journals lie around until vacuumed, which is what we're doing
+     * now anyway. Use an AddressPage to keep track of them.
+     * <p>
+     * Then use an address page for temporaries, be done with it.
+     * <p>
+     * Now, you only lose pages when you crash before commit. Still need to
+     * survey, reap, super-vacuum if you want all your pages back.
+     * <p>
+     * Create the actions Force, FreeHeader, and the like.
+     */
+    public void survey()
+    {
+    }
     
     /**
-     * Close the pager writing out the region boudnaries and the soft shutdown
+     * Close the pager writing out the region boundaries and the soft shutdown
      * flag in the header and variable pager state to a region at the end of the
      * file. The variable data includes address pages with addresses remaining,
      * empty user pages, and user pages with space remaining. The variable data

@@ -5,7 +5,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,7 +33,7 @@ public final class Opener
     
     private boolean badAddress(Header header, long address)
     {
-        return address < header.getHeaderSize() + Pack.ADDRESS_PAGE_HEADER_SIZE
+        return address < header.getHeaderSize()
             || address > header.getUserBoundary();
     }
 
@@ -149,9 +148,6 @@ public final class Opener
             addressPages.add(reopen.getLong());
         }
         
-        Map<Long, ByteBuffer> temporaryNodes = new HashMap<Long, ByteBuffer>();
-        
-        
         try
         {
             fileChannel.truncate(header.getEndOfSheaf());
@@ -161,14 +157,16 @@ public final class Opener
             throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
         }
         
-        Sheaf pager = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        Bouquet bouquet = new Bouquet(header, staticBlocks, header.getUserBoundary(), pager, new AddressPagePool(addressPages), new TemporaryNodePool(temporaryNodes));
+        Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
+        TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
+        Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf, new AddressPagePool(addressPages), temporaryPool);
         
         int blockPageCount = reopen.getInt();
         for (int i = 0; i < blockPageCount; i++)
         {
             long position = reopen.getLong();
-            BlockPage user = pager.getPage(position, BlockPage.class, new BlockPage());
+            BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
             bouquet.getUserPagePool().returnUserPage(user);
         }
 
@@ -193,25 +191,9 @@ public final class Opener
             throw new PackException(Pack.ERROR_IO_FORCE, e);
         }
 
-        Mutator mutator = bouquet.getPack().mutate();
-        
-        long temporaries = header.getFirstTemporaryNode();
-        do
-        {
-            ByteBuffer node = mutator.read(temporaries);
-            temporaryNodes.put(temporaries, node);
-            long address = node.getLong(0);
-            if (address != 0L)
-            {
-                setOfTemporaryBlocks.add(address);
-            }
-            temporaries = node.getLong(Pack.ADDRESS_SIZE);
-        }
-        while (temporaries != 0L);
-
         return new Bouquet(header, staticBlocks,
-                    header.getUserBoundary(), pager,
+                    userBoundary, sheaf,
                     new AddressPagePool(addressPages),
-                    new TemporaryNodePool(temporaryNodes)).getPack();
+                    temporaryPool).getPack();
     }
 }

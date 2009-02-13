@@ -37,7 +37,7 @@ final class Bouquet
     /**  Round block allocations to this alignment. */
     private final int alignment;
 
-    private final TemporaryNodePool temporaryFactory;
+    private final TemporaryNodePool temporaryPool;
     
     private final AddressPagePool addressPagePool;
     
@@ -74,8 +74,6 @@ final class Bouquet
 
     private final MutatorFactory mutatorFactory;
     
-    private final VacuumNodePool vacuumNodePool;
-
     /**
      * @param alignment
      *            The alignment to which all block allocations are rounded.
@@ -95,25 +93,24 @@ final class Bouquet
      * @param interimBoundary
      *            The boundary between user data pages and interim data pages.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, long userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryNodePool temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, UserBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryNodePool temporaryFactory)
     {
         this.pack = new Pack(this);
         this.alignment = header.getAlignment();
         this.header = header;
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
-        this.userBoundary = new UserBoundary(sheaf.getPageSize(), userBoundary);
+        this.userBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.userPagePool = new UserPagePool(sheaf.getPageSize(), alignment);
         this.interimPagePool = new InterimPagePool();
-        this.temporaryFactory = temporaryFactory;
+        this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
         this.addressLocker = new AddressLocker();
         this.temporaryAddressLocker = new AddressLocker();
         this.mutatorFactory = new MutatorFactory(this);
         this.pageMoveLock = new ReentrantReadWriteLock();
-        this.vacuumNodePool = new VacuumNodePool();
     }
     
     public Pack getPack()
@@ -197,9 +194,9 @@ final class Bouquet
         return journalHeaders;
     }
 
-    public TemporaryNodePool getTemporaryFactory()
+    public TemporaryNodePool getTemporaryPool()
     {
-        return temporaryFactory;
+        return temporaryPool;
     }
     
     public UserPagePool getUserPagePool()
@@ -231,10 +228,5 @@ final class Bouquet
     public Object getVacuumMutex()
     {
         return vacuumMutex;
-    }
-    
-    public VacuumNodePool getVacuumNodePool()
-    {
-        return vacuumNodePool;
     }
 }
