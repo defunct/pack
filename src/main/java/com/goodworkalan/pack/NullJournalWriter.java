@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
@@ -40,9 +41,9 @@ extends JournalWriter
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
+    public NullJournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, Checksum adler32, DirtyPageSet dirtyPages)
     {
-        super(sheaf, interimPagePool, 0L, null, null, dirtyPages);
+        super(sheaf, interimPagePool, adler32, 0L, null, null, dirtyPages);
     }
 
     /**
@@ -73,7 +74,8 @@ extends JournalWriter
     {
         Set<Long> journalPages = new HashSet<Long>();
         JournalPage journal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
+        journal.writeChecksum(checksum);
         journalPages.add(journal.getRawPage().getPosition());
-        return new JournalWriter(sheaf, interimPagePool, journal.getJournalPosition(), journal, journalPages, dirtyPages);
+        return new JournalWriter(sheaf, interimPagePool, checksum, journal.getJournalPosition(), journal, journalPages, dirtyPages);
     }
 }

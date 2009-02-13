@@ -9,8 +9,6 @@ import com.goodworkalan.sheaf.SheafException;
 /**
  * A structure referencing a position value stored at a specific position in the
  * file guarded by a mutex.
- * <p>
- * TODO Maybe move back to pack. You're not actually using this here.
  * 
  * @author Alan Gutierrez
  */

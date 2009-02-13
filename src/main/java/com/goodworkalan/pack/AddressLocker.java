@@ -32,6 +32,16 @@ import java.util.Set;
  * then the other thread marks it as pending, it sleeps, then you end up
  * flushing the pending to disk. The other thread rolls back. Then soft
  * shutdown. Now you've leaked an address.
+ * <p>
+ * Which doesn't bother me. I like the idea of a recovery thread. The pack opens
+ * quickly, after running journals, but keeps the address pages and user pages
+ * out of service until it checks them. It checks address pages until it finds
+ * one that has some free slots, then the pack can begin use, as it inspects
+ * other address pages for max valued positions, clears then and puts the
+ * address page back into service.
+ * <p>
+ * You can simply make reap threaded. You can run it and it will run to
+ * completion, or you can give it its own thread.
  * 
  * @author Alan Gutierrez
  */

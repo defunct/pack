@@ -64,7 +64,7 @@ public class Pack
 
     public final static int ADDRESS_SIZE = Long.SIZE / Byte.SIZE;
 
-    final static int FILE_HEADER_SIZE = COUNT_SIZE * 6 + ADDRESS_SIZE * 5;
+    final static int FILE_HEADER_SIZE = COUNT_SIZE * 7 + ADDRESS_SIZE * 5;
 
     public final static int BLOCK_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
 
@@ -92,7 +92,7 @@ public class Pack
 
     final static int NEXT_PAGE_SIZE = FLAG_SIZE + ADDRESS_SIZE;
 
-    final static int JOURNAL_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
+    final static int JOURNAL_PAGE_HEADER_SIZE = CHECKSUM_SIZE;
     
     final static int COUNT_MASK = 0xA0000000;
     
@@ -224,6 +224,8 @@ public class Pack
      * survey, reap, super-vacuum if you want all your pages back.
      * <p>
      * Create the actions Force, FreeHeader, and the like.
+     * <p>
+     * TODO Even more magic.
      */
     public void survey()
     {

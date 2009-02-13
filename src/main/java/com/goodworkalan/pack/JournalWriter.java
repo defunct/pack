@@ -1,6 +1,7 @@
 package com.goodworkalan.pack;
 
 import java.util.Set;
+import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
@@ -38,6 +39,8 @@ class JournalWriter
 
     /** The set of dirty pages. */
     protected final DirtyPageSet dirtyPages;
+    
+    protected final Checksum checksum;
 
     /**
      * Create a journal writer that will write to the given journal page and
@@ -64,12 +67,13 @@ class JournalWriter
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public JournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, long start, JournalPage journalPage, Set<Long> journalPages, DirtyPageSet dirtyPages)
+    public JournalWriter(Sheaf sheaf, InterimPagePool interimPagePool, Checksum checksum, long start, JournalPage journalPage, Set<Long> journalPages, DirtyPageSet dirtyPages)
     {
         this.sheaf = sheaf;
         this.interimPagePool = interimPagePool;
         this.journal = journalPage;
         this.journalPages = journalPages;
+        this.checksum = checksum;
         this.start = start;
         this.dirtyPages = dirtyPages;
     }
@@ -148,8 +152,9 @@ class JournalWriter
     {
         JournalPage nextJournal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
         journal.write(new NextOperation(nextJournal.getJournalPosition()), 0, dirtyPages);
+        journal.writeChecksum(checksum);
         journalPages.add(nextJournal.getRawPage().getPosition());
-        return new JournalWriter(sheaf, interimPagePool, start, nextJournal, journalPages, dirtyPages);
+        return new JournalWriter(sheaf, interimPagePool, checksum, start, nextJournal, journalPages, dirtyPages);
     }
 
     /**
@@ -160,6 +165,6 @@ class JournalWriter
      */
     public JournalWriter reset()
     {
-        return new NullJournalWriter(sheaf, interimPagePool, dirtyPages);
+        return new NullJournalWriter(sheaf, interimPagePool, checksum, dirtyPages);
     }
 }

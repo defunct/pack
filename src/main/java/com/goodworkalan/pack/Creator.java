@@ -21,6 +21,8 @@ public final class Creator
     private int pageSize;
 
     private int alignment;
+    
+    private int addressPagePoolSize;
 
     private int internalJournalCount;
     
@@ -29,6 +31,7 @@ public final class Creator
         this.mapOfStaticPageSizes = new TreeMap<URI, Integer>();
         this.pageSize = 8 * 1024;
         this.alignment = 64;
+        this.addressPagePoolSize = 1;
         this.internalJournalCount = 64;
     }
 
@@ -37,6 +40,11 @@ public final class Creator
         this.pageSize = pageSize * 1024;
     }
 
+    public void setAddressPagePoolSize(int addressPagePoolSize)
+    {
+        this.addressPagePoolSize = addressPagePoolSize;
+    }
+    
     public void setAlignment(int alignment)
     {
         this.alignment = alignment;
@@ -78,6 +86,7 @@ public final class Creator
         header.setInternalJournalCount(internalJournalCount);
         header.setStaticPageSize(getStaticBlockMapSize());
         header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
+        header.setAddressPagePoolSize(addressPagePoolSize);
         header.setUserBoundary(pageSize);
         header.setEndOfSheaf(0L);
         header.setFirstTemporaryNode(Long.MIN_VALUE);
@@ -130,12 +139,12 @@ public final class Creator
         dirtyPages.flush();
         
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
-        TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
+        TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
         
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 userBoundary,
                 sheaf,
-                new AddressPagePool(addressPages), temporaryPool);
+                new AddressPagePool(header.getAddressPagePoolSize(), addressPages), temporaryPool);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         

@@ -12,7 +12,8 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 class AddressPagePool implements Iterable<Long>
 {
-
+    private final int addressPagePoolSize;
+    
     /** A set of address pages with available free addresses. */
     private final SortedSet<Long> addressPages;
     /**
@@ -27,8 +28,9 @@ class AddressPagePool implements Iterable<Long>
      * @param addressPages
      *            A set of address pages with available free addresses.
      */
-    public AddressPagePool(SortedSet<Long> addressPages)
+    public AddressPagePool(int addressPagePoolSize, SortedSet<Long> addressPages)
     {
+        this.addressPagePoolSize = addressPagePoolSize;
         this.addressPages = addressPages;
         this.returningAddressPages = new HashSet<Long>();
     }
@@ -80,9 +82,6 @@ class AddressPagePool implements Iterable<Long>
      */
     private SortedSet<Long> tryNewAddressPage(Bouquet bouquet, int newAddressPageCount)
     {
-        // TODO These pages that you are creating, are they getting into 
-        // the free lists, or are they getting lost?
-        
         // The set of newly created address pages.
         SortedSet<Long> newAddressPages = new TreeSet<Long>();
         Set<Long> pagesToMove = new HashSet<Long>();
@@ -112,8 +111,6 @@ class AddressPagePool implements Iterable<Long>
 
             if (!bouquet.getInterimPagePool().remove(position))
             {
-                // FIXME Reserve in FreeSet should now prevent a page from
-                // ever returning, but the page position will be adjusted?
                 pagesToMove.add(position);
             }
 
@@ -137,9 +134,6 @@ class AddressPagePool implements Iterable<Long>
         // If the new address page is in the set of free block pages or if it is
         // a block page we've just created the page does not have to be moved.
         
-        // TODO When you expand, are you putting the user pages back? Are you
-        // releasing them from ignore in the by remaining and empty tables?
-
         DirtyPageSet dirtyPages = new DirtyPageSet(16);
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
         Map<Long, Long> moves = new HashMap<Long, Long>();
@@ -219,13 +213,13 @@ class AddressPagePool implements Iterable<Long>
             // outstanding that have two or more free addresses, then we
             // need to allocate more address pages and try again.
             
-            if (addressPages.size() == 0 && returningAddressPages.size() == 0)
+            if (addressPages.size() + returningAddressPages.size() < addressPagePoolSize)
             {
                 // Create a mutator to move the user page immediately
                 // following the address page region  to a new user
                 // page.
                 // See the source of Mutator.newAddressPage.
-                newAddressPages(bouquet, 1);
+                newAddressPages(bouquet, addressPagePoolSize - (addressPages.size() + returningAddressPages.size()));
                 
                 // There are more pages now, return null indicating we need to
                 // try again.
@@ -327,8 +321,6 @@ class AddressPagePool implements Iterable<Long>
      * address page. If there are fewer address pages than the minimum number of
      * available address pages for allocation outstanding, then a new address
      * page is created by expanding the address page region.
-     * <p>
-     * TODO Specify a minimum address page pool.
      * 
      * @param lastSelected
      *            The address of the last selected address page.

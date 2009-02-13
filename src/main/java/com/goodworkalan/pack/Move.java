@@ -5,7 +5,21 @@ import java.nio.ByteBuffer;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Probably should journal each address as well? Ah, no, not freeing.
+/**
+ * Move the blocks in a user block page to a new user block page.
+ * <p>
+ * The blocks are not freed from the source page because the journal playback
+ * may fail and the journal may be replayed. When the journal is replayed we
+ * need all of the source blocks. We ensure a good copy from source to
+ * destination by truncating the destination after its pre-commit last address
+ * and appending over the copies from the failed playback.
+ * <p>
+ * The blocks will be freed when the source page is marked as empty and given to
+ * the interim page pool.
+ * 
+ * @author Alan Gutierrez
+ * 
+ */
 public class Move extends Operation
 {
     private long from;

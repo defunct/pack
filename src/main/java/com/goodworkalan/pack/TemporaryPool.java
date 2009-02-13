@@ -7,7 +7,7 @@ import java.util.Set;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-class TemporaryNodePool
+class TemporaryPool
 {
     private final ReferencePool referencePool;
     
@@ -25,7 +25,7 @@ class TemporaryNodePool
      *            Map of temporary node addresses to byte buffers containing the
      *            address value at the temporary node position.
      */
-    public TemporaryNodePool(Sheaf sheaf, UserBoundary userBoundary, Header header)
+    public TemporaryPool(Sheaf sheaf, UserBoundary userBoundary, Header header)
     {
         this.referencePool = new ReferencePool(sheaf, userBoundary, header)
         {

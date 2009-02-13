@@ -158,7 +158,7 @@ public final class Opener
         
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
-        TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
+        TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
         temporaryBlocks.addAll(temporaryPool.toMap().keySet());
         
         Set<Long> freedBlockPages = new HashSet<Long>();
@@ -192,7 +192,7 @@ public final class Opener
         }
 
         Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
-                    new AddressPagePool(addressPages),
+                    new AddressPagePool(header.getAddressPagePoolSize(), addressPages),
                     temporaryPool);
         bouquet.getUserPagePool().vacuum(bouquet);
         return bouquet.getPack();

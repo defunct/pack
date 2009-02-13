@@ -46,7 +46,6 @@ final class Header extends DirtyRegionMap
         return Pack.FILE_HEADER_SIZE + getInternalJournalCount() * Pack.POSITION_SIZE;
     }
 
-    // TODO Make this a checksum.
     public long getSignature()
     {
         return bytes.getLong(0);
@@ -136,6 +135,31 @@ final class Header extends DirtyRegionMap
         bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, headerSize);
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, Pack.COUNT_SIZE);
     }
+    
+
+    /**
+     * Get the size of the pack file header including the set of named static
+     * pages and the journal headers.
+     * 
+     * @return The size of the file header.
+     */
+    public int getAddressPagePoolSize()
+    {
+        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
+    }
+
+    /**
+     * Set the size of the pack file header including the set of named static
+     * pages and the journal headers.
+     * 
+     * @param addressPagePoolSize
+     *            The size of the file header.
+     */    
+    public void setAddressPagePoolSize(int addressPagePoolSize)
+    {
+        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, addressPagePoolSize);
+        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.COUNT_SIZE);
+    }
 
     /**
      * Get the user boundary of the pack file. The user boundary is the 
@@ -145,7 +169,7 @@ final class Header extends DirtyRegionMap
      */
     public long getUserBoundary()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
+        return bytes.getLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7);
     }
 
     /**
@@ -157,19 +181,19 @@ final class Header extends DirtyRegionMap
      */
     public void setUserBoundary(long userBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, userBoundary);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7, userBoundary);
+        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
 
     public long getEndOfSheaf()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6);
+        return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7);
     }
 
     public void setEndOfSheaf(long interimBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, interimBoundary);
-        invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7, interimBoundary);
+        invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
 
     /**
@@ -180,7 +204,7 @@ final class Header extends DirtyRegionMap
      */
     public long getFirstTemporaryNode()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6);
+        return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7);
     }
 
     /**
@@ -192,18 +216,18 @@ final class Header extends DirtyRegionMap
      */  
     public void setFirstTemporaryNode(long temporaries)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6, temporaries);
-        invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7, temporaries);
+        invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
     
     public long getFirstReferencePage()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6);
+        return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7);
     }
     
     public void setFirstReferencePage(long vacuumNode)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6, vacuumNode);
-        invalidate(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 6, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7, vacuumNode);
+        invalidate(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
 }

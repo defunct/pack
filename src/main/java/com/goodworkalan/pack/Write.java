@@ -6,7 +6,6 @@ import java.util.Set;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Maybe position address to erase? Ah, but a vacuum might change that. 
 final class Write
 extends Operation
 {
@@ -35,8 +34,9 @@ extends Operation
                 BlockPage user = userBoundary.dereference(sheaf, address);
                 synchronized (user.getRawPage())
                 {
-                    // FIXME Free could also mean back reference points not back to address.
-                    // Remember, here you're not copying, just re-pointing.
+                    // TODO Free could also mean back reference points not back
+                    // to address.  Remember, here you're not copying, just
+                    // re-pointing.
                     boolean freed = user.getRawPage().getPosition() == position;
                     if (!freed)
                     {

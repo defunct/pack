@@ -68,6 +68,7 @@ class UserPagePool implements Iterable<Long>
         return byRemaining.iterator();
     }
     
+    // TODO More magic.
     public synchronized void vacuum(Bouquet bouquet)
     {
         Set<Long> allocatedBlockPages = getAllocatedBlockPages();

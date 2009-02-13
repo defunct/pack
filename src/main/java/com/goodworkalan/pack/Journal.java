@@ -1,6 +1,7 @@
 package com.goodworkalan.pack;
 
 import java.util.Set;
+import java.util.zip.Adler32;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
@@ -11,7 +12,7 @@ class Journal
     
     public Journal(Sheaf sheaf, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
     {
-        writer = new NullJournalWriter(sheaf, interimPagePool, dirtyPages);
+        writer = new NullJournalWriter(sheaf, interimPagePool, new Adler32(), dirtyPages);
     }
     
     public long getJournalStart()

@@ -51,7 +51,7 @@ extends Operation
         this.temporary = temporary;
     }
     
-    private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryNodePool temporaryPool, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
     {
         temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);
     }

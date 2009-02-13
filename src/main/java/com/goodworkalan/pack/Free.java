@@ -42,9 +42,9 @@ extends Operation
             {
                 player.getFreedBlockPages().add(user.getRawPage().getPosition());
 
-                // FIXME Moving will work this way, lock from page, lock to
-                // page. Free from form page, add to to page. Then lock and
-                // update address page, free lock. Then free user locks.
+                // Moving will work this way, lock from page, lock to page. Free
+                // from form page, add to to page. Then lock and update address
+                // page, free lock. Then free user locks.
 
                 // So, when we are here, the page is free because it moved, then
                 // we try again. If we try again, it is free, and it hasn't

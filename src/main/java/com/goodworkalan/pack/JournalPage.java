@@ -58,12 +58,16 @@ extends Page
     /**
      * Checksum the entire journal page. In order to checksum only journal
      * pages I'll have to keep track of where the journal ends.
-     * <p>
-     * TODO Not using this, but I should.
      * 
      * @param checksum The checksum algorithm.
      */
-    public void checksum(Checksum checksum)
+    public void writeChecksum(Checksum checksum)
+    {
+        getRawPage().getByteBuffer().putLong(0, getChecksum(checksum));
+        getRawPage().invalidate(0, Pack.CHECKSUM_SIZE);
+    }
+    
+    private long getChecksum(Checksum checksum)
     {
         checksum.reset();
         ByteBuffer bytes = getRawPage().getByteBuffer();
@@ -72,8 +76,12 @@ extends Page
         {
             checksum.update(bytes.get());
         }
-        bytes.putLong(0, checksum.getValue());
-        getRawPage().invalidate(0, Pack.CHECKSUM_SIZE);
+        return checksum.getValue();
+    }
+    
+    public boolean isValidChecksum(Checksum checksum)
+    {
+        return getRawPage().getByteBuffer().getLong(0) == getChecksum(checksum);
     }
 
     /**
