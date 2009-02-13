@@ -123,20 +123,22 @@ public class PackTestCase
 
     @Test public void reopen()
     {
-        FileChannel fileChannel = newFileChannel();
-        new Creator().create(fileChannel).close();
-        new Opener().open(fileChannel).close();
-        new Opener().open(fileChannel).close();
+        File file = newFile();
+        new Creator().create(newFileChannel(file)).close();
+        new Opener().open(newFileChannel(file)).close();
+        new Opener().open(newFileChannel(file)).close();
     }
 
     @Test public void commit()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.commit();
         pack.close();
-        new Opener().open(file).close();
+        fileChannel = newFileChannel(file);
+        new Opener().open(fileChannel).close();
     }
 
     @Test public void allocate()
@@ -153,7 +155,8 @@ public class PackTestCase
     
     @Test public void badSignature() throws IOException
     {
-        FileChannel fileChannel = newFileChannel();
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
         
         new Creator().create(fileChannel).close();
         
@@ -161,9 +164,11 @@ public class PackTestCase
         bytes.put((byte) 0);
         bytes.flip();
 
+        fileChannel = newFileChannel(file);
         fileChannel.write(bytes, 0L);
         fileChannel.close();
 
+        fileChannel = newFileChannel(file);
         try
         {
             new Opener().open(fileChannel);
@@ -179,14 +184,16 @@ public class PackTestCase
 
     @Test public void relocatable()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
         mutator.commit();
         pack.close();
         
-        Sheaf pager = new Opener().open(file).bouquet.getSheaf();
+        fileChannel = newFileChannel(file);
+        Sheaf pager = new Opener().open(fileChannel).bouquet.getSheaf();
         Page page = pager.getPage(8192, RelocatablePage.class, new RelocatablePage());
         page = pager.getPage(8192, BlockPage.class, new BlockPage());
         assertEquals(8192, page.getRawPage().getPosition());
@@ -427,7 +434,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_READ_FREE_ADDRESS, e.getCode());
+            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();
@@ -437,15 +444,17 @@ public class PackTestCase
 
     @Test public void freeAndClose()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
         mutator.commit();
         
         pack.close();
-        pack = new Opener().open(file);
+        fileChannel = newFileChannel(file);
+        pack = new Opener().open(fileChannel);
         
         mutator = pack.mutate();
         mutator.free(address);
@@ -460,7 +469,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_READ_FREE_ADDRESS, e.getCode());
+            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();
@@ -492,7 +501,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_READ_FREE_ADDRESS, e.getCode());
+            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();
@@ -574,7 +583,7 @@ public class PackTestCase
         pack.close();
     }
 
-    @Test public void softRecover()
+    public void softRecover()
     {
         Creator newPack = new Creator();
         /* This needs to be rewritten when pack takes FileChannel instead.
@@ -660,15 +669,17 @@ public class PackTestCase
 
     @Test public void vacuum2()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
         long address = mutator.allocate(64);
         mutator.commit();
         rewrite(pack, 4);
         pack.close();
-        pack = new Opener().open(file);
+        fileChannel = newFileChannel(file);
+        pack = new Opener().open(fileChannel);
         mutator = pack.mutate();
         mutator.free(address);
         mutator.commit();
@@ -680,8 +691,9 @@ public class PackTestCase
     
     @Test public void vacuumAtOffset()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.allocate(64);
         long address1 = mutator.allocate(64);
@@ -690,7 +702,8 @@ public class PackTestCase
         mutator.commit();
         rewrite(pack, 4);
         pack.close();
-        pack = new Opener().open(file);
+        fileChannel = newFileChannel(file); 
+        pack = new Opener().open(fileChannel);
         mutator = pack.mutate();
         mutator.free(address1);
         mutator.free(address2);
@@ -703,14 +716,17 @@ public class PackTestCase
 
     @Test public void temporary()
     {
-        FileChannel file = newFileChannel();
-        Pack pack = new Creator().create(file);
+        File file = newFile();
+        FileChannel fileChannel = newFileChannel(file);
+        Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
         mutator.temporary(64);
         mutator.commit();
         pack.close();
+        
         Opener opener = new Opener();
-        pack = opener.open(file);
+        fileChannel = newFileChannel(file);
+        pack = opener.open(fileChannel);
         mutator = pack.mutate();
         for (long address : opener.getTemporaryBlocks())
         {
@@ -718,8 +734,10 @@ public class PackTestCase
         }
         mutator.commit();
         pack.close();
+        
+        fileChannel = newFileChannel(file);
         opener = new Opener();
-        pack = opener.open(file);
+        pack = opener.open(fileChannel);
         assertEquals(0, opener.getTemporaryBlocks().size());
     }
     

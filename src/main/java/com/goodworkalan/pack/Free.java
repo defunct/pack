@@ -28,9 +28,10 @@ extends Operation
         bouquet.getAddressLocker().lock(address);
         player.getAddresses().add(address);
 
-        if (bouquet.getTemporaryPool().free(address, player.getBouquet().getSheaf(), bouquet.getUserBoundary(), player.getDirtyPages()))
+        long temporary;
+        if ((temporary = bouquet.getTemporaryPool().free(address, player.getBouquet().getSheaf(), bouquet.getUserBoundary(), player.getDirtyPages())) != 0L)
         {
-            player.getTemporaryAddresses().add(address);
+            player.getTemporaryAddresses().add(temporary);
         }
         
         long previous = 0L;

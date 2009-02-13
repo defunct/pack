@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +42,16 @@ class TemporaryNodePool
             }
         };
         this.temporaryLocker = new AddressLocker();
-        this.temporaries = referencePool.toMap(sheaf, userBoundary);
+        this.temporaries = new HashMap<Long, Long>();
+        for (Map.Entry<Long, Long> mapping : referencePool.toMap(sheaf, userBoundary).entrySet())
+        {
+            temporaries.put(mapping.getValue(), mapping.getKey());
+        }
+    }
+    
+    public synchronized Map<Long, Long> toMap()
+    {
+        return new HashMap<Long, Long>(temporaries);
     }
     
     public long allocate(Sheaf sheaf, Header header, UserBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
@@ -57,7 +67,7 @@ class TemporaryNodePool
         temporaries.put(address, temporary);
     }
 
-    public synchronized boolean free(long address, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    public synchronized long free(long address, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         if (temporaries.containsKey(address))
         {
@@ -65,10 +75,10 @@ class TemporaryNodePool
             temporaryLocker.lock(temporary);
             AddressPage references = userBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
             references.free(temporary, dirtyPages);
-            temporaries.put(address, temporary);
-            return true;
+            temporaries.remove(address);
+            return temporary;
         }
-        return false;
+        return 0L;
     }
     
     public void unlock(Set<Long> temporaries)

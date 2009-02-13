@@ -102,6 +102,7 @@ final class AddressPage extends Page
             freeCount++;
         }
 
+        getRawPage().invalidate(0, getRawPage().getSheaf().getPageSize());
         dirtyPages.add(getRawPage());
     }
     

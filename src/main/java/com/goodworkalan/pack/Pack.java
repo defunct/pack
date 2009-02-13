@@ -16,11 +16,9 @@ public class Pack
      */
     public final static long NULL_ADDRESS = 0L;
 
-    public final static int ERROR_FREED_FREE_ADDRESS = 300;
+    public final static int ERROR_FREED_ADDRESS = 300;
     
     public final static int ERROR_FREED_STATIC_ADDRESS = 301;
-
-    public final static int ERROR_READ_FREE_ADDRESS = 302;
 
     public final static int ERROR_FILE_NOT_FOUND = 400;
     

@@ -20,7 +20,7 @@ public abstract class ReferencePool
         {
             referencePages.add(position);
             AddressPage references = userBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
-            position = references.dereference(0);
+            position = references.dereference(position);
         }
     }
     
@@ -70,7 +70,7 @@ public abstract class ReferencePool
             AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages, false);
             synchronized (header)
             {
-                references.set(0, getHeaderField(header), dirtyPages);
+                references.set(position, getHeaderField(header), dirtyPages);
                 setHeaderField(header, position);
                 allocDirtyPages.flush();
                 try

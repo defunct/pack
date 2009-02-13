@@ -125,7 +125,8 @@ public final class Creator
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
         
         DirtyPageSet dirtyPages = new DirtyPageSet(0);
-        sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages, false);
+        AddressPage addresses = sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages, false);
+        addresses.set(0, Long.MIN_VALUE, dirtyPages);
         dirtyPages.flush();
         
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());

@@ -83,7 +83,7 @@ public class UserBoundary extends Boundary
         long position = addresses.dereference(address);
         if (position == 0L || position == Long.MAX_VALUE)
         {
-            throw new PackException(Pack.ERROR_FREED_FREE_ADDRESS);
+            throw new PackException(Pack.ERROR_FREED_ADDRESS);
         }
         
         while (position < getPosition())

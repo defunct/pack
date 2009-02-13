@@ -19,22 +19,21 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 public final class Opener
 {
-    private final Set<Long> setOfTemporaryBlocks;
+    private final Set<Long> temporaryBlocks;
     
     public Opener()
     {
-        this.setOfTemporaryBlocks = new HashSet<Long>();
+        this.temporaryBlocks = new HashSet<Long>();
     }
     
     public Set<Long> getTemporaryBlocks()
     {
-        return setOfTemporaryBlocks;
+        return temporaryBlocks;
     }
     
     private boolean badAddress(Header header, long address)
     {
-        return address < header.getHeaderSize()
-            || address > header.getUserBoundary();
+        return address < 8 || address > header.getUserBoundary();
     }
 
     private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
@@ -160,6 +159,7 @@ public final class Opener
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
         TemporaryNodePool temporaryPool = new TemporaryNodePool(sheaf, userBoundary, header);
+        temporaryBlocks.addAll(temporaryPool.toMap().keySet());
         Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf, new AddressPagePool(addressPages), temporaryPool);
         
         int blockPageCount = reopen.getInt();
