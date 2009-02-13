@@ -10,6 +10,8 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 class UserPagePool implements Iterable<Long>
 {
+    private final Vacuum vacuum;
+    
     private final Set<Long> freedBlockPages;
     
     private final Set<Long> allocatedBlockPages;
@@ -27,6 +29,7 @@ class UserPagePool implements Iterable<Long>
 
     public UserPagePool(int pageSize, int alignment)
     {
+        this.vacuum = new BestFitVacuum();
         this.byRemaining = new ByRemainingTable(pageSize, alignment);
         this.freedBlockPages = new HashSet<Long>();
         this.allocatedBlockPages = new HashSet<Long>();
@@ -69,6 +72,10 @@ class UserPagePool implements Iterable<Long>
     }
     
     // TODO More magic. Create an interface.
+    // TODO File set, each page divided into blocks with a larger and larger
+    // number of entries.
+    // TODO Bit set can be kept on pages, just a very plain page, read
+    // and write to raw page.
     public synchronized void vacuum(Bouquet bouquet)
     {
         Set<Long> allocatedBlockPages = getAllocatedBlockPages();
@@ -89,47 +96,12 @@ class UserPagePool implements Iterable<Long>
             }
         }
         
+        Map<Long, Long> moves = new HashMap<Long, Long>();
+        
+        vacuum.vacuum(new Mover(bouquet, moves), byRemaining, allocatedBlockPages, freedBlockPages);
+
         DirtyPageSet dirtyPages = new DirtyPageSet(16);
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
-
-        for (long position : freedBlockPages)
-        {
-            byRemaining.remove(position);
-        }
-        
-        int pageSize = bouquet.getSheaf().getPageSize();
-        Map<Long, Long> moves = new HashMap<Long, Long>();
-        Iterator<Long> discontinuous = freedBlockPages.iterator();
-        while (discontinuous.hasNext())
-        {
-            long position = discontinuous.next();
-            BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            long bestFit = byRemaining.bestFit(pageSize - blocks.getRemaining());
-            if (bestFit != 0)
-            {
-                moves.put(position, bestFit);
-                discontinuous.remove();
-            }
-        }
-        
-        for (long position : freedBlockPages)
-        {
-            BlockPage destnation = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages);
-            moves.put(position, destnation.getRawPage().getPosition());
-        }
-        
-        Iterator<Long> allocated = allocatedBlockPages.iterator();
-        while (allocated.hasNext())
-        {
-            long position = allocated.next();
-            BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
-            long bestFit = byRemaining.bestFit(pageSize - blocks.getRemaining());
-            if (bestFit != 0)
-            {
-                moves.put(position, bestFit);
-                allocated.remove();
-            }
-        }
         
         for (Map.Entry<Long, Long> move : moves.entrySet())
         {
@@ -160,5 +132,5 @@ class UserPagePool implements Iterable<Long>
             bouquet.getSheaf().free(position);
             bouquet.getInterimPagePool().free(position);
         }
-    }
+     }
 }

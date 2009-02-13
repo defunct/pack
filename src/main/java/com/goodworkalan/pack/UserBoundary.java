@@ -6,7 +6,7 @@ import java.util.Set;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
-public class UserBoundary
+class UserBoundary
 {
     /** The size of a page in the Pack.  */
     private final int pageSize;

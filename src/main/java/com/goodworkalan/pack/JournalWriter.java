@@ -150,7 +150,7 @@ class JournalWriter
      */
     public JournalWriter extend()
     {
-        JournalPage nextJournal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages);
+        JournalPage nextJournal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages, false);
         journal.write(new NextOperation(nextJournal.getJournalPosition()), 0, dirtyPages);
         journal.writeChecksum(checksum);
         journalPages.add(nextJournal.getRawPage().getPosition());

@@ -2,8 +2,7 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-public class MovePage
-extends Operation
+class MovePage extends Operation
 {
     private long from;
     

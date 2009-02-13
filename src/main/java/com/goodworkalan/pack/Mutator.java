@@ -184,7 +184,7 @@ public final class Mutator
             long bestFit = allocByRemaining.bestFit(fullSize);
             if (bestFit == 0L)
             {
-                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages);
+                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
             }
             else
             {
@@ -253,7 +253,7 @@ public final class Mutator
                 long bestFit = allocByRemaining.bestFit(blockSize);
                 if (bestFit == 0L)
                 {
-                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages);
+                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
                 }
                 else
                 {
@@ -261,6 +261,8 @@ public final class Mutator
                 }
                 
                 interim.allocate(address, blockSize, dirtyPages);
+                
+                allocByRemaining.add(interim);
                 
                 if (blockSize < source.remaining() + Pack.BLOCK_HEADER_SIZE)
                 {

@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-public class Checkpoint extends Operation
+class Checkpoint extends Operation
 {
     private long position;
     

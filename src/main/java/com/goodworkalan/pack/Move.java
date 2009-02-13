@@ -20,7 +20,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * @author Alan Gutierrez
  * 
  */
-public class Move extends Operation
+class Move extends Operation
 {
     private long from;
     

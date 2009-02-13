@@ -8,7 +8,7 @@ import java.util.Map;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-public abstract class ReferencePool
+abstract class ReferencePool
 {
     private final LinkedList<Long> referencePages;
     
@@ -66,7 +66,7 @@ public abstract class ReferencePool
         if (reference == 0L)
         {
             DirtyPageSet allocDirtyPages = new DirtyPageSet(16);
-            long position = interimPagePool.newBlankInterimPage(sheaf);
+            long position = interimPagePool.newBlankInterimPage(sheaf, true);
             AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages);
             synchronized (header)
             {

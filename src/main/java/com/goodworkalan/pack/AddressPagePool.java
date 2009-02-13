@@ -142,7 +142,7 @@ class AddressPagePool implements Iterable<Long>
             // Allocate mirrors for the user pages and place them in
             // the alloc page by size table and the allocation page set
             // so the commit method will assign a destination user page.
-            long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getSheaf());
+            long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getSheaf(), true);
             journal.write(new MovePage(from, to));
             moves.put(from, to);
         }

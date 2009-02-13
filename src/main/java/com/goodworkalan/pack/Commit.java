@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-public class Commit extends Operation
+class Commit extends Operation
 {
     public Commit()
     {

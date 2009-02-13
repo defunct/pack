@@ -12,7 +12,7 @@ import com.goodworkalan.sheaf.SheafException;
  * 
  * @author Alan Gutierrez
  */
-public final class JournalHeader
+final class JournalHeader
 {
     /** The bytes at the file position of the segment. */
     private final ByteBuffer byteBuffer;
