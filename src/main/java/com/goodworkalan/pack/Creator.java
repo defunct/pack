@@ -98,7 +98,7 @@ public final class Creator
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
 
         // Create a buffer of journal file positions. Initialize each page
@@ -119,7 +119,7 @@ public final class Creator
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
 
         // To create the map of static pages, we're going to allocate a
@@ -176,7 +176,7 @@ public final class Creator
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
         
         try
@@ -185,7 +185,7 @@ public final class Creator
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
 
         new Pack(bouquet).shutdown();

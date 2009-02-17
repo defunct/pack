@@ -211,7 +211,36 @@ class BlockPage extends Page
      */
     protected long getAddress(ByteBuffer bytes)
     {
-        return bytes.getLong(bytes.position() + Pack.COUNT_SIZE);
+        return Math.abs(bytes.getLong(bytes.position() + Pack.COUNT_SIZE));
+    }
+
+    public Boolean isTail(long address)
+    {
+        synchronized (getRawPage())
+        {
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            if (seek(bytes, address))
+            {
+                return bytes.getLong(bytes.position() + Pack.COUNT_SIZE) > 0L;
+            }
+        }
+        
+        return null;
+    }
+    
+    public boolean setTail(long address, boolean tail)
+    {
+        synchronized (getRawPage())
+        {
+            ByteBuffer bytes = getRawPage().getByteBuffer();
+            if (seek(bytes, address))
+            {
+                bytes.putLong(bytes.position() + Pack.COUNT_SIZE, getAddress(bytes) * (tail ? 1 : -1));
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -480,9 +509,13 @@ class BlockPage extends Page
                 int size = bytes.getInt();
                 if (bytes.getLong() != address)
                 {
-                    throw new PackException(Pack.ERROR_BLOCK_PAGE_CORRUPT);
+                    throw new PackException(PackException.ERROR_BLOCK_PAGE_CORRUPT);
                 }
                 bytes.limit(offset + size);
+                if (bytes.remaining() < data.remaining())
+                {
+                    throw new BufferOverflowException();
+                }
                 getRawPage().invalidate(bytes.position(), bytes.remaining());
                 bytes.put(data);
                 bytes.limit(bytes.capacity());

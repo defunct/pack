@@ -79,7 +79,7 @@ abstract class ReferencePool
                 }
                 catch (IOException e)
                 {
-                    throw new PackException(Pack.ERROR_IO_WRITE, e);
+                    throw new PackException(PackException.ERROR_IO_WRITE, e);
                 }
                 try
                 {
@@ -87,7 +87,7 @@ abstract class ReferencePool
                 }
                 catch (IOException e)
                 {
-                    throw new PackException(Pack.ERROR_IO_FORCE, e);
+                    throw new PackException(PackException.ERROR_IO_FORCE, e);
                 }
                 referencePages.addFirst(position);
             }

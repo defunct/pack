@@ -227,7 +227,18 @@ final class AddressPage extends Page
             }
         }
     }
-    
+
+    /**
+     * Create a map of addresses to their referenced values excluding any
+     * addresses whose values are zero or reserved. The <code>skip</code>
+     * parameter is the count of addresses to skip from the start of the page
+     * before creating the map, for use when the first addresses are used as
+     * housekeeping fields.
+     * 
+     * @param skip
+     *            The count of addresses to skip before creating the map.
+     * @return A map of addresses to their values.
+     */
     public Map<Long, Long> toMap(int skip)
     {
         Map<Long, Long> map = new HashMap<Long, Long>();

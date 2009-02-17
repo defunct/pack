@@ -34,7 +34,7 @@ class Checkpoint extends Operation
         }
         catch(IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_FORCE, e);
+            throw new PackException(PackException.ERROR_IO_FORCE, e);
         }
     }
 

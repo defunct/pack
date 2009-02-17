@@ -10,8 +10,19 @@ import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
+/**
+ * Manages the pool of address pages, tracking which address pages have
+ * addresses available, and creating new address pages as address pages become
+ * full.
+ * 
+ * @author Alan Gutierrez
+ */
 class AddressPagePool implements Iterable<Long>
 {
+    /**
+     * The minimum number of address pages with addresses available for
+     * allocation.
+     */
     private final int addressPagePoolSize;
     
     /** A set of address pages with available free addresses. */
@@ -23,8 +34,16 @@ class AddressPagePool implements Iterable<Long>
     private final Set<Long> returningAddressPages;
 
     /**
-     * Create an address page pool.
+     * Create an address page pool that will contain at least as many address
+     * pages with addresses available for allocation as the the given address
+     * page pool size. When the address pages fill and there are fewer address
+     * pages with address available for allocation in the pool than the given
+     * address page pool size, new address pages are created by moving the user
+     * boundary forward in the file.
      * 
+     * @param addressPagePoolSize
+     *            The minimum number of address pages with address available for
+     *            allocation to maintain in the pool.
      * @param addressPages
      *            A set of address pages with available free addresses.
      */

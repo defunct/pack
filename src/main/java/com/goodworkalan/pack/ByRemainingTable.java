@@ -24,7 +24,7 @@ import java.util.TreeSet;
  * 
  * @author Alan Gutierrez
  */
-final class ByRemainingTable implements Iterable<Long>
+public final class ByRemainingTable implements Iterable<Long>
 {
     /** The block alignment. */
     private final int alignment;

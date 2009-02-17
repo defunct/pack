@@ -60,7 +60,7 @@ public class Test
             }
             catch (FileNotFoundException e)
             {
-                throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
+                throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
             }
             return fileChannel;
         }

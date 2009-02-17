@@ -121,7 +121,7 @@ class UserBoundary
         long position = addresses.dereference(address);
         if (position == 0L || position == Long.MAX_VALUE)
         {
-            throw new PackException(Pack.ERROR_FREED_ADDRESS);
+            throw new PackException(PackException.ERROR_FREED_ADDRESS);
         }
         
         while (position < getPosition())

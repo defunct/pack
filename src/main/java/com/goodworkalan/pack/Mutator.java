@@ -157,29 +157,9 @@ public final class Mutator
         bouquet.getPageMoveLock().readLock().lock();
         try
         {
-            // This is unimplemented: Creating a linked list of blocks when
-            // the block size exceeds the size of a page.
-            
-            int pageSize = bouquet.getSheaf().getPageSize();
-            if (fullSize + Pack.BLOCK_PAGE_HEADER_SIZE > pageSize)
-            {
-                // Recurse.
-                throw new UnsupportedOperationException();
-            }
-            
             // If we already have a wilderness data page that will fit the
             // block, use that page. Otherwise, allocate a new wilderness
             // data page for allocation.
-    
-    
-            // We know that our already reserved pages are not moving
-            // because our page recorder will wait for them to move.
-    
-            // We know that the new interim page is not moving because we
-            // have a shared lock on all moves, so if it is going to move
-            // it will move after this operation. It would not be in the
-            // set of free interim pages if it was also scheduled to move.
-    
             BlockPage interim = null;
             long bestFit = allocByRemaining.bestFit(fullSize);
             if (bestFit == 0L)
@@ -200,6 +180,87 @@ public final class Mutator
             addresses.put(-address, interim.getRawPage().getPosition());
             
             return address;
+        }
+        finally
+        {
+            bouquet.getPageMoveLock().readLock().unlock();
+        }
+    }
+
+    /**
+     * If true, the block is the last block in a linked list of blocks used to
+     * store an allocation that cannot fit in a single block. Pack itself does
+     * not manage allocations that span multiple blocks. An attempt to allocate
+     * a block larger than the maximum block size will result in a
+     * <code>PackException</code>.
+     * <p>
+     * The default value for the tail flag is true. Allocations will set the
+     * tail flag to true.
+     * <p>
+     * Client programmers can use this flag to indicate that a block contains an
+     * allocation that spans more than one block. For allocations that spans
+     * multiple blocks, the client programmer can create a linked list including
+     * the address of the next block in the block data.
+     * <p>
+     * Tail is chosen as a default because in a linked list model the tail node
+     * will not require a pointer to the next block, so the data will contain
+     * only allocation data, much like an allocation that spans only one block.
+     * 
+     * @param address
+     *            The block address.
+     * @return True if the block is the last block in list of blocks used to
+     *         store an allocation that cannot fit in a single block.
+     */
+    public boolean isTail(long address)
+    {
+        bouquet.getPageMoveLock().readLock().lock();
+        try
+        {
+            Boolean isTail = null;
+            Long isolated = getIsolated(address);
+            if (isolated == null)
+            {
+                do
+                {
+                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                    isTail = user.isTail(address);
+                }
+                while (isTail == null);
+            }
+            else
+            {
+                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                isTail = interim.isTail(address);
+            }
+    
+            return isTail;
+        }
+        finally
+        {
+            bouquet.getPageMoveLock().readLock().unlock();
+        }
+    }
+
+    /**
+     * Set the flag indicating that whether or not this block is the last block
+     * in a linked list of blocks that stores an allocation that does not fit
+     * into the maximum block size.
+     * 
+     * @param address
+     * @param isTail
+     */
+    public void setTail(long address, boolean isTail)
+    {
+        bouquet.getPageMoveLock().readLock().lock();
+        try
+        {
+            // For now, the first test will write to an allocated block, so
+            // the write buffer is already there.
+            BlockPage interim = snert(address);
+            if (!interim.setTail(address, isTail))
+            {
+                throw new IllegalStateException();
+            }
         }
         finally
         {
@@ -230,61 +291,7 @@ public final class Mutator
         {
             // For now, the first test will write to an allocated block, so
             // the write buffer is already there.
-            BlockPage interim = null;
-            Long isolated = getIsolated(address);
-
-            if (isolated == null)
-            {
-                // Interim block pages allocated to store writes are tracked
-                // in a separate by size table and a separate set of interim
-                // pages. During commit interim write blocks need only be
-                // copied to the user pages where they reside, while interim
-                // alloc blocks need to be assigned (as a page) to a user
-                // page with space to accommodate them.
-
-                int blockSize = 0;
-                do
-                {
-                    BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
-                    blockSize = blocks.getBlockSize(address);
-                }
-                while (blockSize == 0);
-               
-                long bestFit = allocByRemaining.bestFit(blockSize);
-                if (bestFit == 0L)
-                {
-                    interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
-                }
-                else
-                {
-                    interim = bouquet.getSheaf().getPage(bestFit, BlockPage.class, new BlockPage());
-                }
-                
-                interim.allocate(address, blockSize, dirtyPages);
-                
-                allocByRemaining.add(interim);
-                
-                if (blockSize < source.remaining() + Pack.BLOCK_HEADER_SIZE)
-                {
-                    ByteBuffer read = null;
-                    ByteBuffer copy = ByteBuffer.allocateDirect(blockSize - Pack.BLOCK_HEADER_SIZE);
-                    do
-                    {
-                        BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
-                        read = blocks.read(address, copy);
-                    }
-                    while (read == null);
-                    read.flip();
-                    interim.write(address, read, dirtyPages);
-                }
-
-                addresses.put(address, interim.getRawPage().getPosition());
-            }
-            else
-            {
-                interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
-            }
-
+            BlockPage interim = snert(address);
             if (!interim.write(address, source, dirtyPages))
             {
                 throw new IllegalStateException();
@@ -294,6 +301,62 @@ public final class Mutator
         {
             bouquet.getPageMoveLock().readLock().unlock();
         }
+    }
+
+    private BlockPage snert(final long address)
+    {
+        BlockPage interim;
+        Long isolated = getIsolated(address);
+
+        if (isolated == null)
+        {
+            // Interim block pages allocated to store writes are tracked
+            // in a separate by size table and a separate set of interim
+            // pages. During commit interim write blocks need only be
+            // copied to the user pages where they reside, while interim
+            // alloc blocks need to be assigned (as a page) to a user
+            // page with space to accommodate them.
+
+            int blockSize = 0;
+            do
+            {
+                BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                blockSize = blocks.getBlockSize(address);
+            }
+            while (blockSize == 0);
+           
+            long bestFit = allocByRemaining.bestFit(blockSize);
+            if (bestFit == 0L)
+            {
+                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
+            }
+            else
+            {
+                interim = bouquet.getSheaf().getPage(bestFit, BlockPage.class, new BlockPage());
+            }
+            
+            interim.allocate(address, blockSize, dirtyPages);
+            
+            allocByRemaining.add(interim);
+            
+            ByteBuffer read = null;
+            ByteBuffer copy = ByteBuffer.allocateDirect(blockSize - Pack.BLOCK_HEADER_SIZE);
+            do
+            {
+                BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                read = blocks.read(address, copy);
+            }
+            while (read == null);
+            read.flip();
+            interim.write(address, read, dirtyPages);
+
+            addresses.put(address, interim.getRawPage().getPosition());
+        }
+        else
+        {
+            interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+        }
+        return interim;
     }
 
     private Long getIsolated(long address)
@@ -413,7 +476,7 @@ public final class Mutator
         // User is not allowed to free named blocks.
         if (bouquet.getStaticBlocks().containsValue(address))
         {
-            throw new PackException(Pack.ERROR_FREED_STATIC_ADDRESS);
+            throw new PackException(PackException.ERROR_FREED_STATIC_ADDRESS);
         }
 
         // Ensure that no pages move.

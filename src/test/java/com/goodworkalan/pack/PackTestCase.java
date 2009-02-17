@@ -47,7 +47,7 @@ public class PackTestCase
         }
         catch (FileNotFoundException e)
         {
-            throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
+            throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
         }
         return fileChannel;
     }
@@ -66,7 +66,7 @@ public class PackTestCase
             }
             catch (FileNotFoundException e)
             {
-                throw new PackException(Pack.ERROR_FILE_NOT_FOUND, e);
+                throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
             }
             return fileChannel;
         }
@@ -173,7 +173,7 @@ public class PackTestCase
         }
         catch (PackException e)
         {
-            assertEquals(Pack.ERROR_SIGNATURE, e.getCode());
+            assertEquals(PackException.ERROR_SIGNATURE, e.getCode());
             return;
         }
 
@@ -415,7 +415,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
+            assertEquals(PackException.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();
@@ -450,7 +450,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
+            assertEquals(PackException.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();
@@ -482,7 +482,7 @@ public class PackTestCase
         catch (PackException e)
         {
             thrown = true;
-            assertEquals(Pack.ERROR_FREED_ADDRESS, e.getCode());
+            assertEquals(PackException.ERROR_FREED_ADDRESS, e.getCode());
         }
         assertTrue(thrown);
         mutator.commit();

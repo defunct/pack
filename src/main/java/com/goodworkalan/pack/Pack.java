@@ -18,38 +18,6 @@ public class Pack
      */
     public final static long NULL_ADDRESS = 0L;
 
-    public final static int ERROR_FREED_ADDRESS = 300;
-    
-    public final static int ERROR_FREED_STATIC_ADDRESS = 301;
-
-    public final static int ERROR_FILE_NOT_FOUND = 400;
-    
-    public final static int ERROR_IO_WRITE = 401;
-
-    public final static int ERROR_IO_READ = 402;
-
-    public final static int ERROR_IO_SIZE = 403;
-
-    public final static int ERROR_IO_TRUNCATE = 404;
-
-    public final static int ERROR_IO_FORCE = 405;
-
-    public final static int ERROR_IO_CLOSE = 406;
-
-    public final static int ERROR_IO_STATIC_PAGES = 407;
-    
-    public final static int ERROR_SIGNATURE = 501;
-
-    public final static int ERROR_SHUTDOWN = 502;
-
-    public final static int ERROR_FILE_SIZE = 503;
-    
-    public final static int ERROR_HEADER_CORRUPT = 600;
-
-    public final static int ERROR_BLOCK_PAGE_CORRUPT = 601;
-    
-    public final static int ERROR_CORRUPT = 602;
-
     final static long SIGNATURE = 0xAAAAAAAAAAAAAAAAL;
     
     final static int SOFT_SHUTDOWN = 0xAAAAAAAA;
@@ -166,7 +134,7 @@ public class Pack
             }
             catch(IOException e)
             {
-                throw new PackException(Pack.ERROR_IO_CLOSE, e);
+                throw new PackException(PackException.ERROR_IO_CLOSE, e);
             }
         }
         finally
@@ -278,7 +246,7 @@ public class Pack
         }
         catch(IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_SIZE, e);
+            throw new PackException(PackException.ERROR_IO_SIZE, e);
         }
         
         // Write the variable data at the interim page positions.
@@ -289,7 +257,7 @@ public class Pack
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
 
         // Write the boundaries and soft shutdown flag.
@@ -300,7 +268,7 @@ public class Pack
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
+            throw new PackException(PackException.ERROR_IO_TRUNCATE, e);
         }
         
         bouquet.getHeader().setUserBoundary(bouquet.getUserBoundary().getPosition());
@@ -313,7 +281,7 @@ public class Pack
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
     }
 }

@@ -46,7 +46,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_READ, e);
+            throw new PackException(PackException.ERROR_IO_READ, e);
         }
         bytes.flip();
         int count = bytes.getInt();
@@ -61,7 +61,7 @@ public final class Opener
             long address = bytes.getLong();
             if (badAddress(header, address))
             {
-                throw new PackException(Pack.ERROR_IO_STATIC_PAGES);
+                throw new PackException(PackException.ERROR_IO_STATIC_PAGES);
             }
             try
             {
@@ -69,7 +69,7 @@ public final class Opener
             }
             catch (URISyntaxException e)
             {
-                throw new PackException(Pack.ERROR_IO_STATIC_PAGES, e);
+                throw new PackException(PackException.ERROR_IO_STATIC_PAGES, e);
             }
         }
         return staticBlocks;
@@ -84,7 +84,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-           throw new PackException(Pack.ERROR_IO_READ, e);
+           throw new PackException(PackException.ERROR_IO_READ, e);
         }
         return new Header(bytes);
     }
@@ -97,13 +97,13 @@ public final class Opener
 
         if (header.getSignature() != Pack.SIGNATURE)
         {
-            throw new PackException(Pack.ERROR_SIGNATURE);
+            throw new PackException(PackException.ERROR_SIGNATURE);
         }
         
         int shutdown = header.getShutdown();
         if (!(shutdown == Pack.HARD_SHUTDOWN || shutdown == Pack.SOFT_SHUTDOWN))
         {
-            throw new PackException(Pack.ERROR_SHUTDOWN);
+            throw new PackException(PackException.ERROR_SHUTDOWN);
         }
         
         if (shutdown == Pack.HARD_SHUTDOWN)
@@ -125,7 +125,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_SIZE, e);
+            throw new PackException(PackException.ERROR_IO_SIZE, e);
         }
         
         ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
@@ -135,7 +135,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_READ, e);
+            throw new PackException(PackException.ERROR_IO_READ, e);
         }
         reopen.flip();
         
@@ -153,7 +153,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_TRUNCATE, e);
+            throw new PackException(PackException.ERROR_IO_TRUNCATE, e);
         }
         
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
@@ -179,7 +179,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_WRITE, e);
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
         }
         
         try
@@ -188,7 +188,7 @@ public final class Opener
         }
         catch (IOException e)
         {
-            throw new PackException(Pack.ERROR_IO_FORCE, e);
+            throw new PackException(PackException.ERROR_IO_FORCE, e);
         }
 
         Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
