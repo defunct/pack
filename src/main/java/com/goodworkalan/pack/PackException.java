@@ -1,5 +1,6 @@
 package com.goodworkalan.pack;
 
+// FIXME Comment.
 public final class PackException
 extends RuntimeException
 {

@@ -10,6 +10,8 @@ import com.goodworkalan.sheaf.DirtyRegionMap;
  * Reads and writes the header fields of a pack file. The header is built on top
  * of {@link DirtyRegionMap} so that writing header fields will only cause the
  * dirty fields to be written when the header is flushed.
+ * <p>
+ * FIXME Comment.
  * 
  * @author Alan Gutierrez
  */

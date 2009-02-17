@@ -10,6 +10,8 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
+ * <p>
+ * FIXME Comment constants.
  */
 public class Pack
 {
@@ -98,6 +100,7 @@ public class Pack
         return bouquet.getAlignment();
     }
     
+    // FIXME Comment.
     public void vacuum()
     {
         synchronized (bouquet.getVacuumMutex())
@@ -143,7 +146,7 @@ public class Pack
         }
     }
     
-    
+    // FIXME Comment.
     public Mutator mutate()
     {
         DirtyPageSet dirtyPages = new DirtyPageSet(16);

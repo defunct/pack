@@ -15,8 +15,10 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class InterimPagePool
 {
+    // FIXME Comment.
     private int maxUserPoolSize;
     
+    // FIXME Comment.
     private long userToInterimBoundary;
     
     /** The set of free interim pages. */
@@ -109,6 +111,7 @@ class InterimPagePool
         return position;
     }
 
+    // FIXME Comment.
     public void free(long position)
     {
         synchronized (freeInterimPages)
@@ -117,6 +120,7 @@ class InterimPagePool
         }
     }
     
+    // FIXME Comment.
     public boolean remove(long position)
     {
         synchronized (freeInterimPages)

@@ -205,6 +205,8 @@ public final class Mutator
      * Tail is chosen as a default because in a linked list model the tail node
      * will not require a pointer to the next block, so the data will contain
      * only allocation data, much like an allocation that spans only one block.
+     * <p>
+     * FIXME Comment.
      * 
      * @param address
      *            The block address.
@@ -245,7 +247,8 @@ public final class Mutator
      * Set the flag indicating that whether or not this block is the last block
      * in a linked list of blocks that stores an allocation that does not fit
      * into the maximum block size.
-     * 
+     * <p>
+     * FIXME Comment.
      * @param address
      * @param isTail
      */

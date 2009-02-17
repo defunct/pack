@@ -6,11 +6,14 @@ import java.util.Set;
 /**
  * A simple vacuum strategy that merges each newly allocated block page with 
  * the first existing user block page that best fits the new page.
+ * <p>
+ * TODO Try putting this in its own package.
  *   
  * @author Alan Gutierrez
  */
 public class BestFitVacuum implements Vacuum
 {
+    // FIXME Comment.
     public void vacuum(Mover mover, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
         for (long position : freedBlockPages)

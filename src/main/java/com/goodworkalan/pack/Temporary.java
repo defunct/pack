@@ -51,6 +51,7 @@ extends Operation
         this.temporary = temporary;
     }
     
+    // FIXME Comment.
     private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
     {
         temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);

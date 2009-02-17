@@ -2,6 +2,7 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
+// FIXME Comment.
 final class Terminate
 extends Operation
 {

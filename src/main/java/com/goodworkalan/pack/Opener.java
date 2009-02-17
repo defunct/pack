@@ -16,6 +16,8 @@ import com.goodworkalan.sheaf.Sheaf;
 
 /**
  * Opens pack files and performs recovery.
+ * <p>
+ * FIXME Comment.
  */
 public final class Opener
 {

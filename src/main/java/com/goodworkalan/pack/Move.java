@@ -16,9 +16,10 @@ import com.goodworkalan.sheaf.Sheaf;
  * <p>
  * The blocks will be freed when the source page is marked as empty and given to
  * the interim page pool.
+ * <p>
+ * FIXME Comment.
  * 
  * @author Alan Gutierrez
- * 
  */
 class Move extends Operation
 {

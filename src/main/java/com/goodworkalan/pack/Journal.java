@@ -6,6 +6,7 @@ import java.util.zip.Adler32;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
+//FIXME Comment.
 class Journal
 {
     private JournalWriter writer;

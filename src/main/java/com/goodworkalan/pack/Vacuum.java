@@ -4,7 +4,7 @@ import java.util.Set;
 
 /**
  * A strategy for relocating blocks, reclaiming space lost in pages due to block
- * frees, and generallly compacting the file.
+ * frees.
  * 
  * @author Alan Gutierrez
  */
@@ -14,7 +14,7 @@ public interface Vacuum
      * Vacuum a pack file by merging and moving block pages.
      * 
      * @param mover
-     *            A recorder for vacuum strategy.
+     *            Used to record the moves prescribed by this strategy.
      * @param byRemaining
      *            A table of user block pages ordered by space remaining.
      * @param allocatedBlockPages

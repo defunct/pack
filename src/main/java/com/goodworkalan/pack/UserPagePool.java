@@ -8,12 +8,16 @@ import java.util.Set;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
+// FIXME Comment.
 class UserPagePool implements Iterable<Long>
 {
+    // FIXME Comment.
     private final Vacuum vacuum;
     
+    // FIXME Comment.
     private final Set<Long> freedBlockPages;
     
+    // FIXME Comment.
     private final Set<Long> allocatedBlockPages;
     
     /**
@@ -35,6 +39,7 @@ class UserPagePool implements Iterable<Long>
         this.allocatedBlockPages = new HashSet<Long>();
     }
     
+    // FIXME Comment.
     public void add(Set<Long> freedBlockPages, Set<Long> allocatedBlockPages)
     {
         synchronized (freedBlockPages)
@@ -47,6 +52,7 @@ class UserPagePool implements Iterable<Long>
         }
     }
     
+    // FIXME Comment.
     private Set<Long> getFreedBlockPages()
     {
         Set<Long> copy = new HashSet<Long>(freedBlockPages);
@@ -54,6 +60,7 @@ class UserPagePool implements Iterable<Long>
         return copy;
     }
 
+    // FIXME Comment.
     private Set<Long> getAllocatedBlockPages()
     {
         Set<Long> copy = new HashSet<Long>(allocatedBlockPages);
@@ -61,11 +68,13 @@ class UserPagePool implements Iterable<Long>
         return copy;
     }
     
+    // FIXME Comment.
     public int getSize()
     {
         return byRemaining.getSize();
     }
     
+    // FIXME Comment.
     public Iterator<Long> iterator()
     {
         return byRemaining.iterator();

@@ -2,7 +2,7 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-
+// FIXME Comment.
 final class NextOperation
 extends Operation
 {

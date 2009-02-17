@@ -214,6 +214,7 @@ class BlockPage extends Page
         return Math.abs(bytes.getLong(bytes.position() + Pack.COUNT_SIZE));
     }
 
+    // FIXME Comment.
     public Boolean isTail(long address)
     {
         synchronized (getRawPage())
@@ -228,6 +229,7 @@ class BlockPage extends Page
         return null;
     }
     
+    // FIXME Comment.
     public boolean setTail(long address, boolean tail)
     {
         synchronized (getRawPage())
@@ -316,6 +318,7 @@ class BlockPage extends Page
         return false;
     }
     
+    // FIXME Comment.
     public void truncate(long address, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())
@@ -344,6 +347,7 @@ class BlockPage extends Page
         }
     }
     
+    // FIXME Comment.
     public boolean isContinuous()
     {
         ByteBuffer bytes = getBlockRange();
@@ -413,6 +417,7 @@ class BlockPage extends Page
         return listOfAddresses;
     }
     
+    // FIXME Comment.
     public long getLastAddress()
     {
         long last = 0L;
@@ -634,6 +639,7 @@ class BlockPage extends Page
         return false;
     }
 
+    // FIXME Comment.
     public void unallocate(long address, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())

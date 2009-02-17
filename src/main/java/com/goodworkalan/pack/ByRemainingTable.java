@@ -16,11 +16,15 @@ import java.util.TreeSet;
  * The table rounds the amount remaining in a given page down to the nearest block alignment, then stores it 
  * in a set for that value. Use the {@link #bestFit(int)} method to find a page
  * that will fit a given block size. Use {@link #reserve(long)} to prevent
- * a page from being returned 
+ * a page from being returned...
  * 
  * A table of pages ordered by size that performs a best fit lookup, returning
  * the page in the collection with the least amount of free space that will
  * accommodate a block of a given size.
+ * <p>
+ * FIXME Remove reservations.
+ * <p>
+ * FIXME Make file backed.
  * 
  * @author Alan Gutierrez
  */
