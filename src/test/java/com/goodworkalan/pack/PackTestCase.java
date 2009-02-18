@@ -701,7 +701,8 @@ public class PackTestCase
         FileChannel fileChannel = newFileChannel(file);
         Pack pack = new Creator().create(fileChannel);
         Mutator mutator = pack.mutate();
-        mutator.temporary(64);
+        long temporary = mutator.allocate(64);
+        mutator.setTemporary(temporary);
         mutator.commit();
         pack.close();
         

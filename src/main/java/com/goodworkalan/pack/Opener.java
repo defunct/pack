@@ -15,29 +15,32 @@ import java.util.TreeSet;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
- * Opens pack files and performs recovery.
- * <p>
- * FIXME Comment.
+ * Opens a <code>Pack</code> file.
  */
 public final class Opener
 {
+    // FIXME Comment.
     private final Set<Long> temporaryBlocks;
-    
+   
+    // FIXME Comment.
     public Opener()
     {
         this.temporaryBlocks = new HashSet<Long>();
     }
-    
+
+    // FIXME Comment.
     public Set<Long> getTemporaryBlocks()
     {
         return temporaryBlocks;
     }
     
+    // FIXME Comment.
     private boolean badAddress(Header header, long address)
     {
         return address < 8 || address > header.getUserBoundary();
     }
 
+    // FIXME Comment.
     private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
     {
         Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
@@ -77,6 +80,7 @@ public final class Opener
         return staticBlocks;
     }    
 
+    // FIXME Comment.
     private Header readHeader(FileChannel fileChannel)
     {
         ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
@@ -91,6 +95,7 @@ public final class Opener
         return new Header(bytes);
     }
 
+    // FIXME Comment.
     public Pack open(FileChannel fileChannel)
     {
         // Read the header and obtain the basic file properties.
@@ -116,6 +121,7 @@ public final class Opener
         return softOpen(fileChannel, header);
    }
 
+    // FIXME Comment.
     private Pack softOpen(FileChannel fileChannel, Header header)
     {
         Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);

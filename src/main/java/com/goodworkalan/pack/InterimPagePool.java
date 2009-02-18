@@ -1,6 +1,5 @@
 package com.goodworkalan.pack;
 
-import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -15,10 +14,16 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class InterimPagePool
 {
-    // FIXME Comment.
+    /**
+     * The maximum number of user pages that should be on the user side of the
+     * user page boundary.
+     */
     private int maxUserPoolSize;
-    
-    // FIXME Comment.
+
+    /**
+     * Pages before this boundary can be used as long term pages, pages after
+     * this boundary should be used as interim pages.
+     */
     private long userToInterimBoundary;
     
     /** The set of free interim pages. */
@@ -30,7 +35,7 @@ class InterimPagePool
     public InterimPagePool()
     {
         this.maxUserPoolSize = 24;
-        this.freeInterimPages = Collections.synchronizedSortedSet(new TreeSet<Long>());
+        this.freeInterimPages = new TreeSet<Long>();
     }
 
     /**
@@ -111,7 +116,13 @@ class InterimPagePool
         return position;
     }
 
-    // FIXME Comment.
+    /**
+     * Free the page at the given position, returning it to the interim page
+     * pool for use by any mutator or vacuum.
+     * 
+     * @param position
+     *            The page position to free.
+     */
     public void free(long position)
     {
         synchronized (freeInterimPages)
@@ -119,8 +130,20 @@ class InterimPagePool
             freeInterimPages.add(position);
         }
     }
-    
-    // FIXME Comment.
+
+    /**
+     * Remove the page at the given page position, preventing it from being used
+     * as an interim page by any mutator. Returns true if the page is in the
+     * interim page pool.
+     * <p>
+     * This method is called by the address page pool to remove a page that is
+     * about to be turned into an address page if it exists in the interim page
+     * pool.
+     * 
+     * @param position
+     *            The page position to free.
+     * @return True if the page position is in the interim page pool.
+     */
     public boolean remove(long position)
     {
         synchronized (freeInterimPages)

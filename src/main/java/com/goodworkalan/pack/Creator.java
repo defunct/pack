@@ -13,57 +13,76 @@ import java.util.TreeSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-//FIXME Comment.
+/**
+ * Used to create a <code>Pack</code> and specify the properties of the
+ * <code>Pack</code> that once created are immutable.
+ * 
+ * @author Alan Gutierrez
+ */
 public final class Creator
 {
-    private final Map<URI, Integer> mapOfStaticPageSizes;
+    /** A map of named pages to page sizes. */
+    private final Map<URI, Integer> staticPages;
 
+    /** The page size. */
     private int pageSize;
 
+    /** The block alignment. */
     private int alignment;
     
+    /** The minimum number of address pages with addresses available for allocation. */
     private int addressPagePoolSize;
 
     private int internalJournalCount;
     
+    /**
+     * Create a constructor for a <code>Pack</code>. The default values for
+     * each property are documented in the setter for the poperty.
+     */
     public Creator()
     {
-        this.mapOfStaticPageSizes = new TreeMap<URI, Integer>();
+        this.staticPages = new TreeMap<URI, Integer>();
         this.pageSize = 8 * 1024;
         this.alignment = 64;
         this.addressPagePoolSize = 1;
         this.internalJournalCount = 64;
     }
-
+    
+    // FIXME Comment.
     public void setPageSize(int pageSize)
     {
         this.pageSize = pageSize * 1024;
     }
 
-    public void setAddressPagePoolSize(int addressPagePoolSize)
-    {
-        this.addressPagePoolSize = addressPagePoolSize;
-    }
-    
+    // FIXME Comment.
     public void setAlignment(int alignment)
     {
         this.alignment = alignment;
     }
-    
+
+    // FIXME Comment.
+    public void addStaticPage(URI uri, int blockSize)
+    {
+        staticPages.put(uri, blockSize);
+    }
+
+    // FIXME Comment.
     public void setInternalJournalCount(int internalJournalCount)
     {
         this.internalJournalCount = internalJournalCount;
     }
 
-    public void addStaticPage(URI uri, int blockSize)
+    // FIXME Comment.
+    public void setAddressPagePoolSize(int addressPagePoolSize)
     {
-        mapOfStaticPageSizes.put(uri, blockSize);
+        this.addressPagePoolSize = addressPagePoolSize;
     }
     
+    // FIXME Comment.
     private int getStaticBlockMapSize()
     {
         int size = Pack.COUNT_SIZE;
-        for (Map.Entry<URI, Integer> entry: mapOfStaticPageSizes.entrySet())
+        for (Map.Entry<URI, Integer> entry: staticPages.entrySet())
         {
             size += Pack.COUNT_SIZE + Pack.ADDRESS_SIZE;
             size += entry.getKey().toString().length() * 2;
@@ -148,12 +167,12 @@ public final class Creator
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         
-        statics.putInt(mapOfStaticPageSizes.size());
+        statics.putInt(staticPages.size());
         
-        if (mapOfStaticPageSizes.size() != 0)
+        if (staticPages.size() != 0)
         {
             Mutator mutator = new Pack(bouquet).mutate();
-            for (Map.Entry<URI, Integer> entry: mapOfStaticPageSizes.entrySet())
+            for (Map.Entry<URI, Integer> entry: staticPages.entrySet())
             {
                 String uri = entry.getKey().toString();
                 int size = entry.getValue();

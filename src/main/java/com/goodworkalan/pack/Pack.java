@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -79,6 +80,93 @@ public class Pack
     {
         this.bouquet = bouquet;
     }
+
+    /**
+     * Read the block at the given address into the given destination buffer. If
+     * the given destination buffer is null, this method will allocate a byte
+     * buffer of the block size. If the given destination buffer is not null and
+     * the block size is greater than the bytes remaining in the destination
+     * buffer, size of the addressed block, no bytes are transferred and a
+     * <code>BufferOverflowException</code> is thrown.
+     * 
+     * @param address
+     *            The block address.
+     * @param destination
+     *            The destination buffer or null to indicate that the method
+     *            should allocate a destination buffer of block size.
+     * @return The given or created destination buffer.
+     * @throws BufferOverflowException
+     *             If the size of the block is greater than the bytes remaining
+     *             in the destination buffer.
+     */
+    private ByteBuffer tryRead(long address, ByteBuffer destination)
+    {
+        bouquet.getPageMoveLock().readLock().lock();
+        try
+        {
+            ByteBuffer read = null;
+            do
+            {
+                BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                read = user.read(address, destination);
+            }
+            while (read == null);
+            
+            return read;
+        }
+        finally
+        {
+            bouquet.getPageMoveLock().readLock().unlock();
+        }
+    }
+
+    /**
+     * Read the block at the given address into the a buffer and return the
+     * buffer. This method will allocate a byte buffer of the block size.
+     * <p>
+     * The address is only valid after the <code>commit</code> method of the
+     * <code>Mutator</code> that allocated the address is called.
+     * 
+     * @param address
+     *            The block address.
+     * @return A buffer containing the contents of the block.
+     */
+    public ByteBuffer read(long address)
+    {
+        return tryRead(address, null);
+    }
+
+    /**
+     * Read the block referenced by the given address into the given destination
+     * buffer. If the block size is greater than the bytes remaining in the
+     * destination buffer, size of the addressed block, no bytes are transferred
+     * and a <code>BufferOverflowException</code> is thrown.
+     * <p>
+     * The address is only valid after the <code>commit</code> method of the
+     * <code>Mutator</code> that allocated the address is called.
+     * 
+     * @param address
+     *            The address of the block.
+     * @param destination
+     *            The destination byte buffer.
+     * @throws BufferOverflowException
+     *             If the size of the block is greater than the bytes remaining
+     *             in the destination buffer.
+     */
+    public void read(long address, ByteBuffer destination)
+    {
+        tryRead(address, destination);
+    }
+    
+    /**
+     * Return the maximum size of a block allocation for this pack.
+     * 
+     * @return The maximum block size.
+     */
+    public int getMaximumBlockSize()
+    {
+        return bouquet.getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE - Pack.BLOCK_HEADER_SIZE;
+    }
     
     /**
      * Get the size of all underlying pages managed by this pager.
@@ -100,7 +188,34 @@ public class Pack
         return bouquet.getAlignment();
     }
     
-    // FIXME Comment.
+    /**
+     * Set the strategy for optimizing the size of the file on disk.
+     * 
+     * @param vacuum
+     *            The strategy for optimizing the size of the file on disk.
+     */
+    public void setVacuum(Vacuum vacuum)
+    {
+        synchronized (bouquet.getVacuumMutex())
+        {
+            bouquet.getUserPagePool().setVacuum(vacuum);
+        }
+    }
+
+    /**
+     * Optimize the size of the pack on disk by combining block pages and
+     * compacting block pages with freed blocks.
+     * <p>
+     * The actual vacuum is only performed if the {@link Vacuum} strategy
+     * assigned by the {@link Creator} determines that there is something to
+     * gain from a vacuum.
+     * <p>
+     * Vacuum can either be called after each mutator commit or it can be
+     * called periodically from a worker thread.
+     * 
+     * @see Vacuum
+     * @see Creator
+     */
     public void vacuum()
     {
         synchronized (bouquet.getVacuumMutex())
@@ -146,7 +261,17 @@ public class Pack
         }
     }
     
-    // FIXME Comment.
+    /**
+     * Create an isolated mutator that can concurrently modify the pack. A mutator
+     * is the only way to 
+     * 
+     * The
+     * changed made by the mutator will not be made permanent until the
+     * {@link Mutator#commit() commit} method of the mutator is called. They
+     * will be discarded
+     * 
+     * @return
+     */
     public Mutator mutate()
     {
         DirtyPageSet dirtyPages = new DirtyPageSet(16);

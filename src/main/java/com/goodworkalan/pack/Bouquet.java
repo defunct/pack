@@ -101,7 +101,7 @@ final class Bouquet
         this.userBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
-        this.userPagePool = new UserPagePool(sheaf.getPageSize(), alignment);
+        this.userPagePool = new UserPagePool(header.getPageSize(), header.getAlignment());
         this.interimPagePool = new InterimPagePool();
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();

@@ -3,15 +3,18 @@ package com.goodworkalan.pack;
 import java.util.Set;
 
 /**
- * A strategy for relocating blocks, combining new allocations with existing
- * allocations, reclaiming space lost in pages due to block frees.
+ * An implementation of vacuum that does nothing to reorder the
+ * <code>Pack</code> file. This is the default vacuum strategy. It is useful for
+ * applications where the <code>Pack</code> is used to temporarily allocate
+ * blobs of data larger than a single block. An example might be a web page
+ * cache or a mail queue.
  * 
  * @author Alan Gutierrez
  */
-public interface Vacuum
+public class NullVacuum implements Vacuum
 {
     /**
-     * Vacuum a pack file by merging and moving block pages.
+     * Do nothing.
      * 
      * @param mover
      *            Used to record the moves prescribed by this strategy.
@@ -23,5 +26,7 @@ public interface Vacuum
      *            The block pages with freed blocks followed by allocated blocks
      *            created by frees since the last vacuum.
      */
-    public void vacuum(MoveRecorder mover, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages);
+    public void vacuum(MoveRecorder moveRecorder, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
+    {
+    }
 }

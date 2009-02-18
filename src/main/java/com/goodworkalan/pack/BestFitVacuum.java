@@ -14,40 +14,40 @@ import java.util.Set;
 public class BestFitVacuum implements Vacuum
 {
     // FIXME Comment.
-    public void vacuum(Mover mover, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
+    public void vacuum(MoveRecorder moveRecorder, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
         for (long position : freedBlockPages)
         {
             byRemaining.remove(position);
         }
         
-        int pageSize = mover.getSheaf().getPageSize();
+        int pageSize = moveRecorder.getPageSize();
         
         Iterator<Long> discontinuous = freedBlockPages.iterator();
         while (discontinuous.hasNext())
         {
             long position = discontinuous.next();
-            long bestFit = byRemaining.bestFit(pageSize - mover.getBytesRemaining(position));
+            long bestFit = byRemaining.bestFit(pageSize - moveRecorder.getBytesRemaining(position));
             if (bestFit != 0)
             {
-                mover.move(position, bestFit);
+                moveRecorder.move(position, bestFit);
                 discontinuous.remove();
             }
         }
         
         for (long position : freedBlockPages)
         {
-            mover.move(position);
+            moveRecorder.move(position);
         }
         
         Iterator<Long> allocated = allocatedBlockPages.iterator();
         while (allocated.hasNext())
         {
             long position = allocated.next();
-            long bestFit = byRemaining.bestFit(pageSize - mover.getBytesRemaining(position));
+            long bestFit = byRemaining.bestFit(pageSize - moveRecorder.getBytesRemaining(position));
             if (bestFit != 0)
             {
-                mover.move(position, bestFit);
+                moveRecorder.move(position, bestFit);
                 allocated.remove();
             }
         }

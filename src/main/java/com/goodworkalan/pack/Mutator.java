@@ -99,19 +99,19 @@ public final class Mutator
      * Allocate a block whose address will be returned in the list of temporary
      * blocks when the pack is reopened.
      * <p>
-     * I've implemented this using user space, which seems to imply that I don't
-     * need to provide this as part of the core. I'm going to attempt to
-     * implement it as a user object.
+     * This method <strong>can only be called for blocks that were allocated by
+     * this mutator</strong> and before the allocations have been committed by
+     * calling <code>commit</code>.
      * 
-     * @param blockSize
-     *            Size of the temporary block to allocate.
-     * 
-     * @return The address of the block.
+     * @param address The block address.
      */
-    public long temporary(int blockSize)
+    public void setTemporary(long address)
     {
-        long address = allocate(blockSize);
-        
+        if (!addresses.containsKey(-address))
+        {
+            throw new IllegalStateException();
+        }
+
         bouquet.getPageMoveLock().readLock().lock();
         try
         {
@@ -122,8 +122,6 @@ public final class Mutator
         {
             bouquet.getPageMoveLock().readLock().unlock();
         }
-        return address;
-        
     }
 
     /**
@@ -188,54 +186,42 @@ public final class Mutator
     }
 
     /**
-     * If true, the block is the last block in a linked list of blocks used to
-     * store an allocation that cannot fit in a single block. Pack itself does
-     * not manage allocations that span multiple blocks. An attempt to allocate
-     * a block larger than the maximum block size will result in a
-     * <code>PackException</code>.
+     * Set to true a flag indicating that block referenced by the given address
+     * is part of an allocation that that could not fit in the maximum block
+     * size that is continued on one or more subsequent blocks. After calling
+     * this method calls to {@link #isContinued(long)} will return true.
      * <p>
-     * The default value for the tail flag is true. Allocations will set the
-     * tail flag to true.
+     * The default value of this flag for any allocation is false. If false, the
+     * block is either an allocation that could fit in the maximum block size or
+     * the last block of an allocation that could not fit in the maximum block
+     * size.
      * <p>
-     * Client programmers can use this flag to indicate that a block contains an
-     * allocation that spans more than one block. For allocations that spans
-     * multiple blocks, the client programmer can create a linked list including
-     * the address of the next block in the block data.
+     * This method <strong>can only be called for blocks that were allocated by
+     * this mutator</strong> and before the allocations have been committed by
+     * calling <code>commit</code>.
      * <p>
-     * Tail is chosen as a default because in a linked list model the tail node
-     * will not require a pointer to the next block, so the data will contain
-     * only allocation data, much like an allocation that spans only one block.
-     * <p>
-     * FIXME Comment.
+     * The default value for the flag is false.
      * 
      * @param address
      *            The block address.
-     * @return True if the block is the last block in list of blocks used to
-     *         store an allocation that cannot fit in a single block.
      */
-    public boolean isTail(long address)
+    public void setContinued(long address)
     {
+        if (addresses.containsKey(-address))
+        {
+            throw new IllegalStateException();
+        }
+     
         bouquet.getPageMoveLock().readLock().lock();
         try
         {
-            Boolean isTail = null;
-            Long isolated = getIsolated(address);
-            if (isolated == null)
+            // For now, the first test will write to an allocated block, so
+            // the write buffer is already there.
+            BlockPage interim = getInterimBlock(address);
+            if (!interim.setContinued(address))
             {
-                do
-                {
-                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
-                    isTail = user.isTail(address);
-                }
-                while (isTail == null);
+                throw new IllegalStateException();
             }
-            else
-            {
-                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
-                isTail = interim.isTail(address);
-            }
-    
-            return isTail;
         }
         finally
         {
@@ -244,26 +230,51 @@ public final class Mutator
     }
 
     /**
-     * Set the flag indicating that whether or not this block is the last block
-     * in a linked list of blocks that stores an allocation that does not fit
-     * into the maximum block size.
+     * If true the block is part of an allocation that that could not fit in the
+     * maximum block size that is continued on one or more subsequent blocks. If
+     * false, the block is either an allocation that could fit in the maximum
+     * block size or the last block of an allocation that could not fit in the
+     * maximum block size.
      * <p>
-     * FIXME Comment.
+     * The default value for the tail flag is true.
+     * <p>
+     * Client programmers can use this flag to indicate that a block contains an
+     * allocation that spans more than one block. For allocations that spans
+     * multiple blocks, the client programmer can create a linked list including
+     * the address of the next block in the block data.
+     * 
      * @param address
-     * @param isTail
+     *            The block address.
+     * @return True if true the block is part of an allocation that that could
+     *         not fit in the maximum block size that is continued on one or
+     *         more subsequent blocks, false if the block is either an
+     *         allocation that could fit in the maximum block size or the last
+     *         block of an allocation that could not fit in the maximum block
+     *         size.
      */
-    public void setTail(long address, boolean isTail)
+    public boolean isContinued(long address)
     {
         bouquet.getPageMoveLock().readLock().lock();
         try
         {
-            // For now, the first test will write to an allocated block, so
-            // the write buffer is already there.
-            BlockPage interim = snert(address);
-            if (!interim.setTail(address, isTail))
+            Boolean isContinued = null;
+            Long isolated = getIsolated(address);
+            if (isolated == null)
             {
-                throw new IllegalStateException();
+                do
+                {
+                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                    isContinued = user.isContinued(address);
+                }
+                while (isContinued == null);
             }
+            else
+            {
+                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                isContinued = interim.isContinued(address);
+            }
+    
+            return isContinued;
         }
         finally
         {
@@ -294,7 +305,7 @@ public final class Mutator
         {
             // For now, the first test will write to an allocated block, so
             // the write buffer is already there.
-            BlockPage interim = snert(address);
+            BlockPage interim = getInterimBlock(address);
             if (!interim.write(address, source, dirtyPages))
             {
                 throw new IllegalStateException();
@@ -306,7 +317,7 @@ public final class Mutator
         }
     }
 
-    private BlockPage snert(final long address)
+    private BlockPage getInterimBlock(final long address)
     {
         BlockPage interim;
         Long isolated = getIsolated(address);

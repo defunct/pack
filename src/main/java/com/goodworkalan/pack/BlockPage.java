@@ -214,30 +214,56 @@ class BlockPage extends Page
         return Math.abs(bytes.getLong(bytes.position() + Pack.COUNT_SIZE));
     }
 
-    // FIXME Comment.
-    public Boolean isTail(long address)
+    /**
+     * Return true if the block is part of an allocation that was too big to fit
+     * in the maximum block size and is followed by one or more subsequent
+     * blocks that continue the allocation.
+     * <p>
+     * Continued allocations are indicated by storing a negated value for the
+     * back-reference address.
+     * 
+     * @param address
+     *            The block address.
+     * @return True if the block is part of a continued allocation.
+     */
+    public Boolean isContinued(long address)
     {
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getRawPage().getByteBuffer();
             if (seek(bytes, address))
             {
-                return bytes.getLong(bytes.position() + Pack.COUNT_SIZE) > 0L;
+                return bytes.getLong(bytes.position() + Pack.COUNT_SIZE) < 0L;
             }
         }
         
         return null;
     }
-    
-    // FIXME Comment.
-    public boolean setTail(long address, boolean tail)
+
+    /**
+     * Set to true flag that indicates that block is part of an allocation that
+     * was too big to fit in the maximum block size and is followed by one or
+     * more subsequent blocks that continue the allocation. Return true if the
+     * block for the given address exists in this block page, false if it does
+     * not. If the block does not exist, it is likely that the block has been
+     * moved by a vacuum and the address need to be dereferenced again.
+     * <p>
+     * Continued allocations are indicated by storing a negated value for the
+     * back-reference address.
+     * 
+     * @param address
+     *            The block address.
+     * @return True if the block for the given address was found in this block
+     *         page, false if it was not.
+     */
+    public boolean setContinued(long address)
     {
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getRawPage().getByteBuffer();
             if (seek(bytes, address))
             {
-                bytes.putLong(bytes.position() + Pack.COUNT_SIZE, getAddress(bytes) * (tail ? 1 : -1));
+                bytes.putLong(bytes.position() + Pack.COUNT_SIZE, -getAddress(bytes));
                 return true;
             }
         }
@@ -317,8 +343,24 @@ class BlockPage extends Page
         }
         return false;
     }
-    
-    // FIXME Comment.
+
+    /**
+     * Truncate the block page, adjusting the block count to end the list of
+     * blocks after the block with the given address.
+     * <p>
+     * This method is called during journal playback of a vacuum move to reset
+     * the block page to its state when the vacuum move was recorded in the
+     * journal. If there is a hard shutdown while blocks are appended to the
+     * block page, the truncating the block page before appending moved blocks
+     * will ensure that the when the journal is replayed in recovery, it does
+     * not append a block twice. The truncate and append will overwrite any
+     * blocks that were corrupted by a hard shutdown in middle of a block write.
+     * 
+     * @param address
+     *            The block address.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     */
     public void truncate(long address, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())
@@ -346,8 +388,22 @@ class BlockPage extends Page
             getRawPage().getByteBuffer().putInt(Pack.CHECKSUM_SIZE, getBlockCount());
         }
     }
-    
-    // FIXME Comment.
+
+    /**
+     * Return true if there are no gaps left by free blocks in the list of
+     * allocated blocks.
+     * <p>
+     * A page is discontinuous when a freed block is followed by one or more
+     * allocated blocks.
+     * <p>
+     * Not all block frees cause a block page to become discontinuous. When a
+     * block or string of blocks is freed from the end of the list of blocks, no
+     * gaps are created and the page is continuous. If a page is discontinuous,
+     * the allocated blocks following the first freed block are freed, the page
+     * becomes continuous.
+     * 
+     * @return True if there are no freed blocks followed by allocated blocks.
+     */
     public boolean isContinuous()
     {
         ByteBuffer bytes = getBlockRange();
@@ -416,8 +472,23 @@ class BlockPage extends Page
         }
         return listOfAddresses;
     }
-    
-    // FIXME Comment.
+
+    /**
+     * Get the address of the last block in the list of allocated blocks for use
+     * in truncating failed copies during journal playback. This method is
+     * called to obtain the last block in the list of blocks when writing a
+     * journal entry for a block page move.
+     * <p>
+     * During playback, the journal will truncate the block page, ignoring any
+     * blocks that occur after the recorded last address. Then it will append
+     * new blocks to the block page. This truncate is for the case where a hard
+     * shutdown occurs while appending blocks during a vacuum move. The truncate
+     * ensures that we do not append a block twice, that we do a complete do
+     * over, resetting the state of the block page, overwritting any blocks that
+     * might have been corrupted by a hard shutdown in middle of a write.
+     * 
+     * @return The address of the last block in the list of allocated blocks.
+     */
     public long getLastAddress()
     {
         long last = 0L;
@@ -639,7 +710,22 @@ class BlockPage extends Page
         return false;
     }
 
-    // FIXME Comment.
+    /**
+     * Frees a block on a block page used as an interim block page by copying
+     * subsequent blocks over the gap created by the free block, freeing up the
+     * entire remaining region of the block page for the allocation of new
+     * blocks. This unallocates a block, rather than freeing it and potentially
+     * leaving a gap with a freed block to skip.
+     * <p>
+     * Since an interim block page is only referenced by a single mutator, all
+     * of the blocks belong to a single mutator, so copying over blocks will not
+     * interfere with a concurrent attempt to read the other blocks.
+     * 
+     * @param address
+     *            The address of the block to free.
+     * @param dirtyPages
+     *            The set of dirty pages.
+     */
     public void unallocate(long address, DirtyPageSet dirtyPages)
     {
         synchronized (getRawPage())
