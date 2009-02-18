@@ -28,7 +28,12 @@ public final class Opener
         this.temporaryBlocks = new HashSet<Long>();
     }
 
-    // FIXME Comment.
+    /**
+     * Return the addresses of blocks in the file marked as temporary by the
+     * {@link Mutator#setTemporary(long)}.
+     * 
+     * @return The set of temporary blocks.
+     */
     public Set<Long> getTemporaryBlocks()
     {
         return temporaryBlocks;
@@ -40,7 +45,16 @@ public final class Opener
         return address < 8 || address > header.getUserBoundary();
     }
 
-    // FIXME Comment.
+    /**
+     * Read the map of static blocks URIs to block address from the given file
+     * channel using the housekeeping information in the given header.
+     * 
+     * @param header
+     *            The file header.
+     * @param fileChannel
+     *            The file channel.
+     * @return A map of static block URIs to block addresses.
+     */
     private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
     {
         Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
@@ -78,9 +92,16 @@ public final class Opener
             }
         }
         return staticBlocks;
-    }    
+    }
 
-    // FIXME Comment.
+    /**
+     * Read the file header from the given file channel.
+     * 
+     * @param fileChannel
+     *            The file channel.
+     * @return The file header.
+     * @throws PackException If an I/O error occours.
+     */
     private Header readHeader(FileChannel fileChannel)
     {
         ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
@@ -95,6 +116,7 @@ public final class Opener
         return new Header(bytes);
     }
 
+    // FIXME Return null?
     // FIXME Comment.
     public Pack open(FileChannel fileChannel)
     {
@@ -118,12 +140,6 @@ public final class Opener
             return null;
         }
 
-        return softOpen(fileChannel, header);
-   }
-
-    // FIXME Comment.
-    private Pack softOpen(FileChannel fileChannel, Header header)
-    {
         Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
 
         int reopenSize = 0;

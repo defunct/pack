@@ -545,8 +545,8 @@ public class PackTestCase
     @Test public void staticPages()
     {
         Creator creator = new Creator();
-        creator.addStaticPage(URI.create("http://one.com/"), 64);
-        creator.addStaticPage(URI.create("http://two.com/"), 64);
+        creator.addStaticBlock(URI.create("http://one.com/"), 64);
+        creator.addStaticBlock(URI.create("http://two.com/"), 64);
         FileChannel fileChannel = newFileChannel();
         Pack pack = creator.create(fileChannel);
         Mutator mutator = pack.mutate();

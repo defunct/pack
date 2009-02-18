@@ -48,37 +48,79 @@ public final class Creator
         this.internalJournalCount = 64;
     }
     
-    // FIXME Comment.
+    /**
+     * Set the page size size in kilobytes. The minimum page size is 1k.
+     * 
+     * @param pageSize The page size.
+     */
     public void setPageSize(int pageSize)
     {
         this.pageSize = pageSize * 1024;
     }
 
-    // FIXME Comment.
+    /**
+     * Set the block alignment.
+     * <p>
+     * The block alignment is used to group pages in by bytes available for
+     * allocation in lookup tables for free blocks. The default byte alignment
+     * is 64 bytes. The minimum byte alignment is 32 bytes.
+     * 
+     * @param alignment The block alignment.
+     */
     public void setAlignment(int alignment)
     {
         this.alignment = alignment;
     }
 
-    // FIXME Comment.
-    public void addStaticPage(URI uri, int blockSize)
+    /**
+     * Add a static block identified by a URI that cannot be deallocated.
+     * <p>
+     * Static blocks can be used by client programmers to create headers and
+     * housekeeping records.
+     * 
+     * @param uri
+     *            The URI of the static block.
+     * @param blockSize
+     *            The size of the static block.
+     */
+    public void addStaticBlock(URI uri, int blockSize)
     {
         staticPages.put(uri, blockSize);
     }
 
-    // FIXME Comment.
+    /**
+     * Set the number of journal headers in the file. The number of journal
+     * headers determines the maximum number of concurrent commit operations.
+     * The default is 64.
+     * 
+     * @param internalJournalCount
+     *            The number of journals in the file.
+     */
     public void setInternalJournalCount(int internalJournalCount)
     {
         this.internalJournalCount = internalJournalCount;
     }
 
-    // FIXME Comment.
+    /**
+     * Set the minimum number of address pages with addresses available to keep
+     * in the address page pool. When the number of address pages with addresses
+     * available for allocation drops below this minimum a new address page is
+     * created from the user pages.
+     * 
+     * @param addressPagePoolSize
+     *            The minimum number of address pages with addresses available
+     *            to keep in the address page pool
+     */
     public void setAddressPagePoolSize(int addressPagePoolSize)
     {
         this.addressPagePoolSize = addressPagePoolSize;
     }
-    
-    // FIXME Comment.
+
+    /**
+     * Get the size in bytes necessary to store the static block map.
+     * 
+     * @return The size necessary to store the static block map.
+     */
     private int getStaticBlockMapSize()
     {
         int size = Pack.COUNT_SIZE;
@@ -91,7 +133,9 @@ public final class Creator
     }
 
     /**
-     * Create a new pack that writes to the specified file.
+     * Create a new pack that writes to the specified file channel.
+     * 
+     * @return fileChannel The file channel.
      */
     public Pack create(FileChannel fileChannel)
     {

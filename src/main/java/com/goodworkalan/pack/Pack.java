@@ -282,7 +282,7 @@ public class Pack
     /**
      * Return a map of named pages that maps a URI to the address of a static
      * page. Static pages are defined using the
-     * {@link Creator#addStaticPage(URI, int)} method. They can be used to
+     * {@link Creator#addStaticBlock(URI, int)} method. They can be used to
      * specify blocks that contain housekeeping information in application
      * programs.
      * 
