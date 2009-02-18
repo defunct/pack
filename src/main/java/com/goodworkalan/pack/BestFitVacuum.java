@@ -6,8 +6,6 @@ import java.util.Set;
 /**
  * A simple vacuum strategy that merges each newly allocated block page with 
  * the first existing user block page that best fits the new page.
- * <p>
- * TODO Try putting this in its own package.
  *   
  * @author Alan Gutierrez
  */

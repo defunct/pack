@@ -75,7 +75,7 @@ public final class Mutator
      */
     Mutator(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
-        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
+        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet);
 
         this.bouquet = bouquet;
         this.journal = journal;
@@ -520,21 +520,13 @@ public final class Mutator
             // the interim block.
             if (isolated != null)
             {
-                // Figure out which by size table contains the page.  We
-                // will not reinsert the page if it is not already in the by
-                // size table.
-                boolean reinsert = allocByRemaining.remove(isolated) != 0;
-                
                 // Free the block from the interim page.
                 BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
                 interim.unallocate(address, dirtyPages);
                 
-                // We remove and reinsert because if we free from the end of
-                // the block, the bytes remaining will change.
-                if (reinsert)
-                {
-                    allocByRemaining.add(interim);
-                }
+                // We remove and reinsert because the bytes remaining will change.
+                allocByRemaining.add(interim);
             }
 
             // If we are freeing a block allocated by this mutator, we

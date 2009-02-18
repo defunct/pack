@@ -9,7 +9,7 @@ import java.util.Set;
 import com.goodworkalan.sheaf.DirtyPageSet;
 
 // FIXME Comment.
-class UserPagePool implements Iterable<Long>
+class UserPagePool
 {
     /** The strategy for optimizing the size of the file on disk. */
     private Vacuum vacuum;
@@ -43,10 +43,10 @@ class UserPagePool implements Iterable<Long>
      * @param alignment
      *            The block alignment.
      */
-    public UserPagePool(int pageSize, int alignment)
+    public UserPagePool(ByRemainingTable byRemaining, int pageSize, int alignment)
     {
         this.vacuum = new NullVacuum();
-        this.byRemaining = new ByRemainingTable(pageSize, alignment);
+        this.byRemaining = byRemaining;
         this.freedBlockPages = new HashSet<Long>();
         this.allocatedBlockPages = new HashSet<Long>();
     }
@@ -115,27 +115,6 @@ class UserPagePool implements Iterable<Long>
             allocatedBlockPages.clear();
             return copy;
         }
-    }
-    
-    /**
-     * Return the number of pages with space remaining.
-     * 
-     * @return The number of pages with space remaining.
-     */
-    public int getSize()
-    {
-        return byRemaining.getSize();
-    }
-    
-    /**
-     * Return an iterator over the pages that have space available for the
-     * allocation of blocks.
-     * 
-     * @return An iterator over the page that have space available.
-     */
-    public Iterator<Long> iterator()
-    {
-        return byRemaining.iterator();
     }
     
     // TODO File set, each page divided into blocks with a larger and larger

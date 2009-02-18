@@ -27,6 +27,10 @@ public class Pack
 
     final static int HARD_SHUTDOWN = 0x55555555;
     
+    final static int INT_SIZE = (Integer.SIZE / Byte.SIZE);
+    
+    final static int LONG_SIZE = (Long.SIZE / Byte.SIZE);
+
     final static int FLAG_SIZE = 2;
 
     final static int COUNT_SIZE = 4;
@@ -347,9 +351,7 @@ public class Pack
 
         int size = 0;
         
-        int userPageSize = bouquet.getUserPagePool().getSize();
         size += Pack.COUNT_SIZE + bouquet.getAddressPagePool().size() * Pack.POSITION_SIZE;
-        size += Pack.COUNT_SIZE + userPageSize * Pack.POSITION_SIZE;
         
         ByteBuffer reopen = ByteBuffer.allocateDirect(size);
         
@@ -359,12 +361,6 @@ public class Pack
             reopen.putLong(position);
         }
        
-        reopen.putInt(userPageSize);
-        for (long position: bouquet.getUserPagePool())
-        {
-            reopen.putLong(position);
-        }
-        
         reopen.flip();
 
         long endOfSheaf;

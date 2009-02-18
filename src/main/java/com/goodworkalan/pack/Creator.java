@@ -153,7 +153,7 @@ public final class Creator
         header.setUserBoundary(pageSize);
         header.setEndOfSheaf(0L);
         header.setFirstTemporaryNode(Long.MIN_VALUE);
-        header.setFirstReferencePage(Long.MIN_VALUE);
+        header.setByRemainingTable(Long.MIN_VALUE);
 
         try
         {
@@ -203,11 +203,11 @@ public final class Creator
         
         UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
         TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
-        
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 userBoundary,
                 sheaf,
-                new AddressPagePool(header.getAddressPagePoolSize(), addressPages), temporaryPool);
+                new AddressPagePool(header.getAddressPagePoolSize(), addressPages),
+              temporaryPool);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
         

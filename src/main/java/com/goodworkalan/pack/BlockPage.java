@@ -69,6 +69,7 @@ import com.goodworkalan.sheaf.Sheaf;
 class BlockPage extends Page
 {
     /** The count of blocks in this page. */
+    // FIXME Need to keep track of freed blocks to have correct remaining.
     protected int count;
 
     /** The count of bytes remaining for block allocation. */
