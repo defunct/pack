@@ -105,8 +105,8 @@ class UserBoundary
     }
 
     /**
-     * Dereferences the page referenced by the address, adjusting the file
-     * position of the page according the list of user move latches.
+     * Dereferences the block page referenced by the address, adjusting the file
+     * position of the block page according the list of user move latches.
      * 
      * @param address
      *            The block address.
@@ -117,22 +117,34 @@ class UserBoundary
      */
     public BlockPage dereference(Sheaf sheaf, long address)
     {
-        // Get the address page.
-        AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
-    
-        // Assert that address is not a free address.
-        long position = addresses.dereference(address);
-        if (position == 0L || position == Long.MAX_VALUE)
+        for (;;)
         {
-            throw new PackException(PackException.ERROR_FREED_ADDRESS);
-        }
+            // Get the address page.
+            AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
         
-        while (position < getPosition())
-        {
-            position = get(sheaf, position);
+            // Assert that address is not a free address.
+            long position = addresses.dereference(address);
+            if (position == 0L || position == Long.MAX_VALUE)
+            {
+                throw new PackException(PackException.ERROR_FREED_ADDRESS);
+            }
+            
+            while (position < getPosition())
+            {
+                position = get(sheaf, position);
+            }
+            
+            // FIXME What if blocks are moved, page is reclaimed, page is
+            // reassigned, right here?
+            Page page = sheaf.getPage(position, Page.class, new Page());
+            synchronized (page.getRawPage())
+            {
+                if (page.getRawPage().getByteBuffer().get(0) < 0)
+                {
+                    return sheaf.getPage(position, BlockPage.class, new BlockPage());
+                }
+            }
         }
-    
-        return sheaf.getPage(position, BlockPage.class, new BlockPage());
     }
     
     // TODO Comment.

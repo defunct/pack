@@ -122,7 +122,13 @@ class BlockPage extends Page
         dirtyPages.add(getRawPage());
     }
 
-    // TODO Document.
+    /**
+     * Calculate the count of bytes remaining for block allocation by tallying
+     * all allocated and freed blocks and subtracting that from the page size
+     * less the block page header size.
+     * 
+     * @return The count of bytes remaining for block allocation.
+     */
     private int calcRemaining()
     {
         int remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
@@ -379,8 +385,13 @@ class BlockPage extends Page
     }
 
     /**
-     * Return true if there are no gaps left by free blocks in the list of
-     * allocated blocks.
+     * Attempt to pruge the block page of freed blocks by removing those freed
+     * blocks that are not followed by allocated blocks. That is, remove any
+     * consecutive freed blocks at the end of the list of blocks.
+     * <p>
+     * Returns true if there are no freed blocks followed by allocated blocks.
+     * That is, there are no gaps left by free blocks in the list of allocated
+     * blocks.
      * <p>
      * A page is discontinuous when a freed block is followed by one or more
      * allocated blocks.
@@ -391,9 +402,10 @@ class BlockPage extends Page
      * the allocated blocks following the first freed block are freed, the page
      * becomes continuous.
      * 
+     * @param dirtyPages
+     *            The dirty page set.
      * @return True if there are no freed blocks followed by allocated blocks.
      */
-    // TODO Document.
     public boolean purge(DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = getBlockRange();
@@ -530,8 +542,10 @@ class BlockPage extends Page
         {
             ByteBuffer bytes = getBlockRange();
             
-            // FIXME Assert that we go to the end of the page.
-            seek(bytes, address);
+            if (seek(bytes, address))
+            {
+                throw new IllegalStateException();
+            }
 
             getRawPage().invalidate(bytes.position(), blockSize);
 

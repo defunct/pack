@@ -6,7 +6,21 @@ import java.util.Set;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// TODO Comment.
+/**
+ * Update an address to reference a block allocation or isolated block write.
+ * <p>
+ * A write operation contains an address and the page position of a block page
+ * containing the block to assign to that address.
+ * <p>
+ * In the case of an allocation, the write will update the address to reference
+ * the newly allocated block.
+ * <p>
+ * In the case of a write, the write operation will dereference the current
+ * address, free the block it its current page, then it will update the address
+ * to reference the newly allocated block.
+ * 
+ * @author Alan Gutierrez
+ */
 final class Write
 extends Operation
 {
@@ -23,50 +37,106 @@ extends Operation
     public Write()
     {
     }
-    
-    // TODO Comment.
+
+    /**
+     * Create a write address that will update the given address to reference
+     * the block for that address in the block page at the given position.
+     * 
+     * @param address
+     *            The address.
+     * @param position
+     *            The position of the block page.
+     */
     public Write(long address, long position)
     {
         this.address = address;
         this.position = position;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Update the address of this write operation to reference the block in the
+     * the block page at the position this write operation.
+     * 
+     * @param sheaf
+     *            The page manager.
+     * @param userBoundary
+     *            The boundary between the address pages and user pages.
+     * @param freedBlockPages
+     *            The set of blocks that have had pages freed during this
+     *            playback of the journal.
+     * @param allocatedBlockPages
+     *            The pages with allocated blocks and isolated write blocks for
+     *            this journal.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
     private void commit(Sheaf sheaf, UserBoundary userBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
     {
+        // Get the address page for the address.
         AddressPage addresses = sheaf.getPage(address < 0 ? -address : address, AddressPage.class, new AddressPage());
-        if (address > 0L && addresses.dereference(address) != 0)
+
+        // If the address is greater than zero and the dereferenced addres is
+        // does not reference a null page position.
+        if (address > 0L && addresses.dereference(address) != 0L)
         {
             long previous = 0L;
             for (;;)
             {
+                // Get the adjusted user page block page.
                 BlockPage user = userBoundary.dereference(sheaf, address);
+                // FIXME What if page moves here? What if it changes type? 
                 synchronized (user.getRawPage())
                 {
-                    // TODO Free could also mean back reference points not back
-                    // to address.  Remember, here you're not copying, just
-                    // re-pointing.
-                    boolean freed = user.getRawPage().getPosition() == position;
-                    if (!freed)
+                    if (user.getRawPage().getPage() == user)
                     {
-                        freed = user.free(address, dirtyPages);
-                        if (freed)
+                        // We may have already updated the address during a
+                        // failed journal playback.
+                        boolean freed = user.getRawPage().getPosition() == position;
+                        if (!freed)
                         {
-                            freedBlockPages.add(user.getRawPage().getPosition());
+                            // Free the existing block. We may have already
+                            // freed the block but not updated the address
+                            // during a failed playback, or we may have lost a
+                            // race against another thread that is chaing the
+                            // address reference.
+                            freed = user.free(address, dirtyPages);
+                            if (freed)
+                            {
+                                // Record the block page as containing freed
+                                // blocks.
+                                freedBlockPages.add(user.getRawPage().getPosition());
+                            }
+                        }
+
+                        // If we have freed the address, then we know that the
+                        // current page position referenced by the address is
+                        // indeed correct.
+
+                        // The address might have been freed by a failed
+                        // playback, however.
+
+                        // If the previous address is different from the address
+                        // of the current page, we may have lost a race against
+                        // another thread that changed the address refernece.
+
+                        // If the previous address is the same as the address of
+                        // the current page, we thought we lost a race against
+                        // another thread that changed the address reference,
+                        // but this time through we see that the address
+                        // reference has not changed.
+
+                        if (freed || previous == user.getRawPage().getPosition())
+                        {
+                            BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
+                            synchronized (interim.getRawPage())
+                            {
+                                addresses.set(address, position, dirtyPages);
+                                break;
+                            }
                         }
                     }
-                    if (freed || previous == user.getRawPage().getPosition())
-                    {
-                        BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
-                        synchronized (interim.getRawPage())
-                        {
-                            addresses.set(address, position, dirtyPages);
-                            break;
-                        }
-                    }
+                    previous = user.getRawPage().getPosition();
                 }
-                // TODO After implementing move, tell me where this belongs.
-                previous = user.getRawPage().getPosition();
             }
         }
         else
@@ -76,11 +146,18 @@ extends Operation
         allocatedBlockPages.add(position);
     }
 
-    // TODO Comment.
+    /**
+     * Update the address of this write operation to reference the block in the
+     * the block page at the position this write operation.
+     * 
+     * @param player
+     *            The journal player.
+     */
     @Override
     public void execute(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getFreedBlockPages(), player.getAllocatedBlockPages(), player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getFreedBlockPages(),
+            player.getAllocatedBlockPages(), player.getDirtyPages());
     }
     
     /**

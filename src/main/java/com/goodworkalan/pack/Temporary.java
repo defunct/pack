@@ -37,7 +37,7 @@ extends Operation
 
     /**
      * Construct an instance of a temporary allocation journal entry that will
-     * write the allocation of the temporary black at the given address into the
+     * write the allocation of the temporary block at the given address into the
      * temporary reference node at the given address.
      * 
      * @param address
