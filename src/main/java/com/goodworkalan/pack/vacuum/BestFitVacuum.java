@@ -14,7 +14,20 @@ import java.util.Set;
  */
 public class BestFitVacuum implements Vacuum
 {
-    // TODO Comment.
+    /**
+     * Vacuum a pack file by merging each newly allocated block page with the
+     * first existing user block page that best fits the new page if any.
+     * 
+     * @param moveRecorder
+     *            Used to record the moves prescribed by this strategy.
+     * @param byRemaining
+     *            A table of user block pages ordered by space remaining.
+     * @param allocatedBlockPages
+     *            The block pages allocated since the last vacuum.
+     * @param freedBlockPages
+     *            The block pages with freed blocks followed by allocated blocks
+     *            created by frees since the last vacuum.
+     */
     public void vacuum(MoveRecorder moveRecorder, ByRemaining byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
         int pageSize = moveRecorder.getPageSize();

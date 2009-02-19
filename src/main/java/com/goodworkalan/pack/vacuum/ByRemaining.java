@@ -1,6 +1,11 @@
 package com.goodworkalan.pack.vacuum;
 
-// TODO Comment.
+/**
+ * An interface to obtain existing user pages with enough space remaining to
+ * accommodate a given size of addiontional blocks.
+ * 
+ * @author Alan Gutierrez
+ */
 public interface ByRemaining
 {
     /**

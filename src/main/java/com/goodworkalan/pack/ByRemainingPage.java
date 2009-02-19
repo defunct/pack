@@ -6,7 +6,7 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
 // TODO Comment.
-public class ByRemainingPage extends Page
+class ByRemainingPage extends Page
 {
     /** The size of an alignment record; position count and slot position. */ 
     private final static int RECORD_SIZE = Pack.INT_SIZE + Pack.LONG_SIZE;

@@ -2,7 +2,13 @@ package com.goodworkalan.pack.vacuum;
 
 import java.util.Map;
 
-//TODO Comment.
+/**
+ * Used by {@link Vacuum} to record the moves necessary to optimize the size a
+ * file. The interface provides size information for pages and blocks as well as
+ * methods to move blocks from one page to another.
+ * 
+ * @author Alan Gutierrez
+ */
 public interface MoveRecorder
 {
     /**
