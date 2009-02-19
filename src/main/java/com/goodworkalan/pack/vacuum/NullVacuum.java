@@ -1,6 +1,7 @@
-package com.goodworkalan.pack;
+package com.goodworkalan.pack.vacuum;
 
 import java.util.Set;
+
 
 /**
  * An implementation of vacuum that does nothing to reorder the
@@ -16,7 +17,7 @@ public class NullVacuum implements Vacuum
     /**
      * Do nothing.
      * 
-     * @param mover
+     * @param moveRecorder
      *            Used to record the moves prescribed by this strategy.
      * @param byRemaining
      *            A table of user block pages ordered by space remaining.
@@ -26,7 +27,7 @@ public class NullVacuum implements Vacuum
      *            The block pages with freed blocks followed by allocated blocks
      *            created by frees since the last vacuum.
      */
-    public void vacuum(MoveRecorder moveRecorder, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
+    public void vacuum(MoveRecorder moveRecorder, ByRemaining byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
     }
 }

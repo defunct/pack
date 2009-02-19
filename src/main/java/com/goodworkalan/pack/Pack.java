@@ -7,6 +7,7 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import com.goodworkalan.pack.vacuum.Vacuum;
 import com.goodworkalan.sheaf.DirtyPageSet;
 
 /**

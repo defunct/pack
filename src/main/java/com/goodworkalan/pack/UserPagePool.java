@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.goodworkalan.pack.vacuum.NullVacuum;
+import com.goodworkalan.pack.vacuum.Vacuum;
 import com.goodworkalan.sheaf.DirtyPageSet;
 
 // TODO Comment.
@@ -154,7 +156,7 @@ class UserPagePool
         
         Map<Long, Long> moves = new HashMap<Long, Long>();
         
-        vacuum.vacuum(new MoveRecorder(bouquet, moves), byRemaining, allocatedBlockPages, freedBlockPages);
+        vacuum.vacuum(new CoreMoveRecorder(bouquet, moves), byRemaining, allocatedBlockPages, freedBlockPages);
 
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
         

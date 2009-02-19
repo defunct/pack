@@ -1,6 +1,7 @@
-package com.goodworkalan.pack;
+package com.goodworkalan.pack.vacuum;
 
 import java.util.Set;
+
 
 /**
  * A strategy for relocating blocks, combining new allocations with existing
@@ -13,7 +14,7 @@ public interface Vacuum
     /**
      * Vacuum a pack file by merging and moving block pages.
      * 
-     * @param mover
+     * @param moveRecorder
      *            Used to record the moves prescribed by this strategy.
      * @param byRemaining
      *            A table of user block pages ordered by space remaining.
@@ -23,5 +24,5 @@ public interface Vacuum
      *            The block pages with freed blocks followed by allocated blocks
      *            created by frees since the last vacuum.
      */
-    public void vacuum(MoveRecorder mover, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages);
+    public void vacuum(MoveRecorder moveRecorder, ByRemaining byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages);
 }

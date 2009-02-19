@@ -1,18 +1,21 @@
-package com.goodworkalan.pack;
+package com.goodworkalan.pack.vacuum;
 
 import java.util.Iterator;
 import java.util.Set;
 
+
 /**
  * A simple vacuum strategy that merges each newly allocated block page with 
- * the first existing user block page that best fits the new page.
+ * the first existing user block page that best fits the new page if any.
+ * <p>
+ * A rather naive best fit vacuum algorithm.
  *   
  * @author Alan Gutierrez
  */
 public class BestFitVacuum implements Vacuum
 {
     // TODO Comment.
-    public void vacuum(MoveRecorder moveRecorder, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
+    public void vacuum(MoveRecorder moveRecorder, ByRemaining byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
         int pageSize = moveRecorder.getPageSize();
         

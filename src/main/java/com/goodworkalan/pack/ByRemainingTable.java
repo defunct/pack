@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import com.goodworkalan.pack.vacuum.ByRemaining;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
@@ -47,7 +48,7 @@ import com.goodworkalan.sheaf.Page;
  * 
  * @author Alan Gutierrez
  */
-public final class ByRemainingTable
+final class ByRemainingTable implements ByRemaining
 {
     /** A descending list of the sizes of */
     private LinkedList<Integer> slotSizes;
@@ -347,19 +348,8 @@ public final class ByRemainingTable
         return position;
     }
 
-    /**
-     * Return the page with the least amount of bytes remaining for allocation
-     * that will fit the full block size. The block given block size must
-     * include the block header.
-     * <p>
-     * The method will ascend the table looking at the slots for each remaining
-     * size going form smallest to largest and returning the first to fit the
-     * block, or null if no page can fit the block.
-     * 
-     * @param blockSize
-     *            The block size including the block header.
-     * @return A size object containing the a page that will fit the block or
-     *         null if none exists.
+    /* (non-Javadoc)
+     * @see com.goodworkalan.pack.ByRemaining#bestFit(int)
      */
     public long bestFit(int blockSize)
     {
