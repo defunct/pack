@@ -204,14 +204,12 @@ class UserPagePool
         
         for (long position : moves.keySet())
         {
-            bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().free(position);
+            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
         
         for (long position : emptyBlockPages)
         {
-            bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().free(position);
+            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
      }
 }

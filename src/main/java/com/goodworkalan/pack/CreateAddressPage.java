@@ -10,7 +10,15 @@ import com.goodworkalan.sheaf.Sheaf;
  * <p>
  * The create address page operation contains the position of a page to turn
  * into an address page and the page position of the page where the current
- * contents of the user page were moved. If the 
+ * contents of the user page were moved.
+ * <p>
+ * If the moved to page position is null, because the address page was found in
+ * the free set of interim pages, the position will be used as an address
+ * position.
+ * <p>
+ * Note that when this create address page operation executes, all of the pages
+ * will have been moved or freed, so that the page creation will not raise an
+ * exception by colliding with a cached page of a different type in the pager.
  * 
  * @author Alan Gutierrez
  * 

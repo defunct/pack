@@ -233,8 +233,7 @@ final class Player
         
         for(long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journalPages))
         {
-            bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().free(position);
+            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
         
         bouquet.getUserPagePool().add(getFreedBlockPages(), getAllocatedBlockPages());

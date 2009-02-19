@@ -6,7 +6,17 @@ import java.util.Set;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
-// TODO Comment.
+/**
+ * The boundary between address pages and non-address pages. The boundary can
+ * only be modified if the {@link Bouquet#getPageMoveLock() page move lock} of
+ * the bouquet is held exclusively.
+ * <p>
+ * FIXME Move the read/write lock into this class.
+ * <p>
+ * FIXME Rename this class AddressBoundary.
+ * 
+ * @author Alan Gutierrez
+ */
 class UserBoundary
 {
     /** The size of a page in the Pack.  */
@@ -41,12 +51,6 @@ class UserBoundary
         return position;
     }
     
-    // TODO Comment.
-    public int getPageSize()
-    {
-        return pageSize;
-    }
-    
     /**
      * Increment the boundary position by one page.
      */
@@ -55,14 +59,6 @@ class UserBoundary
         position += pageSize;
     }
     
-    /**
-     * Decrement the boundary position by one page.
-     */
-    public void decrement()
-    {
-        position -= pageSize;
-    }
-
     /**
      * Return a file position based on the given file position adjusted by page
      * moves stored in the bouquets move map.
@@ -77,16 +73,26 @@ class UserBoundary
      */
     public long adjust(Sheaf sheaf, long position)
     {
-        int offset = (int) (position % getPageSize());
+        int offset = (int) (position % pageSize);
         position = position - offset;
         if (position < getPosition())
         {
-            position = get(sheaf, position);
+            position = getForwardReference(sheaf, position);
         }
         return position + offset;
     }
 
-    // TODO Comment.
+    /**
+     * Create a set of page positions from the given set of positions adjusting
+     * each position for any page moves made to accommodate address pages.
+     * 
+     * 
+     * @param sheaf
+     *            The page manager.
+     * @param positions
+     *            A set of page positions.
+     * @return A set of page positions adjusted for page moves.
+     */
     public Set<Long> adjust(Sheaf sheaf, Set<Long> positions)
     {
         Set<Long> adjusted = new HashSet<Long>();
@@ -96,23 +102,31 @@ class UserBoundary
         }
         return adjusted;
     }
-    
-    // TODO Comment.
-    private long get(Sheaf sheaf, long position)
+
+    /**
+     * Get the page position user page moved to create an address page for the
+     * given user page position.
+     * 
+     * @param sheaf
+     *            The page manager.
+     * @param position
+     *            The page position.
+     * @return The page position the user page was moved to.
+     */
+    private long getForwardReference(Sheaf sheaf, long position)
     {
         AddressPage addresses = sheaf.getPage(position, AddressPage.class, new AddressPage());
         return addresses.dereference(0);
     }
 
     /**
-     * Dereferences the block page referenced by the address, adjusting the file
-     * position of the block page according the list of user move latches.
+     * Dereferences the block page referenced by the address, adjusting the
+     * position for any page moves made to accommodate address pages.
      * 
+     * @param sheaf
+     *            The page manager.
      * @param address
      *            The block address.
-     * @param userMoveLatches
-     *            A list of the move latches that guarded the most recent user
-     *            page moves.
      * @return The user block page.
      */
     public BlockPage dereference(Sheaf sheaf, long address)
@@ -131,7 +145,7 @@ class UserBoundary
             
             while (position < getPosition())
             {
-                position = get(sheaf, position);
+                position = getForwardReference(sheaf, position);
             }
             
             // FIXME What if blocks are moved, page is reclaimed, page is
@@ -146,13 +160,32 @@ class UserBoundary
             }
         }
     }
-    
-    // TODO Comment.
+
+    /**
+     * Load a page of the given page class at the given position from the given
+     * sheaf after adjusting the position for any page moves made to accommodate
+     * address pages. Use the given page instance to initialize the page if it
+     * is not already loaded.
+     * 
+     * @param <P>
+     *            The page type.
+     * @param sheaf
+     *            The page manager.
+     * @param position
+     *            The page position.
+     * @param pageClass
+     *            The page type.
+     * @param page
+     *            A page instance used to load the page if it is no already in
+     *            memory.
+     * @return A page of the given page type mapped to the contents at the page
+     *         position.
+     */
     public <P extends Page> P load(Sheaf sheaf, long position, Class<P> pageClass, P page)
     {
         while (position < getPosition())
         {
-            position = get(sheaf, position);
+            position = getForwardReference(sheaf, position);
         }
         
         return sheaf.getPage(position, pageClass, page);

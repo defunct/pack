@@ -428,7 +428,7 @@ final class ByRemainingTable implements ByRemaining
                             // The alloc slot page is empty, so lets free it and
                             // make the previous slot page the allocation slot page.
                             byRemainingPage.setAllocSlotPosition(slotIndex, previous, dirtyPages);
-                            bouquet.getInterimPagePool().free(alloc);
+                            bouquet.getInterimPagePool().free(bouquet.getSheaf(), alloc);
                         }
                     }
                     else

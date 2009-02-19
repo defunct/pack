@@ -146,9 +146,9 @@ public final class Creator
         header.setShutdown(Pack.HARD_SHUTDOWN);
         header.setPageSize(pageSize);
         header.setAlignment(alignment);
-        header.setInternalJournalCount(internalJournalCount);
-        header.setStaticPageSize(getStaticBlockMapSize());
-        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.LONG_SIZE);
+        header.setJournalCount(internalJournalCount);
+        header.setStaticBlockCount(getStaticBlockMapSize());
+        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticBlockCount() + header.getJournalCount() * Pack.LONG_SIZE);
         header.setAddressPagePoolSize(addressPagePoolSize);
         header.setUserBoundary(pageSize);
         header.setEndOfSheaf(0L);
@@ -235,7 +235,7 @@ public final class Creator
         
         try
         {
-            fileChannel.write(statics, header.getStaticPagesStart());
+            fileChannel.write(statics, header.getStaticBlockMapStart());
         }
         catch (IOException e)
         {

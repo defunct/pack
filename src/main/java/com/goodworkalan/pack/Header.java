@@ -15,7 +15,7 @@ final class Header extends DirtyRegionMap
 {
     /** The contents of the header region of the file. */
     private final ByteBuffer bytes;
-    
+
     /**
      * Create a file header from the given content buffer.
      * 
@@ -27,58 +27,100 @@ final class Header extends DirtyRegionMap
         super(0L);
         this.bytes = bytes;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Return the underlying byte content of the header for writing.
+     * 
+     * @return The underlying byte content of the header for writing.
+     */
     public ByteBuffer getByteBuffer()
     {
         return bytes;
     }
-    
-    // TODO Comment.
-    public long getStaticPagesStart()
+
+    /**
+     * Get the position where the static block map of URIs to static address is
+     * stored.
+     * 
+     * @return The position where the static block map is stored.
+     */
+    public long getStaticBlockMapStart()
     {
-        return Pack.FILE_HEADER_SIZE + getInternalJournalCount() * Pack.LONG_SIZE;
+        return Pack.FILE_HEADER_SIZE + getJournalCount() * Pack.LONG_SIZE;
     }
 
-    // TODO Comment.
+    /**
+     * Get the signature at the very start of the file that indicates that this
+     * might be a <code>Pack</code> file.
+     * 
+     * @return The file signature.
+     */
     public long getSignature()
     {
         return bytes.getLong(0);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the signature at the very start of the file that indicates that this
+     * might be a <code>Pack</code> file.
+     * 
+     * @param signature
+     *            The file signature.
+     */
     public void setSignature(long signature)
     {
         bytes.putLong(0, signature);
         invalidate(0, Pack.LONG_SIZE);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the flag indicating a soft shutdown or a hard shutdown. The value of
+     * this flag is one of {@link Pack#SOFT_SHUTDOWN} or
+     * {@link Pack#HARD_SHUTDOWN}.
+     * 
+     * @return The shutdown flag.
+     */
     public int getShutdown()
     {
         return bytes.getInt(Pack.LONG_SIZE);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the flag indicating a soft shutdown or a hard shutdown. The value of
+     * this flag is one of {@link Pack#SOFT_SHUTDOWN} or
+     * {@link Pack#HARD_SHUTDOWN}.
+     * 
+     * @param shutdown
+     *            The shutdown flag.
+     */
     public void setShutdown(int shutdown)
     {
         bytes.putInt(Pack.LONG_SIZE, shutdown);
         invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the size of a page in the file.
+     * 
+     * @return The page size.
+     */
     public int getPageSize()
     {
         return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Set the size of a page in the file.
+     * 
+     * @param pageSize
+     *            The page size.
+     */
     public void setPageSize(int pageSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE, pageSize);
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE, Pack.INT_SIZE);
     }
-    
+
     /**
      * Get the alignment to which all block allocations are rounded.
      * 
@@ -88,41 +130,60 @@ final class Header extends DirtyRegionMap
     {
         return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2);
     }
-    
+
     /**
      * Set the alignment to which all block allocations are rounded.
      * 
-     * @param alignment The block alignment.
+     * @param alignment
+     *            The block alignment.
      */
     public void setAlignment(int alignment)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2, alignment);
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 2, Pack.INT_SIZE);
     }
-    
-    // TODO Comment.
-    public int getInternalJournalCount()
+
+    /**
+     * Get the count of journal headers in the header of the file.
+     * 
+     * @return The journal count.
+     */
+    public int getJournalCount()
     {
         return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3);
     }
-    
-    // TODO Comment.
-    public void setInternalJournalCount(int internalJournalCount)
+
+    /**
+     * Set the count of journal headers in the header of the file.
+     * 
+     * @param journalCount
+     *            The journal count.
+     */
+    public void setJournalCount(int journalCount)
     {
-        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3, internalJournalCount);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3, journalCount);
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 3, Pack.INT_SIZE);
     }
-    
-    // TODO Comment.
-    public int getStaticPageSize()
+
+    /**
+     * Get the count of static blocks.
+     * 
+     * @return The static block count.
+     */
+    public int getStaticBlockCount()
     {
         return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4);
     }
-    
-    // TODO Comment.
-    public void setStaticPageSize(int staticPageSize)
+
+    /**
+     * Set the count of static blocks.
+     * 
+     * @param staticPageCount
+     *            The static block count.
+     */
+    public void setStaticBlockCount(int staticPageCount)
     {
-        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4, staticPageSize);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4, staticPageCount);
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 4, Pack.INT_SIZE);
     }
 
@@ -143,13 +204,12 @@ final class Header extends DirtyRegionMap
      * 
      * @param headerSize
      *            The size of the file header.
-     */    
+     */
     public void setHeaderSize(int headerSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 5, headerSize);
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 5, Pack.INT_SIZE);
     }
-    
 
     /**
      * Get the size of the pack file header including the set of named static
@@ -168,7 +228,7 @@ final class Header extends DirtyRegionMap
      * 
      * @param addressPagePoolSize
      *            The size of the file header.
-     */    
+     */
     public void setAddressPagePoolSize(int addressPagePoolSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 6, addressPagePoolSize);
@@ -176,8 +236,8 @@ final class Header extends DirtyRegionMap
     }
 
     /**
-     * Get the user boundary of the pack file. The user boundary is the 
-     * position of the first user page, less the file header offset.
+     * Get the user boundary of the pack file. The user boundary is the position
+     * of the first user page, less the file header offset.
      * 
      * @return The position of the first user page.
      */
@@ -199,13 +259,13 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
-    // TODO Comment.
+    // FIXME Outgoing.
     public long getEndOfSheaf()
     {
         return bytes.getLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7);
     }
 
-    // TODO Comment.
+    // FIXME Outgoing.
     public void setEndOfSheaf(long interimBoundary)
     {
         bytes.putLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, interimBoundary);
@@ -229,23 +289,34 @@ final class Header extends DirtyRegionMap
      * 
      * @param temporaries
      *            The position of the first temporary block node.
-     */  
+     */
     public void setFirstTemporaryNode(long temporaries)
     {
         bytes.putLong(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, temporaries);
         invalidate(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the page position of the table of block pages ordered by bytes
+     * available for block allocation.
+     * 
+     * @return The by remaining table address.
+     */
     public long getByRemainingTable()
     {
         return bytes.getLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7);
     }
-    
-    // TODO Comment.
-    public void setByRemainingTable(long vacuumNode)
+
+    /**
+     * Set the page position of the table of block pages ordered by bytes
+     * available for block allocation.
+     * 
+     * @param byRemainingTable
+     *            The by remaining table address.
+     */
+    public void setByRemainingTable(long byRemainingTable)
     {
-        bytes.putLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, vacuumNode);
+        bytes.putLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, byRemainingTable);
         invalidate(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 }

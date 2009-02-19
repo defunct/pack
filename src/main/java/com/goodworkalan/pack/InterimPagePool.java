@@ -123,8 +123,9 @@ class InterimPagePool
      * @param position
      *            The page position to free.
      */
-    public void free(long position)
+    public void free(Sheaf sheaf, long position)
     {
+        sheaf.free(position);
         synchronized (freeInterimPages)
         {
             freeInterimPages.add(position);

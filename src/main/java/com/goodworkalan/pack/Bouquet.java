@@ -101,7 +101,7 @@ final class Bouquet
         this.pack = new Pack(this);
         this.header = header;
         this.staticBlocks = staticBlocks;
-        this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
+        this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getJournalCount());
         this.userBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;

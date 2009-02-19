@@ -592,14 +592,12 @@ public final class Mutator
         // pages.
         for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interims))
         {
-            bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().free(position);
+            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
         
         for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages()))
         {
-            bouquet.getSheaf().free(position);
-            bouquet.getInterimPagePool().free(position);
+            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
     }
     

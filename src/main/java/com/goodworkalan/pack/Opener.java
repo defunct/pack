@@ -58,10 +58,10 @@ public final class Opener
     private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
     {
         Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
-        ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticPageSize());
+        ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticBlockCount());
         try
         {
-            fileChannel.read(bytes, header.getStaticPagesStart());
+            fileChannel.read(bytes, header.getStaticBlockMapStart());
         }
         catch (IOException e)
         {
