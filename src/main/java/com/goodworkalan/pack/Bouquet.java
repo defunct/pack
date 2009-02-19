@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -77,6 +78,9 @@ final class Bouquet
     /** Housekeeping information stored at the head of the file. */
     private final Header header;
 
+    // TODO Comment.
+    private final DirtyPageSet vacuumDirtyPages;
+    
     /**
      * @param alignment
      *            The alignment to which all block allocations are rounded.
@@ -106,7 +110,8 @@ final class Bouquet
         this.userBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
-        this.userPagePool = new UserPagePool(new ByRemainingTable(this), header.getPageSize(), header.getAlignment());
+        this.vacuumDirtyPages = new DirtyPageSet(16);
+        this.userPagePool = new UserPagePool(new ByRemainingTable(this, vacuumDirtyPages), header.getPageSize(), header.getAlignment());
         this.interimPagePool = new InterimPagePool();
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();

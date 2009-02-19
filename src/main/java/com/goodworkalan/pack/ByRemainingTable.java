@@ -49,16 +49,22 @@ import com.goodworkalan.sheaf.Page;
  */
 public final class ByRemainingTable
 {
-    // TODO Comment.
+    /** A descending list of the sizes of */
     private LinkedList<Integer> slotSizes;
     
-    // TODO Comment.
+    /** The bouquet of services. */
     private final Bouquet bouquet;
+
+    /**
+     * A page for storing by remaining pages grouped by alignment and slot pages
+     * grouped by slot size.
+     */
+    private ByRemainingPage byRemainingPage;
     
-    // TODO Comment.
-    private ByRemainingPage lookupPage;
-    
-    // TODO Comment.
+    /**
+     * The dirty page set to use when writing the by remaining page and slot
+     * pages.
+     */
     private final DirtyPageSet dirtyPages;
 
     /**
@@ -74,7 +80,7 @@ public final class ByRemainingTable
      * @param alignment
      *            The block alignment.
      */
-    public ByRemainingTable(Bouquet bouquet)
+    public ByRemainingTable(Bouquet bouquet, DirtyPageSet dirtyPages)
     {
         this.bouquet = bouquet;
         this.dirtyPages = new DirtyPageSet(16);
@@ -84,22 +90,16 @@ public final class ByRemainingTable
     // TODO Comment.
     public void load(long position)
     {
-        if (lookupPage == null)
+        if (byRemainingPage == null)
         {
             if (position == 0L)
             {
-                lookupPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingPage.class, new ByRemainingPage(), dirtyPages, false);
+                byRemainingPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingPage.class, new ByRemainingPage(), dirtyPages, false);
             }
             else
             {
             }
         }
-    }
-    
-    // TODO Comment.
-    public DirtyPageSet getDirtyPages()
-    {
-        return dirtyPages;
     }
     
     // TODO Comment.
@@ -144,34 +144,49 @@ public final class ByRemainingTable
         add(blocks.getRawPage().getPosition(), blocks.getRemaining());
     }
 
-    // TODO Comment.
+    /**
+     * Allocate a new slot of the slot size given by the slot size index and
+     * added to the linked list of slots of the given alignment index. The given
+     * previous slot position will be linked to the new slot.
+     * 
+     * @param slotSizeIndex
+     *            The index of the slot size.
+     * @param alignmentIndex
+     *            The index of the alignment.
+     * @param previous
+     *            The previous slot position.
+     * @return The position of the new slot.
+     */
     public long newSlotPosition(int slotSizeIndex, int alignmentIndex, long previous)
     {
-        long allocateFrom = lookupPage.getFreeSetPosition(slotSizeIndex);
+        long allocateFrom = byRemainingPage.getAllocSlotPosition(slotSizeIndex);
         if (allocateFrom == 0L)
         {
-            allocateFrom = foo();
+            allocateFrom = newSlotList(slotSizes.getLast());
         }
         ByRemainingSlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
         long slotPosition = slotPage.allocateSlot(previous, dirtyPages);
         if (slotPosition == 0L)
         {
-            allocateFrom = foo();
+            allocateFrom = newSlotList(getNextSlotIndex(slotPage));
             ByRemainingSlotPage newSlotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
             long newSlotPosition = newSlotPage.allocateSlot(previous, dirtyPages);
             slotPage.setNext(slotPosition, newSlotPosition, dirtyPages);
             slotPosition = newSlotPosition;
         }
-        lookupPage.setSlotPosition(alignmentIndex, slotPosition, dirtyPages);
+        byRemainingPage.setSlotPosition(alignmentIndex, slotPosition, dirtyPages);
         return slotPosition;
     }
 
-    // TODO Comment.
-    public long foo()
+    /**
+     * Initiate a ..
+     * @return
+     */
+    public long newSlotList(int slotSizeIndex)
     {
         ByRemainingSlotPage setPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingSlotPage.class, new ByRemainingSlotPage(), dirtyPages, true);
-        setPage.setSlotSize(slotSizes.getLast(), dirtyPages);
-        lookupPage.setFreeSetPosition(slotSizes.size() - 1, setPage.getRawPage().getPosition(), dirtyPages);
+        setPage.setSlotSize(slotSizeIndex, dirtyPages);
+        byRemainingPage.setAllocSlotPosition(slotSizeIndex, setPage.getRawPage().getPosition(), dirtyPages);
         return setPage.getRawPage().getPosition();
     }
     
@@ -182,6 +197,18 @@ public final class ByRemainingTable
         return remaining / alignment * alignment;
     }
     
+    private int getNextSlotIndex(ByRemainingSlotPage slotPage)
+    {
+        int slotSize = 0;
+        ListIterator<Integer> sizes = slotSizes.listIterator();
+        do
+        {
+            slotSize = sizes.next();
+        }
+        while (slotSize != slotPage.getSlotSize());
+        return sizes.previousIndex() == -1 ? 0 : sizes.previousIndex();
+    }
+
     /**
      * Add the page at the given position with the given amount of bytes
      * remaining for block allocation to the table. If the amount of bytes
@@ -206,32 +233,17 @@ public final class ByRemainingTable
         if (aligned != 0)
         {
             int alignmentIndex = aligned / alignment;
-            lookupPage.increment(alignmentIndex, dirtyPages);
-            long setPosition = lookupPage.getSlotPosition(alignmentIndex);
+            byRemainingPage.increment(alignmentIndex, dirtyPages);
+            long setPosition = byRemainingPage.getSlotPosition(alignmentIndex);
             long allocateFrom = 0L;
             if (setPosition == 0L)
             {
                 setPosition = newSlotPosition(slotSizes.size() - 1, alignmentIndex, Long.MIN_VALUE);
-
             }
             ByRemainingSlotPage setPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
             if (!setPage.add(allocateFrom, position, false, dirtyPages))
             {
-                int slotSize = 0;
-                ListIterator<Integer> sizes = slotSizes.listIterator();
-                do
-                {
-                    slotSize = sizes.next();
-                }
-                while (slotSize != setPage.getSlotSize());
-
-                int slotIndex = sizes.previousIndex();
-                if (slotIndex < 0)
-                {
-                    slotIndex = 0;
-                }
-                
-                setPosition = newSlotPosition(slotIndex, alignmentIndex, setPage.getRawPage().getPosition());
+                setPosition = newSlotPosition(getNextSlotIndex(setPage), alignmentIndex, setPage.getRawPage().getPosition());
                 setPage.add(allocateFrom, position, false, dirtyPages);
            }
         }
@@ -252,11 +264,11 @@ public final class ByRemainingTable
         int alignment = bouquet.getAlignment();
         int aligned = remaining / alignment * alignment;
         int alignmentIndex = alignment / aligned;
-        lookupPage.decrement(alignmentIndex, dirtyPages);
+        byRemainingPage.decrement(alignmentIndex, dirtyPages);
         for (;;)
         {
             // Start with head slot of the linked list of slots.
-            long slot = adjust(lookupPage.getSlotPosition(alignmentIndex));
+            long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
             ByRemainingSlotPage slotPage = getSlotPage(slot);
             if (slotPage.remove(slot, position, dirtyPages))
             {
@@ -274,7 +286,7 @@ public final class ByRemainingTable
 
         for (int i = aligned / alignment; i < pageSize / alignment; i++)
         {
-            if (lookupPage.getSizeCount(i) != 0)
+            if (byRemainingPage.getSizeCount(i) != 0)
             {
                 return i;
             }
@@ -336,7 +348,7 @@ public final class ByRemainingTable
         for (;;)
         {
             // Start with head slot of the linked list of slots.
-            long slot = adjust(lookupPage.getSlotPosition(alignmentIndex));
+            long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
             ByRemainingSlotPage slotPage = getSlotPage(slot);
             position = adjust(slotPage.remove(slot, dirtyPages));
 
@@ -352,7 +364,7 @@ public final class ByRemainingTable
                 long previous = adjust(slotPage.getPrevious(slot));
 
                 // Use the slot to allocate positions in the future.
-                lookupPage.setSlotPosition(alignmentIndex, previous, dirtyPages);
+                byRemainingPage.setSlotPosition(alignmentIndex, previous, dirtyPages);
 
                 // Determine the slot size index of the slot page.
                 ListIterator<Integer> sizes = slotSizes.listIterator();
@@ -362,7 +374,7 @@ public final class ByRemainingTable
                 int slotIndex = sizes.previousIndex() + 1;
 
                 // Get the allocation slot page for the slot size.
-                long alloc = adjust(lookupPage.getFreeSetPosition(slotIndex));
+                long alloc = adjust(byRemainingPage.getAllocSlotPosition(slotIndex));
 
                 // If the allocation slot page is not our previous slot page, we
                 // move a slot from the allocation slot page onto the previous
@@ -410,7 +422,7 @@ public final class ByRemainingTable
                     {
                         // The alloc slot page is empty, so lets free it and
                         // make the previous slot page the allocation slot page.
-                        lookupPage.setFreeSetPosition(slotIndex, previous, dirtyPages);
+                        byRemainingPage.setAllocSlotPosition(slotIndex, previous, dirtyPages);
                         bouquet.getInterimPagePool().free(alloc);
                     }
                 }
@@ -440,6 +452,6 @@ public final class ByRemainingTable
      */
     public void clear()
     {
-        lookupPage = null;
+        byRemainingPage = null;
     }
 }

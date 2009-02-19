@@ -74,7 +74,7 @@ public class ByRemainingPage extends Page
     }
     
     // TODO Comment.
-    public long getFreeSetPosition(int slotIndex)
+    public long getAllocSlotPosition(int slotIndex)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();
@@ -82,7 +82,7 @@ public class ByRemainingPage extends Page
     }
     
     // TODO Comment.
-    public void setFreeSetPosition(int slotIndex, long address, DirtyPageSet dirtyPages)
+    public void setAllocSlotPosition(int slotIndex, long address, DirtyPageSet dirtyPages)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();

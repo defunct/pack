@@ -75,7 +75,7 @@ public final class Mutator
      */
     Mutator(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
-        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet);
+        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet, dirtyPages);
 
         this.bouquet = bouquet;
         this.journal = journal;
