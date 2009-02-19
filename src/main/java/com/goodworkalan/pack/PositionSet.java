@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
  * position on range of the underlying file as a set of position. Used
  * by {@link Pager} to maintain a set of available slots in which to
  * write the first address of a chain of journal pages.
+ * <p>
+ * FIXME Use Semaphore.
  *
  * @author Alan Gutierrez
  */

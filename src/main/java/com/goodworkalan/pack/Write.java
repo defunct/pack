@@ -78,7 +78,7 @@ extends Operation
 
     // TODO Comment.
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getFreedBlockPages(), player.getAllocatedBlockPages(), player.getDirtyPages());
     }

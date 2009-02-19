@@ -1,7 +1,6 @@
 package com.goodworkalan.pack;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
@@ -9,61 +8,103 @@ import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-// TODO Comment.
+/**
+ * Plays a journal, calling the {@link Operation#execute(Player) commit} method
+ * of each journal operation and freeing the journal pages after commit.
+ * <p>
+ * Journals are used to allocate new address pages as well as commit changes
+ * made by mutations. The player is also a bouquet pattern, exposing most of its
+ * state to the journal operations.
+ * 
+ * @author Alan Gutierrez
+ */
 final class Player
 {
-    // TODO Comment.
+    /** The bouquet of services. */
     private final Bouquet bouquet;
 
-    // TODO Comment.
-    private final JournalHeader header;
+    /** The journal header that indicates the first journal operation. */
+    private final JournalHeader journalHeader;
 
-    // TODO Comment.
-    private long entryPosition;
-
-    // TODO Comment.
+    /** The dirty page set used to track dirty pages during playback. */
     private final DirtyPageSet dirtyPages;
     
-    // TODO Comment.
-    private final SortedSet<Long> addresses;
+    /** The set of freed addresses that have been locked. */
+    private final SortedSet<Long> lockedAddresses;
     
-    // TODO Comment.
-    private final Set<Long> temporaryAddresses;
+    /** The set of freed temporary references that have been locked. */
+    private final Set<Long> lockedTemporaryReferences;
     
-    // TODO Comment.
-    private final Set<Long> journalPages;
-    
-    // TODO Comment.
+    /**
+     * The block pages that have had one or more blocks freed during playback.
+     */
     private final Set<Long> freedBlockPages;
-    
-    // TODO Comment.
+
+    /**
+     * The block pages that contained newly allocated blocks assigned to
+     * addresses during playback.
+     */
     private final Set<Long> allocatedBlockPages;
-    
-    // TODO Comment.
-    public Player(Bouquet bouquet, JournalHeader header, DirtyPageSet dirtyPages)
+
+    /** The journal pages visited during playback. */
+    private final Set<Long> journalPages;
+
+    /**
+     * Create a recovery journal player that will play the the journal
+     * operations starting by the start of the journal referenced by the the
+     * journal header.
+     * 
+     * @param bouquet
+     *            The bouquet of services.
+     * @param journalHeader
+     *            The journal header.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
+    public Player(Bouquet bouquet, JournalHeader journalHeader, DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = header.getByteBuffer();
-        
-        bytes.clear();
-        
         this.bouquet = bouquet;
-        this.header = header;
-        this.entryPosition = bytes.getLong();
+        this.journalHeader = journalHeader;
         this.dirtyPages = dirtyPages;
-        this.addresses = new TreeSet<Long>();
-        this.temporaryAddresses = new HashSet<Long>();
+        this.lockedAddresses = new TreeSet<Long>();
+        this.lockedTemporaryReferences = new HashSet<Long>();
         this.journalPages = new HashSet<Long>();
         this.freedBlockPages = new HashSet<Long>();
         this.allocatedBlockPages = new HashSet<Long>();
     }
-    
-    // TODO Comment.
+
+    /**
+     * Create a player that will assign the first operation of the given journal
+     * to a journal header and play the the journal operations in the journal.
+     * <p>
+     * If journal playback fails due to a hard shutdown, the journal can be
+     * found via the journal header and replayed.
+     * 
+     * @param bouquet
+     *            The bouquet of services.
+     * @param journal
+     *            The journal.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
     public Player(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
         this(bouquet, allocateHeader(journal, bouquet, dirtyPages), dirtyPages);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Allocate a journal header from the pool of journal headers and assign the
+     * first operation of the given journal to the journal header.
+     * 
+     * @param journal
+     *            The journal.
+     * @param bouquet
+     *            The bouquet of services.
+     * @param dirtyPages
+     *            The dirty page set.
+     * @return A journal header that refrerences the first operation of the
+     *         journal.
+     */
     private static JournalHeader allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
     {
         JournalHeader header = bouquet.getJournalHeaders().allocate();
@@ -84,79 +125,110 @@ final class Player
         return header;
     }
     
-    // TODO Comment.
+    /**
+     * Get the bouquet of services.
+     * 
+     * @return The bouquet of services.
+     */
     public Bouquet getBouquet()
     {
         return bouquet;
     }
     
-    // TODO Comment.
+    /**
+     * Get the journal header that indicates the first journal operation.
+     * 
+     * @return The journal header.
+     */
     public JournalHeader getJournalHeader()
     {
-        return header;
+        return journalHeader;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the dirty page set used to track dirty pages during playback.
+     * 
+     * @return The dirty page set.
+     */
     public DirtyPageSet getDirtyPages()
     {
         return dirtyPages;
     }
-    
-    // TODO Comment.
-    public SortedSet<Long> getAddresses()
+
+    /**
+     * Get the set of freed addresses that have been locked.
+     * 
+     * @return The set of freed addresses that have been locked.
+     */
+    public SortedSet<Long> getLockedAddresses()
     {
-        return addresses;
+        return lockedAddresses;
     }
-    
-    // TODO Comment.
-    public Set<Long> getTemporaryAddresses()
+
+    /**
+     * Get the set of freed temporary references that have been locked.
+     * 
+     * @return The set of freed temporary references that have been locked.
+     */
+    public Set<Long> getLockedTemporaryReferences()
     {
-        return temporaryAddresses;
+        return lockedTemporaryReferences;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the block pages that have had one or more blocks freed during
+     * playback.
+     * 
+     * @return The block pages that have had one or more blocks freed during
+     *         playback.
+     */
     public Set<Long> getFreedBlockPages()
     {
         return freedBlockPages;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the block pages that contained newly allocated blocks assigned to
+     * addresses during playback.
+     * 
+     * @return The block pages that contained newly allocated blocks assigned to
+     *         addresses during playback.
+     */
     public Set<Long> getAllocatedBlockPages()
     {
         return allocatedBlockPages;
     }
-    
-    // TODO Comment.
-    private void execute()
+
+    /**
+     * Execute the journal operations starting by the start of the journal
+     * referenced by the the journal header.
+     * <p>
+     * The journal operations must include a commit or checkpoint operations
+     * followed by a terminate operation at the end of the journal.
+     */
+    public void play()
     {
-        JournalPage journalPage = bouquet.getSheaf().getPage(entryPosition, JournalPage.class, new JournalPage());
+        long operationPosition = journalHeader.getByteBuffer().getLong(0);
+        JournalPage journalPage = bouquet.getSheaf().getPage(operationPosition, JournalPage.class, new JournalPage());
         
-        journalPage.seek(entryPosition);
+        journalPage.seek(operationPosition);
         
         Operation operation = journalPage.next(); 
         while (!operation.terminate())
         {
-            operation.commit(this);
+            operation.execute(this);
             journalPage = operation.getJournalPage(this, journalPage);
             journalPages.add(journalPage.getRawPage().getPosition());
             operation = journalPage.next();
         }
 
-        entryPosition = journalPage.getJournalPosition();
-    }
-
-    // TODO Comment.
-    public void commit()
-    {
-        execute();
-        
-        bouquet.getJournalHeaders().free(header);
+        bouquet.getJournalHeaders().free(journalHeader);
 
         // Unlock any addresses that were returned as free to their
         // address pages, but were locked to prevent the commit of a
         // reallocation until this commit completed.
-        bouquet.getAddressLocker().unlock(getAddresses());
-        bouquet.getTemporaryPool().unlock(getTemporaryAddresses());
+        bouquet.getAddressLocker().unlock(getLockedAddresses());
+        bouquet.getTemporaryPool().unlock(getLockedTemporaryReferences());
         
         
         for(long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journalPages))

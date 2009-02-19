@@ -50,7 +50,7 @@ class MovePage extends Operation
      *            The journal player.
      */
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         player.getBouquet().getSheaf().move(from, to);
     }

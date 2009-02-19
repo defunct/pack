@@ -653,7 +653,7 @@ public final class Mutator
         journal.write(new Terminate());
 
         // Create a journal player.
-        new Player(bouquet, journal, dirtyPages).commit();
+        new Player(bouquet, journal, dirtyPages).play();
     }
 
     /**

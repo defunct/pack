@@ -170,7 +170,7 @@ class UserPagePool
         journal.write(new Terminate());
 
         Player player = new Player(bouquet, journal, dirtyPages);
-        player.commit();
+        player.play();
 
         for (long position : allocatedBlockPages)
         {

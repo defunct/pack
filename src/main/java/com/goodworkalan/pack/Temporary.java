@@ -63,7 +63,7 @@ extends Operation
      * @param player The journal player.
      */
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getBouquet().getTemporaryPool(), player.getDirtyPages());
     }

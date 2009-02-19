@@ -177,7 +177,7 @@ class AddressPagePool implements Iterable<Long>
         journal.write(new Commit());
         journal.write(new Terminate());
         
-        new Player(bouquet, journal, dirtyPages).commit();
+        new Player(bouquet, journal, dirtyPages).play();
         
         return newAddressPages;
     }

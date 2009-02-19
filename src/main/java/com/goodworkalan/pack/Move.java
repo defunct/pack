@@ -106,7 +106,7 @@ class Move extends Operation
      *            The journal player.
      */
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getDirtyPages());
     }

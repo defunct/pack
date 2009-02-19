@@ -77,7 +77,7 @@ class Checkpoint extends Operation
      *            The journal player.
      */
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         commit(player.getBouquet().getSheaf(), player.getJournalHeader(), player.getDirtyPages());
     }

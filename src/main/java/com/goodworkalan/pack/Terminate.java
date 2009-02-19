@@ -6,6 +6,12 @@ import java.nio.ByteBuffer;
  * Terminate journal playback by returning true from the {@link #terminate()}
  * method. This journal operation is written at the end of a journal to
  * terminate the journal playback loop.
+ * <p>
+ * Although it seems like this should be merged with {@link Commit}, the
+ * separate instruction means that playback can terminate after a
+ * {@link Checkpoint} if that ever becomes necessary. The caller might want to
+ * perform concurrency housekeeping after a checkpoint, to send on there way any
+ * threads waiting on resources that have been released due to the checkpoint.
  * 
  * @author Alan Gutierrez
  */

@@ -85,7 +85,7 @@ abstract class Operation
      * @param player
      *            The journal player.
      */
-    public void commit(Player player)
+    public void execute(Player player)
     {
     }
 

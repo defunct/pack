@@ -27,18 +27,18 @@ extends Operation
 
     // TODO Comment.
     @Override
-    public void commit(Player player)
+    public void execute(Player player)
     {
         Bouquet bouquet = player.getBouquet();
         Sheaf pager = bouquet.getSheaf();
         
         bouquet.getAddressLocker().lock(address);
-        player.getAddresses().add(address);
+        player.getLockedAddresses().add(address);
 
         long temporary;
         if ((temporary = bouquet.getTemporaryPool().free(address, player.getBouquet().getSheaf(), bouquet.getUserBoundary(), player.getDirtyPages())) != 0L)
         {
-            player.getTemporaryAddresses().add(temporary);
+            player.getLockedTemporaryReferences().add(temporary);
         }
         
         long previous = 0L;
