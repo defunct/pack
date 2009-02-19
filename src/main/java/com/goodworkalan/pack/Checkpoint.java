@@ -6,7 +6,15 @@ import java.nio.ByteBuffer;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// TODO Comment.
+/**
+ * Checkpoint a journal by updating the journal header so that it references the
+ * journal operation following the checkpoint operation as the first operation
+ * in the journal. Before updating the journal header, the dirty pages for the
+ * journal are flushed. After updating the journal header the contents of the
+ * file channel are forced to disk.
+ * 
+ * @author Alan Gutierrez
+ */
 class Checkpoint extends Operation
 {
     /**

@@ -1,14 +1,21 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.Set;
 
+import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// TODO Comment.
+/**
+ * Free an address by assigning it a null page position and lock the address
+ * from update until the journal playback completes. 
+ * 
+ * @author Alan Gutierrez
+ */
 final class Free
 extends Operation
 {
-    // TODO Comment.
+    /** The address to free. */
     private long address;
     
     /**
@@ -19,54 +26,119 @@ extends Operation
     {
     }
 
-    // TODO Comment.
+    /**
+     * Create a free operation that will free the given address.
+     * 
+     * @param address
+     *            The address to free.
+     */
     public Free(long address)
     {
         this.address = address;
     }
 
-    // TODO Comment.
-    @Override
-    public void execute(Player player)
+    /**
+     * Free the address of this free operation.
+     * 
+     * @param sheaf
+     *            The page manager.
+     * @param addressLocker
+     *            Lock addresses against premature reassignment.
+     * @param userBoundary
+     *            The boundary between address and non-address pages.
+     * @param temporaryPool
+     *            The pool of references to temporary blocks.
+     * @param lockedAddresses
+     *            The set of addresses locked against premature assignment by
+     *            this journal playback.
+     * @param lockedTemporaryAddresses
+     *            The set of temporary address references locked against
+     *            premature assignment by this journal playback.
+     * @param freedBlockPages
+     *            The set of block pages that have had one or more blocks freed
+     *            during playback.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
+    private void free(Sheaf sheaf, AddressLocker addressLocker, UserBoundary userBoundary, TemporaryPool temporaryPool,
+        Set<Long> lockedAddresses, Set<Long> lockedTemporaryAddresses, Set<Long> freedBlockPages, DirtyPageSet dirtyPages)
     {
-        Bouquet bouquet = player.getBouquet();
-        Sheaf pager = bouquet.getSheaf();
-        
-        bouquet.getAddressLocker().lock(address);
-        player.getLockedAddresses().add(address);
+        // Lock the address against reassignment until after this journal
+        // playback completes.
+        addressLocker.lock(address);
+        lockedAddresses.add(address);
 
+        // If there was a temporary reference freed, record tha the temporary
+        // reference is locked against reassignment.
         long temporary;
-        if ((temporary = bouquet.getTemporaryPool().free(address, player.getBouquet().getSheaf(), bouquet.getUserBoundary(), player.getDirtyPages())) != 0L)
+        if ((temporary = temporaryPool.free(address, sheaf, userBoundary, dirtyPages)) != 0L)
         {
-            player.getLockedTemporaryReferences().add(temporary);
+            lockedTemporaryAddresses.add(temporary);
         }
         
         long previous = 0L;
         for (;;)
         {
-            BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
-            if (user.free(address, player.getDirtyPages()) || user.getRawPage().getPosition() == previous)
+            BlockPage user = userBoundary.dereference(sheaf, address);
+            synchronized (user.getRawPage())
             {
-                player.getFreedBlockPages().add(user.getRawPage().getPosition());
+                // Ensure that the page did not move since we dereferenced it.
+                if (user.getRawPage().getPage() == user)
+                {
+                    // Moving synchronizes on the source page, then synchronizes
+                    // on the destination page. It synchronizes on the address
+                    // page for a block address. It frees a block from the
+                    // source page, adds a block to the destination page. Then
+                    // it locks and updates the address page. It leaves the
+                    // address synchronization block and continues with the next
+                    // block address.
 
-                // Moving will work this way, lock from page, lock to page. Free
-                // from form page, add to to page. Then lock and update address
-                // page, free lock. Then free user locks.
+                    // If we free the address, we know that we have not lost a
+                    // race against another page attempting to move the block.
 
-                // So, when we are here, the page is free because it moved, then
-                // we try again. If we try again, it is free, and it hasn't
-                // moved, then we've freed it already in a previous attempt to
-                // playback the journal.
-            
-                break;
+                    // The address might have been freed by a failed playback,
+                    // however.
+
+                    // If the previous address is different from the address of
+                    // the current page, we may have lost a race against another
+                    // thread that changed the address reference.
+
+                    // If the previous address is the same as the address of the
+                    // current page, we thought we lost a race against another
+                    // thread that changed the address reference, but this time
+                    // through we see that the address reference has not
+                    // changed.
+
+                    if (user.free(address, dirtyPages) || user.getRawPage().getPosition() == previous)
+                    {
+                        freedBlockPages.add(user.getRawPage().getPosition());
+                        break;
+                    }
+
+                    // Record this position as the previous position and try
+                    // again.
+                    previous = user.getRawPage().getPosition();
+                }
+
             }
-            previous = user.getRawPage().getPosition();
         }
         
-        AddressPage addresses = pager.getPage(address, AddressPage.class, new AddressPage());
-        addresses.free(address, player.getDirtyPages());
+        AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
+        addresses.free(address, dirtyPages);
     }
 
+    /**
+     * Free the address of this free operation.
+     * 
+     * @param player
+     *            The journal player.
+     */
+    @Override
+    public void execute(Player player)
+    {
+        free(player.getBouquet().getSheaf(), player.getBouquet().getAddressLocker(), player.getBouquet().getUserBoundary(), player.getBouquet().getTemporaryPool(), player.getLockedAddresses(), player.getLockedTemporaryReferences(), player.getFreedBlockPages(), player.getDirtyPages());
+    }
+    
     /**
      * Return the length of the operation in the journal including the type
      * flag.

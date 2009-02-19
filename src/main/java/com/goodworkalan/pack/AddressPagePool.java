@@ -158,9 +158,9 @@ class AddressPagePool implements Iterable<Long>
         Map<Long, Long> moves = new HashMap<Long, Long>();
         for (long from : pagesToMove)
         {
-            // Allocate mirrors for the user pages and place them in
-            // the alloc page by size table and the allocation page set
-            // so the commit method will assign a destination user page.
+            // Allocation a destination for the contents of the moved user page.
+            // The destination will not be one of the other moved pages because
+            // they would have been removed from the interim page pool.
             long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getSheaf(), true);
             journal.write(new MovePage(from, to));
             moves.put(from, to);

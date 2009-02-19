@@ -80,17 +80,21 @@ class Move extends Operation
                 destinationPage.truncate(truncate, dirtyPages);
                 for (long address : sourcePage.getAddresses())
                 {
-                    AddressPage addresses = userBoundary.load(sheaf, address, AddressPage.class, new AddressPage());
-                    long current = addresses.dereference(address);
-                    // Remember that someone else might have pointed the address
-                    // at a newer version of the block, then committed, while
-                    // this journal failed. During playback, we don't want to
-                    // overwrite the new reference.
-                    if (current == source || current == destination)
+                    AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
+                    synchronized (addresses.getRawPage())
                     {
-                        ByteBuffer read = sourcePage.read(address, null);
-                        destinationPage.write(address, read, dirtyPages);
-                        addresses.set(address, destination, dirtyPages);
+                        long current = addresses.dereference(address);
+                        // Remember that someone else might have pointed the
+                        // address at a newer version of the block, then
+                        // committed, while this journal failed. During
+                        // playback, we don't want to overwrite the new
+                        // reference.
+                        if (current == source || current == destination)
+                        {
+                            ByteBuffer read = sourcePage.read(address, null);
+                            destinationPage.write(address, read, dirtyPages);
+                            addresses.set(address, destination, dirtyPages);
+                        }
                     }
                 }
             }

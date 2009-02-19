@@ -87,6 +87,8 @@ extends Operation
                 // FIXME What if page moves here? What if it changes type? 
                 synchronized (user.getRawPage())
                 {
+                    // Ensure that the page did not move since we dereferenced
+                    // it.
                     if (user.getRawPage().getPage() == user)
                     {
                         // We may have already updated the address during a
