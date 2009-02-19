@@ -84,7 +84,7 @@ final class ByRemainingTable implements ByRemaining
     public ByRemainingTable(Bouquet bouquet, DirtyPageSet dirtyPages)
     {
         this.bouquet = bouquet;
-        this.dirtyPages = new DirtyPageSet(16);
+        this.dirtyPages = new DirtyPageSet();
         this.slotSizes = getSlotSizes(bouquet.getSheaf().getPageSize(), bouquet.getHeader().getAlignment());
     }
     
@@ -240,7 +240,6 @@ final class ByRemainingTable implements ByRemaining
         if (aligned != 0)
         {
             int alignmentIndex = aligned / alignment;
-            byRemainingPage.increment(alignmentIndex, dirtyPages);
             long slotPosition = byRemainingPage.getSlotPosition(alignmentIndex);
             long allocateFrom = 0L;
             if (slotPosition == 0L)
@@ -271,7 +270,6 @@ final class ByRemainingTable implements ByRemaining
         int alignment = bouquet.getHeader().getAlignment();
         int aligned = remaining / alignment * alignment;
         int alignmentIndex = alignment / aligned;
-        byRemainingPage.decrement(alignmentIndex, dirtyPages);
         long firstSlot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
         long slot = firstSlot;
         while (slot != Long.MIN_VALUE)
@@ -316,23 +314,6 @@ final class ByRemainingTable implements ByRemaining
     }
     
     // TODO Comment.
-    private int alignmentIndex(int aligned)
-    {
-        int alignment = bouquet.getHeader().getAlignment();
-        int pageSize = bouquet.getSheaf().getPageSize();
-
-        for (int i = aligned / alignment; i < pageSize / alignment; i++)
-        {
-            if (byRemainingPage.getSizeCount(i) != 0)
-            {
-                return i;
-            }
-        }
-        
-        return 0;
-    }
-    
-    // TODO Comment.
     private ByRemainingSlotPage getSlotPage(long position)
     {
         return bouquet.getUserBoundary().load(bouquet.getSheaf(), position, ByRemainingSlotPage.class, new ByRemainingSlotPage());
@@ -348,7 +329,7 @@ final class ByRemainingTable implements ByRemaining
         return position;
     }
 
-    /* (non-Javadoc)
+    /**
      * @see com.goodworkalan.pack.ByRemaining#bestFit(int)
      */
     public long bestFit(int blockSize)
@@ -364,105 +345,104 @@ final class ByRemainingTable implements ByRemaining
         }
     
         // Return zero if there are no pages that can fit.
-        int alignmentIndex = alignmentIndex(aligned);
-        if (alignmentIndex == 0)
-        {
-            return 0L;
-        }
-
         long position = 0L;
-        for (;;)
+
+        int pageSize = bouquet.getSheaf().getPageSize();
+        for (int alignmentIndex = aligned / alignment; alignmentIndex < pageSize / alignment; alignmentIndex++)
         {
-            // Start with head slot of the linked list of slots.
-            long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
-            ByRemainingSlotPage slotPage = getSlotPage(slot);
-            position = slotPage.remove(slot, dirtyPages);
-
-            // If there is no position, we need to go to the previous slot. We
-            // also need to remove the current slot. When we do, we want to make
-            // sure that there are no empty slots, except in the slot page used
-            // to allocate slots. If the empty slot is not on the slot allocation
-            // page, we are going to remove a slot from the slot allocation page
-            // and copy it into the slot page to fill the gap.
-            if (position == 0L)
+            for (;;)
             {
-                // Get the previous slot.
-                long previous = adjust(slotPage.getPrevious(slot));
-
-                // Use the slot to allocate positions in the future.
-                byRemainingPage.setSlotPosition(alignmentIndex, previous, dirtyPages);
-
-                // Determine the slot size index of the slot page.
-                ListIterator<Integer> sizes = slotSizes.listIterator();
-                while (sizes.next() != slotPage.getSlotSize())
+                // Start with head slot of the linked list of slots.
+                long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
+                ByRemainingSlotPage slotPage = getSlotPage(slot);
+                position = slotPage.remove(slot, dirtyPages);
+    
+                // If there is no position, we need to go to the previous slot. We
+                // also need to remove the current slot. When we do, we want to make
+                // sure that there are no empty slots, except in the slot page used
+                // to allocate slots. If the empty slot is not on the slot allocation
+                // page, we are going to remove a slot from the slot allocation page
+                // and copy it into the slot page to fill the gap.
+                if (position == 0L)
                 {
-                }
-                int slotIndex = sizes.previousIndex() + 1;
-
-                // Get the allocation slot page for the slot size.
-                long alloc = adjust(byRemainingPage.getAllocSlotPosition(slotIndex));
-
-                // If the allocation slot page is not our previous slot page, we
-                // move a slot from the allocation slot page onto the previous
-                // slot page, so that all of the slots in the previous slot page
-                // remain full and only the alloc slot page has empty slots.
-                if (alloc != slot)
-                {
-                    ByRemainingSlotPage allocSlotPage = getSlotPage(alloc);
-
-                    // Remove the values for any slot in the alloc page.
-                    long[] values = allocSlotPage.removeSlot(dirtyPages);
-                    if (values != null)
+                    // Get the previous slot.
+                    long previous = adjust(slotPage.getPrevious(slot));
+    
+                    // Use the slot to allocate positions in the future.
+                    byRemainingPage.setSlotPosition(alignmentIndex, previous, dirtyPages);
+    
+                    // Determine the slot size index of the slot page.
+                    ListIterator<Integer> sizes = slotSizes.listIterator();
+                    while (sizes.next() != slotPage.getSlotSize())
                     {
-                        // Copy the values form the allocation slot to the now
-                        // empty slot in the previous page.
-
-                        // Set the previous and next pointers.
-                        slotPage.setPrevious(slot, adjust(values[0]), dirtyPages);
-                        slotPage.setNext(slot, adjust(values[1]), dirtyPages);
-
-                        // Add the slot values. Remember that the slot is empty,
-                        // so we don't need to explicitly zero the slot.
-                        for (int i = 2; i < values.length; i++)
+                    }
+                    int slotIndex = sizes.previousIndex() + 1;
+    
+                    // Get the allocation slot page for the slot size.
+                    long alloc = adjust(byRemainingPage.getAllocSlotPosition(slotIndex));
+    
+                    // If the allocation slot page is not our previous slot page, we
+                    // move a slot from the allocation slot page onto the previous
+                    // slot page, so that all of the slots in the previous slot page
+                    // remain full and only the alloc slot page has empty slots.
+                    if (alloc != slot)
+                    {
+                        ByRemainingSlotPage allocSlotPage = getSlotPage(alloc);
+    
+                        // Remove the values for any slot in the alloc page.
+                        long[] values = allocSlotPage.removeSlot(dirtyPages);
+                        if (values != null)
                         {
-                            slotPage.add(slot, adjust(values[i]), false, dirtyPages);
+                            // Copy the values form the allocation slot to the now
+                            // empty slot in the previous page.
+    
+                            // Set the previous and next pointers.
+                            slotPage.setPrevious(slot, adjust(values[0]), dirtyPages);
+                            slotPage.setNext(slot, adjust(values[1]), dirtyPages);
+    
+                            // Add the slot values. Remember that the slot is empty,
+                            // so we don't need to explicitly zero the slot.
+                            for (int i = 2; i < values.length; i++)
+                            {
+                                slotPage.add(slot, adjust(values[i]), false, dirtyPages);
+                            }
+    
+                            // If there is a previous slot, set its next slot
+                            // reference to this slot.
+                            if (slotPage.getPrevious(slot) != Long.MIN_VALUE)
+                            {
+                                ByRemainingSlotPage lastSlotPage = getSlotPage(slotPage.getPrevious(slot));
+                                lastSlotPage.setNext(slotPage.getPrevious(slot), slot, dirtyPages);
+                            }
+    
+                            // If there is a next slot, set its previous slot
+                            // reference to this slot.
+                            if (slotPage.getNext(slot) != Long.MIN_VALUE)
+                            {
+                                ByRemainingSlotPage nextSlotPage = getSlotPage(slotPage.getNext(slot));
+                                nextSlotPage.setPrevious(slotPage.getNext(slot), slot, dirtyPages);
+                            }
                         }
-
-                        // If there is a previous slot, set its next slot
-                        // reference to this slot.
-                        if (slotPage.getPrevious(slot) != Long.MIN_VALUE)
+                        else
                         {
-                            ByRemainingSlotPage lastSlotPage = getSlotPage(slotPage.getPrevious(slot));
-                            lastSlotPage.setNext(slotPage.getPrevious(slot), slot, dirtyPages);
-                        }
-
-                        // If there is a next slot, set its previous slot
-                        // reference to this slot.
-                        if (slotPage.getNext(slot) != Long.MIN_VALUE)
-                        {
-                            ByRemainingSlotPage nextSlotPage = getSlotPage(slotPage.getNext(slot));
-                            nextSlotPage.setPrevious(slotPage.getNext(slot), slot, dirtyPages);
+                            // The alloc slot page is empty, so lets free it and
+                            // make the previous slot page the allocation slot page.
+                            byRemainingPage.setAllocSlotPosition(slotIndex, previous, dirtyPages);
+                            bouquet.getInterimPagePool().free(alloc);
                         }
                     }
                     else
                     {
-                        // The alloc slot page is empty, so lets free it and
-                        // make the previous slot page the allocation slot page.
-                        byRemainingPage.setAllocSlotPosition(slotIndex, previous, dirtyPages);
-                        bouquet.getInterimPagePool().free(alloc);
-                    }
-                }
-                else
-                {
-                    Page page = bouquet.getSheaf().getPage(adjust(position), Page.class, new Page());
-                    synchronized (page.getRawPage())
-                    {
-                        if (page.getRawPage().getByteBuffer().getInt(0) < 0)
+                        Page page = bouquet.getSheaf().getPage(adjust(position), Page.class, new Page());
+                        synchronized (page.getRawPage())
                         {
-                            BlockPage blocks = bouquet.getSheaf().getPage(position, BlockPage.class, new BlockPage());
-                            if (alignRemaining(blocks.getRemaining()) == alignmentIndex * alignment)
+                            if (page.getRawPage().getByteBuffer().getInt(0) < 0)
                             {
-                                break;
+                                BlockPage blocks = bouquet.getSheaf().getPage(position, BlockPage.class, new BlockPage());
+                                if (alignRemaining(blocks.getRemaining()) == alignmentIndex * alignment)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }

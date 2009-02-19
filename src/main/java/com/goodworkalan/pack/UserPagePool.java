@@ -147,7 +147,7 @@ class UserPagePool
         Set<Long> emptyBlockPages = new HashSet<Long>();
         allocatedBlockPages.removeAll(freedBlockPages);
 
-        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        DirtyPageSet dirtyPages = new DirtyPageSet();
 
         Iterator<Long> continuous = freedBlockPages.iterator();
         while (continuous.hasNext())

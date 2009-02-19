@@ -66,7 +66,7 @@ abstract class ReferencePool
         long reference = reserve(sheaf, userBoundary, dirtyPages);
         if (reference == 0L)
         {
-            DirtyPageSet allocDirtyPages = new DirtyPageSet(16);
+            DirtyPageSet allocDirtyPages = new DirtyPageSet();
             long position = interimPagePool.newBlankInterimPage(sheaf, true);
             AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages);
             synchronized (header)

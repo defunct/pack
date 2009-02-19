@@ -14,9 +14,10 @@ import com.goodworkalan.sheaf.Page;
 class ByRemainingSlotPage extends Page
 {
     /**
-     * Create a slot page by writing zero to the entire new page.
-     *  
-     * @param dirtyPages The dirty page set.
+     * Create a by remaining slot page by writing zero to the entire new page.
+     * 
+     * @param dirtyPages
+     *            The dirty page set.
      */
     @Override
     public void create(DirtyPageSet dirtyPages)

@@ -153,7 +153,7 @@ class AddressPagePool implements Iterable<Long>
         // If the new address page is in the set of free block pages or if it is
         // a block page we've just created the page does not have to be moved.
         
-        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        DirtyPageSet dirtyPages = new DirtyPageSet();
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
         Map<Long, Long> moves = new HashMap<Long, Long>();
         for (long from : pagesToMove)

@@ -196,7 +196,7 @@ public final class Creator
         addressPages.add(0L);
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
         
-        DirtyPageSet dirtyPages = new DirtyPageSet(0);
+        DirtyPageSet dirtyPages = new DirtyPageSet();
         AddressPage addresses = sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages);
         addresses.set(0, Long.MIN_VALUE, dirtyPages);
         dirtyPages.flush();

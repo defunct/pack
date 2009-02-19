@@ -251,7 +251,7 @@ public class Pack
      */
     public Mutator mutate()
     {
-        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+        DirtyPageSet dirtyPages = new DirtyPageSet();
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
         return new Mutator(bouquet, journal, dirtyPages);
     }

@@ -15,6 +15,8 @@ import com.goodworkalan.sheaf.DirtyPageSet;
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
  * order to allocate, read, write or free blocks, one must create a
  * <code>Mutator</code> by calling {@link Pack#mutate()}.
+ * <p>
+ * FIXME Make sure you call flush. Add a setter for page cache count.
  */
 public final class Mutator
 {
@@ -568,7 +570,10 @@ public final class Mutator
             {
                 AddressPage addresses = bouquet.getSheaf().getPage(-address, AddressPage.class, new AddressPage());
                 addresses.free(-address, dirtyPages);
-                dirtyPages.flushIfAtCapacity();
+                if (dirtyPages.size() == 16)
+                {
+                    dirtyPages.flush();
+                }
             }
             interims.add(entry.getValue());
         }
