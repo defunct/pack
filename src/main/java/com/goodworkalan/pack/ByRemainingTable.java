@@ -85,7 +85,7 @@ final class ByRemainingTable implements ByRemaining
     {
         this.bouquet = bouquet;
         this.dirtyPages = new DirtyPageSet(16);
-        this.slotSizes = getSlotSizes(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
+        this.slotSizes = getSlotSizes(bouquet.getSheaf().getPageSize(), bouquet.getHeader().getAlignment());
     }
     
     // TODO Comment.
@@ -200,7 +200,7 @@ final class ByRemainingTable implements ByRemaining
      */
     private int alignRemaining(int remaining)
     {
-        int alignment = bouquet.getAlignment();
+        int alignment = bouquet.getHeader().getAlignment();
         return remaining / alignment * alignment;
     }
     
@@ -235,7 +235,7 @@ final class ByRemainingTable implements ByRemaining
     {
         load(0L);
         
-        int alignment = bouquet.getAlignment();
+        int alignment = bouquet.getHeader().getAlignment();
         int aligned = remaining / alignment * alignment;
         if (aligned != 0)
         {
@@ -268,7 +268,7 @@ final class ByRemainingTable implements ByRemaining
      */
     public void remove(long position, int remaining)
     {
-        int alignment = bouquet.getAlignment();
+        int alignment = bouquet.getHeader().getAlignment();
         int aligned = remaining / alignment * alignment;
         int alignmentIndex = alignment / aligned;
         byRemainingPage.decrement(alignmentIndex, dirtyPages);
@@ -318,7 +318,7 @@ final class ByRemainingTable implements ByRemaining
     // TODO Comment.
     private int alignmentIndex(int aligned)
     {
-        int alignment = bouquet.getAlignment();
+        int alignment = bouquet.getHeader().getAlignment();
         int pageSize = bouquet.getSheaf().getPageSize();
 
         for (int i = aligned / alignment; i < pageSize / alignment; i++)
@@ -354,7 +354,7 @@ final class ByRemainingTable implements ByRemaining
     public long bestFit(int blockSize)
     {
         // Get the page size, alignment and aligned block size.
-        int alignment = bouquet.getAlignment();
+        int alignment = bouquet.getHeader().getAlignment();
         int aligned = (blockSize + alignment - 1) / alignment * alignment;
 
         // Return zero there is no chance of a fit.

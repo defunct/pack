@@ -79,13 +79,21 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.LONG_SIZE + Pack.INT_SIZE, Pack.INT_SIZE);
     }
     
-    // TODO Comment.
+    /**
+     * Get the alignment to which all block allocations are rounded.
+     * 
+     * @return The block alignment.
+     */
     public int getAlignment()
     {
         return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2);
     }
     
-    // TODO Comment.
+    /**
+     * Set the alignment to which all block allocations are rounded.
+     * 
+     * @param alignment The block alignment.
+     */
     public void setAlignment(int alignment)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2, alignment);

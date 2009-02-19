@@ -162,7 +162,7 @@ public class Pack
      */
     public int getAlignment()
     {
-        return bouquet.getAlignment();
+        return bouquet.getHeader().getAlignment();
     }
     
     /**

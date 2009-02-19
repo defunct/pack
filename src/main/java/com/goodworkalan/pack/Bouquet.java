@@ -16,8 +16,6 @@ import com.goodworkalan.sheaf.Sheaf;
  * class, but the bouquet pattern allows us some modularity. Where one service
  * depends on another, that service is given as a parameter, rather than having
  * the services combined.
- * <p>
- * TODO Comment.
  * 
  * @author Alan Gutierrez
  */
@@ -26,34 +24,8 @@ final class Bouquet
     /** The pack object. */
     private final Pack pack;
     
-    /** The page manager of the pack to mutate. */
-    private final Sheaf sheaf;
-    
-    /**
-     * A synchronization strategy that prevents addresses that have been freed
-     * from overwriting reallocations.
-     */
-    private final AddressLocker addressLocker;
-    
-    /**  Round block allocations to this alignment. */
-    private final int alignment;
-
-    // TODO Comment.
-    private final TemporaryPool temporaryPool;
-    
-    // TODO Comment.
-    private final AddressPagePool addressPagePool;
-    
-    // TODO Comment.
-    private final InterimPagePool interimPagePool;
-    
-    // TODO Comment.
-    private final UserPagePool userPagePool;
-    
-    /**
-     * A mutex to ensure that only one thread at a time is vacuuming the pack.
-     */
-    private final Object vacuumMutex;
+    /** Housekeeping information stored at the head of the file. */
+    private final Header header;
 
     /**
      * A map of URIs that identify the addresses of static blocks specified
@@ -69,41 +41,64 @@ final class Bouquet
      */
     private final PositionSet journalHeaders;
 
+    /** The page manager. */
+    private final Sheaf sheaf;
+    
+    /** A read/write lock to guard the address page to user boundary. */
+    private final ReadWriteLock pageMoveLock;
+
+    /**
+     * A synchronization strategy that prevents addresses that have been freed
+     * from overwriting reallocations.
+     */
+    private final AddressLocker addressLocker;
+    
+    /** The address page pool. */
+    private final AddressPagePool addressPagePool;
+
     /** The boundary between address pages and user data pages. */
     private final UserBoundary userBoundary;
-    
-    // TODO Comment.
-    private final ReadWriteLock pageMoveLock;
-    
-    /** Housekeeping information stored at the head of the file. */
-    private final Header header;
 
-    // TODO Comment.
-    private final DirtyPageSet vacuumDirtyPages;
+    /** The user page pool. */
+    private final UserPagePool userPagePool;
+
+    /** The temporary address reference pool. */
+    private final TemporaryPool temporaryPool;
+    
+    /** The interim page pool. */
+    private final InterimPagePool interimPagePool;
     
     /**
-     * @param alignment
-     *            The alignment to which all block allocations are rounded.
-     * @param sheaf
-     *            Page management.
+     * A mutex to ensure that only one thread at a time is vacuuming the pack.
+     */
+    private final Object vacuumMutex;
+
+    /**
+     * The dirty page set used by the by remaining table for all user pages and
+     * by the journaled file vacuum.
+     */
+    private final DirtyPageSet vacuumDirtyPages;
+
+    /**
+     * Create a bouquet of the given services.
+     * 
      * @param header
      *            Housekeeping information stored at the head of the file.
-     * @param addressPagePool
-     * @param interimPagePool
-     * @param temporaryFactory
-     * @param userPagePool
-     * @param staticPages
+     * @param staticBlocks
      *            A map of URIs that identify the addresses of static blocks
      *            specified at the creation of the pack.
      * @param userBoundary
      *            The boundary between address pages and user data pages.
-     * @param interimBoundary
-     *            The boundary between user data pages and interim data pages.
+     * @param sheaf
+     *            Page management.
+     * @param addressPagePool
+     *            The address page pool
+     * @param temporaryFactory
+     *            The temporary address reference pool.
      */
     public Bouquet(Header header, Map<URI, Long> staticBlocks, UserBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryPool temporaryFactory)
     {
         this.pack = new Pack(this);
-        this.alignment = header.getAlignment();
         this.header = header;
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getInternalJournalCount());
@@ -118,27 +113,25 @@ final class Bouquet
         this.addressLocker = new AddressLocker();
         this.pageMoveLock = new ReentrantReadWriteLock();
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the pack associated with this bouquet of services.
+     * 
+     * @return The pack.
+     */
     public Pack getPack()
     {
         return pack;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Get the housekeeping information stored at the head of the file.
+     * 
+     * @return The housekeeping information stored at the head of the file.
+     */
     public Header getHeader()
     {
         return header;
-    }
-    
-    /**
-     * Return the alignment to which all block allocations are rounded.
-     * 
-     * @return The block alignment.
-     */
-    public int getAlignment()
-    {
-        return alignment;
     }
     
     /**
@@ -155,6 +148,38 @@ final class Bouquet
     }
 
     /**
+     * Get the set of position headers used to reserve journal headers.
+     * 
+     * @return The set of position headers.
+     */
+    public PositionSet getJournalHeaders()
+    {
+        return journalHeaders;
+    }
+
+    /**
+     * Get the page manager.
+     * 
+     * @return The page manager.
+     */
+    public Sheaf getSheaf()
+    {
+        return sheaf;
+    }
+    
+    /**
+     * Get the read/write lock used to guard the user boundary. The read lock
+     * of this read/write lock must be held by any operation attempting to
+     * read a non-address page.
+     * 
+     * @return The read/write lock used to guard the user boundary.
+     */
+    public ReadWriteLock getPageMoveLock()
+    {
+        return pageMoveLock;
+    }
+
+    /**
      * Returns the address locker which will block a reallocation from
      * committing until the commit that freed an address has completed. This
      * prevents the reallocation from being overwritten by playback of the
@@ -166,45 +191,15 @@ final class Bouquet
     {
         return addressLocker;
     }
-    
-    // TODO Comment.
-    public Sheaf getSheaf()
-    {
-        return sheaf;
-    }
-    
-    // TODO Comment.
+
+    /**
+     * Get the address page pool.
+     * 
+     * @return The address page pool.
+     */
     public AddressPagePool getAddressPagePool()
     {
         return addressPagePool;
-    }
-
-    // TODO Comment.
-    public InterimPagePool getInterimPagePool()
-    {
-        return interimPagePool;
-    }
-    
-    /**
-     * Get the set of position headers used to reserve journal headers.
-     * 
-     * @return The set of position headers.
-     */
-    public PositionSet getJournalHeaders()
-    {
-        return journalHeaders;
-    }
-
-    // TODO Comment.
-    public TemporaryPool getTemporaryPool()
-    {
-        return temporaryPool;
-    }
-    
-    // TODO Comment.
-    public UserPagePool getUserPagePool()
-    {
-        return userPagePool;
     }
 
     /**
@@ -217,12 +212,36 @@ final class Bouquet
         return userBoundary;
     }
 
-    // TODO Comment.
-    public ReadWriteLock getPageMoveLock()
+    /**
+     * Get the user page pool.
+     * 
+     * @return The user page pool.
+     */
+    public UserPagePool getUserPagePool()
     {
-        return pageMoveLock;
+        return userPagePool;
     }
 
+    /**
+     * Get the temporary address reference pool.
+     * 
+     * @return The temporary address reference pool.
+     */
+    public TemporaryPool getTemporaryPool()
+    {
+        return temporaryPool;
+    }
+
+    /**
+     * Get the interim page pool.
+     * 
+     * @return The interim page pool.
+     */
+    public InterimPagePool getInterimPagePool()
+    {
+        return interimPagePool;
+    }
+    
     /**
      * Return the per pack mutex used to ensure that only one thread at a time
      * is vacuuming the pack.
