@@ -189,8 +189,14 @@ public final class ByRemainingTable
         byRemainingPage.setAllocSlotPosition(slotSizeIndex, setPage.getRawPage().getPosition(), dirtyPages);
         return setPage.getRawPage().getPosition();
     }
-    
-    // TODO Comment.
+
+    /**
+     * Round the remaining bytes down to the nearest alignment.
+     * 
+     * @param remaining
+     *            A count of bytes remaining.
+     * @return The remaining bytes down to the nearest alignment.
+     */
     private int alignRemaining(int remaining)
     {
         int alignment = bouquet.getAlignment();
@@ -234,17 +240,17 @@ public final class ByRemainingTable
         {
             int alignmentIndex = aligned / alignment;
             byRemainingPage.increment(alignmentIndex, dirtyPages);
-            long setPosition = byRemainingPage.getSlotPosition(alignmentIndex);
+            long slotPosition = byRemainingPage.getSlotPosition(alignmentIndex);
             long allocateFrom = 0L;
-            if (setPosition == 0L)
+            if (slotPosition == 0L)
             {
-                setPosition = newSlotPosition(slotSizes.size() - 1, alignmentIndex, Long.MIN_VALUE);
+                slotPosition = newSlotPosition(slotSizes.size() - 1, alignmentIndex, Long.MIN_VALUE);
             }
-            ByRemainingSlotPage setPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
-            if (!setPage.add(allocateFrom, position, false, dirtyPages))
+            ByRemainingSlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
+            if (!slotPage.add(allocateFrom, position, false, dirtyPages))
             {
-                setPosition = newSlotPosition(getNextSlotIndex(setPage), alignmentIndex, setPage.getRawPage().getPosition());
-                setPage.add(allocateFrom, position, false, dirtyPages);
+                slotPosition = newSlotPosition(getNextSlotIndex(slotPage), alignmentIndex, slotPage.getRawPage().getPosition());
+                slotPage.add(allocateFrom, position, false, dirtyPages);
            }
         }
     }
@@ -265,16 +271,46 @@ public final class ByRemainingTable
         int aligned = remaining / alignment * alignment;
         int alignmentIndex = alignment / aligned;
         byRemainingPage.decrement(alignmentIndex, dirtyPages);
-        for (;;)
+        long firstSlot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
+        long slot = firstSlot;
+        while (slot != Long.MIN_VALUE)
         {
             // Start with head slot of the linked list of slots.
-            long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
             ByRemainingSlotPage slotPage = getSlotPage(slot);
             if (slotPage.remove(slot, position, dirtyPages))
             {
-                
+                if (slot == firstSlot)
+                {
+                    slotPage.compact(slot, dirtyPages);
+                }
+                else
+                {
+                    ByRemainingSlotPage firstSlotPage = getSlotPage(firstSlot);
+                    long replace = firstSlotPage.remove(firstSlot, dirtyPages);
+                    if (replace == 0L)
+                    {
+                        long lastSlot = adjust(firstSlotPage.getPrevious(firstSlot));
+                        ByRemainingSlotPage lastSlotPage = getSlotPage(lastSlot);
+                        lastSlotPage.setNext(lastSlot, Long.MIN_VALUE, dirtyPages);
+                        byRemainingPage.setSlotPosition(alignmentIndex, lastSlot, dirtyPages);
+                        if (lastSlot == slot)
+                        {
+                            slotPage.compact(slot, dirtyPages);
+                        }
+                        else
+                        {
+                            replace = lastSlotPage.remove(firstSlot, dirtyPages);
+                            slotPage.add(slot, replace, true, dirtyPages);
+                        }
+                    }
+                    else
+                    {
+                        slotPage.add(slot, replace, true, dirtyPages);
+                    }
+                }
+                break;
             }
-            position = adjust(slotPage.remove(slot, dirtyPages));
+            slot = adjust(slotPage.getPrevious(slot));
         }
     }
     
@@ -329,7 +365,7 @@ public final class ByRemainingTable
     {
         // Get the page size, alignment and aligned block size.
         int alignment = bouquet.getAlignment();
-        int aligned = ( blockSize + alignment - 1 ) / alignment * alignment;
+        int aligned = (blockSize + alignment - 1) / alignment * alignment;
 
         // Return zero there is no chance of a fit.
         if (aligned > bouquet.getPack().getMaximumBlockSize() - alignment)
@@ -350,7 +386,7 @@ public final class ByRemainingTable
             // Start with head slot of the linked list of slots.
             long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
             ByRemainingSlotPage slotPage = getSlotPage(slot);
-            position = adjust(slotPage.remove(slot, dirtyPages));
+            position = slotPage.remove(slot, dirtyPages);
 
             // If there is no position, we need to go to the previous slot. We
             // also need to remove the current slot. When we do, we want to make
@@ -428,7 +464,7 @@ public final class ByRemainingTable
                 }
                 else
                 {
-                    Page page = bouquet.getSheaf().getPage(position, Page.class, new Page());
+                    Page page = bouquet.getSheaf().getPage(adjust(position), Page.class, new Page());
                     synchronized (page.getRawPage())
                     {
                         if (page.getRawPage().getByteBuffer().getInt(0) < 0)
