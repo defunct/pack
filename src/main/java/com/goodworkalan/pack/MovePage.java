@@ -2,11 +2,24 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-// FIXME Comment.
+/**
+ * Move a whole page from one position to another.
+ * <p>
+ * This journal operation is used only by the address page pool to move user
+ * pages out of the way to expand the address region of the file. Moving pages
+ * is an exclusive operation and no other operation can be performed while pages
+ * are moving. Pages only move from a lesser file position to a greater file
+ * position.
+ * 
+ * @author Alan Gutierrez
+ * 
+ */
 class MovePage extends Operation
 {
+    /** The page position to move from. */
     private long from;
     
+    /** The page position to move to. */
     private long to;
 
     /**

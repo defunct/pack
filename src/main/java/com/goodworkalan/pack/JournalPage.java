@@ -67,7 +67,7 @@ extends Page
         getRawPage().invalidate(0, Pack.CHECKSUM_SIZE);
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     private long getChecksum(Checksum checksum)
     {
         checksum.reset();
@@ -80,7 +80,7 @@ extends Page
         return checksum.getValue();
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public boolean isValidChecksum(Checksum checksum)
     {
         return getRawPage().getByteBuffer().getLong(0) == getChecksum(checksum);

@@ -58,7 +58,7 @@ extends JournalWriter
         return false;
     }
 
-    // FIXME Comment.
+    // TODO Comment.
     @Override
     public Set<Long> getJournalPages()
     {

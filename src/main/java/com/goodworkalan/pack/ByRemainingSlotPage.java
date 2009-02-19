@@ -54,14 +54,17 @@ class ByRemainingSlotPage extends Page
     {
         return getRawPage().getByteBuffer().getInt(0);
     }
-    
+
     /**
-     * Add the given position to the set of positions at the given set position. Returns true
-     * if the position is added, false if the set is full.
+     * Add the given position to the set of positions at the given set position.
+     * Returns true if the position is added, false if the set is full.
      * 
-     * @param setPosition The position of start the set on disk.
-     * @param position The file position.
-     * @param dirtyPages The dirty page set.
+     * @param setPosition
+     *            The position of start the set on disk.
+     * @param position
+     *            The file position.
+     * @param dirtyPages
+     *            The dirty page set.
      * @return True if the position was added, false if the set is full.
      */
     public boolean add(long setPosition, long position, boolean force, DirtyPageSet dirtyPages)
@@ -139,6 +142,7 @@ class ByRemainingSlotPage extends Page
         return 0L;
     }
     
+    // TODO Comment.
     public boolean remove(long slotPosition, long position, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
@@ -179,12 +183,14 @@ class ByRemainingSlotPage extends Page
         return false;
     }
     
+    // TODO Comment.
     public long least(long slotPosition)
     {
         int offset = (int) (slotPosition - getRawPage().getPosition());
         return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE * 2);
     }
     
+    // TODO Comment.
     public void compact(long slotPosition, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());

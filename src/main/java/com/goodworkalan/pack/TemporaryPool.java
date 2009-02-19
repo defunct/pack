@@ -7,13 +7,13 @@ import java.util.Set;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Comment.
+// TODO Comment.
 class TemporaryPool
 {
-    // FIXME Comment.
+    // TODO Comment.
     private final ReferencePool referencePool;
     
-    // FIXME Comment.
+    // TODO Comment.
     private final AddressLocker temporaryLocker;
 
     /**
@@ -52,19 +52,19 @@ class TemporaryPool
         }
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public synchronized Map<Long, Long> toMap()
     {
         return new HashMap<Long, Long>(temporaries);
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public long allocate(Sheaf sheaf, Header header, UserBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
     {
         return referencePool.allocate(sheaf, header, userBoundary, interimPagePool, dirtyPages);
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public synchronized void commit(long address, long temporary, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         temporaryLocker.bide(temporary);
@@ -73,7 +73,7 @@ class TemporaryPool
         temporaries.put(address, temporary);
     }
 
-    // FIXME Comment.
+    // TODO Comment.
     public synchronized long free(long address, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         if (temporaries.containsKey(address))
@@ -88,7 +88,7 @@ class TemporaryPool
         return 0L;
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public void unlock(Set<Long> temporaries)
     {
         temporaryLocker.unlock(temporaries);

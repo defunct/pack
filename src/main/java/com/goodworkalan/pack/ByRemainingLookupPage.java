@@ -5,14 +5,19 @@ import java.nio.ByteBuffer;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
+// TODO Comment.
 public class ByRemainingLookupPage extends Page
 {
+    // TODO Comment.
     private final static int INT_SIZE = (Integer.SIZE / Byte.SIZE);
     
+    // TODO Comment.
     private final static int LONG_SIZE = (Long.SIZE / Byte.SIZE);
 
+    // TODO Comment.
     private final static int RECORD_SIZE = INT_SIZE + LONG_SIZE;
     
+    // TODO Comment.
     @Override
     public void create(DirtyPageSet dirtyPages)
     {
@@ -25,22 +30,26 @@ public class ByRemainingLookupPage extends Page
         getRawPage().invalidate(0, getRawPage().getSheaf().getPageSize());
     }
     
+    // TODO Comment.
     public void setAlignment(int alignment, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putInt(0, alignment);
     }
     
+    // TODO Comment.
     public int getAlignment()
     {
         return getRawPage().getByteBuffer().getInt(0);
     }
     
+    // TODO Comment.
     public int getSizeCount(int index)
     {
         return getRawPage().getByteBuffer().getInt(RECORD_SIZE * index);
     }
     
+    // TODO Comment.
     public void increment(int index, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
@@ -48,6 +57,7 @@ public class ByRemainingLookupPage extends Page
         getRawPage().invalidate(RECORD_SIZE * index, INT_SIZE);
     }
     
+    // TODO Comment.
     public void deccrement(int index, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
@@ -55,11 +65,13 @@ public class ByRemainingLookupPage extends Page
         getRawPage().invalidate(RECORD_SIZE * index, INT_SIZE);
     }
 
+    // TODO Comment.
     public long getSetPosition(int index)
     {
         return getRawPage().getByteBuffer().getLong(RECORD_SIZE * index + INT_SIZE);
     }
     
+    // TODO Comment.
     public void setSetPosition(int index, long address, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
@@ -67,6 +79,7 @@ public class ByRemainingLookupPage extends Page
         getRawPage().invalidate(RECORD_SIZE * index + INT_SIZE, LONG_SIZE);
     }
     
+    // TODO Comment.
     public long getFreeSetPosition(int index)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();
@@ -74,6 +87,7 @@ public class ByRemainingLookupPage extends Page
         return getRawPage().getByteBuffer().getLong(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * index);
     }
     
+    // TODO Comment.
     public void setFreeSetPosition(int index, long address, DirtyPageSet dirtyPages)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();

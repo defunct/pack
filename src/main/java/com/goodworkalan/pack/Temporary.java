@@ -51,7 +51,7 @@ extends Operation
         this.temporary = temporary;
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
     {
         temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);
@@ -96,7 +96,7 @@ extends Operation
     }
     
     /**
-     * Read the operation data but not the preceeding operation type flag from
+     * Read the operation data but not the preceding operation type flag from
      * the byte buffer.
      * 
      * @param bytes

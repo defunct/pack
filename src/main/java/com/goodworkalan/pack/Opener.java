@@ -19,10 +19,10 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 public final class Opener
 {
-    // FIXME Comment.
+    // TODO Comment.
     private final Set<Long> temporaryBlocks;
    
-    // FIXME Comment.
+    // TODO Comment.
     public Opener()
     {
         this.temporaryBlocks = new HashSet<Long>();
@@ -39,7 +39,7 @@ public final class Opener
         return temporaryBlocks;
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     private boolean badAddress(Header header, long address)
     {
         return address < 8 || address > header.getUserBoundary();
@@ -117,7 +117,7 @@ public final class Opener
     }
 
     // FIXME Return null?
-    // FIXME Comment.
+    // TODO Comment.
     public Pack open(FileChannel fileChannel)
     {
         // Read the header and obtain the basic file properties.

@@ -69,11 +69,10 @@ import com.goodworkalan.sheaf.Sheaf;
 class BlockPage extends Page
 {
     /** The count of blocks in this page. */
-    // FIXME Need to keep track of freed blocks to have correct remaining.
-    protected int count;
+    private int count;
 
     /** The count of bytes remaining for block allocation. */
-    protected int remaining;
+    private int remaining;
 
     /**
      * Construct an uninitialized block page that is then initialized by calling
@@ -123,26 +122,18 @@ class BlockPage extends Page
         dirtyPages.add(getRawPage());
     }
 
-    /**
-     * Return the count of bytes allocated by iterating over the blocks
-     * and reading their block sizes.
-     * 
-     * @return The count of bytes allocated.
-     */
-    private int getAllocated()
+    // TODO Document.
+    private int calcRemaining()
     {
-        int consumed = Pack.BLOCK_PAGE_HEADER_SIZE;
+        int remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
         ByteBuffer bytes = getBlockRange();
         for (int i = 0; i < count; i++)
         {
-            int size = getBlockSize(bytes);
-            if (size > 0)
-            {
-                consumed += size;
-            }
+            int size = Math.abs(getBlockSize(bytes));
+            remaining -= size;
             advance(bytes, size);
         }
-        return consumed;
+        return remaining;
     }
 
     /**
@@ -156,7 +147,7 @@ class BlockPage extends Page
         bytes.getLong();
 
         this.count = bytes.getInt();
-        this.remaining = getRawPage().getSheaf().getPageSize() - getAllocated();
+        this.remaining = calcRemaining();
     }
 
     /**
@@ -184,7 +175,7 @@ class BlockPage extends Page
             return remaining;
         }
     }
-
+    
     /**
      * Get the full block size including the block header of the block at the
      * position of the given byte buffer of the underlying block page.
@@ -328,15 +319,10 @@ class BlockPage extends Page
     protected boolean seek(ByteBuffer bytes, long address)
     {
         bytes = getBlockRange(bytes);
-        int block = 0;
-        while (block < count)
+        for (int i = 0; i < count; i++)
         {
             int size = getBlockSize(bytes);
-            if (size > 0)
-            {
-                block++;
-            }
-            if (getAddress(bytes) == address)
+            if (size > 0 && getAddress(bytes) == address)
             {
                 return true;
             }
@@ -373,12 +359,9 @@ class BlockPage extends Page
                 ByteBuffer bytes = getBlockRange();
                 for (;;)
                 {
+                    count++;
                     int size = getBlockSize(bytes);
-                    if (size > 0)
-                    {
-                        count++;
-                    }
-                    if (getAddress(bytes) == address)
+                    if (size > 0 && getAddress(bytes) == address)
                     {
                         break;
                     }
@@ -405,24 +388,37 @@ class BlockPage extends Page
      * 
      * @return True if there are no freed blocks followed by allocated blocks.
      */
-    public boolean isContinuous()
+    // TODO Document.
+    public boolean purge(DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = getBlockRange();
-        int block = 0;
-        while (block < count)
+        boolean continuous = true;
+        int freed = 0;
+        int free = 0;
+        for (int i = 0; i < count; i++)
         {
             int size = getBlockSize(bytes);
-            if (size > 0)
+            if (size < 0)
             {
-                block++;
+                free++;
+                freed += Math.abs(size);
             }
-            else
+            else if (free != 0)
             {
-                return true;
+                continuous = false;
+                free = 0;
+                freed = 0;
             }
             advance(bytes, size);
         }
-        return false;
+        if (free != 0)
+        {
+            count -= free;
+            remaining += freed;
+            dirtyPages.add(getRawPage());
+            getRawPage().getByteBuffer().putInt(0, count);
+        }
+        return continuous;
     }
 
     /**
@@ -459,13 +455,11 @@ class BlockPage extends Page
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getBlockRange();
-            int block = 0;
-            while (block < getBlockCount())
+            for (int i = 0; i < count; i++)
             {
                 int size = getBlockSize(bytes);
                 if (size > 0)
                 {
-                    block++;
                     listOfAddresses.add(getAddress(bytes));
                 }
                 advance(bytes, size);
@@ -496,13 +490,11 @@ class BlockPage extends Page
         synchronized (getRawPage())
         {
             ByteBuffer bytes = getBlockRange();
-            int block = 0;
-            while (block < getBlockCount())
+            for (int i = 0; i < count; i++)
             {
                 int size = getBlockSize(bytes);
                 if (size > 0)
                 {
-                    block++;
                     last = getAddress(bytes);
                 }
                 advance(bytes, size);
@@ -533,6 +525,7 @@ class BlockPage extends Page
         {
             ByteBuffer bytes = getBlockRange();
             
+            // FIXME Assert that we go to the end of the page.
             seek(bytes, address);
 
             getRawPage().invalidate(bytes.position(), blockSize);
@@ -697,10 +690,6 @@ class BlockPage extends Page
     
                 getRawPage().invalidate(offset, Pack.COUNT_SIZE);
                 bytes.putInt(offset, size);
-                
-                count--;
-                getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
-                bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
     
                 dirtyPages.add(getRawPage());
                 

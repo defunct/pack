@@ -10,21 +10,22 @@ import com.goodworkalan.sheaf.DirtyRegionMap;
  * Reads and writes the header fields of a pack file. The header is built on top
  * of {@link DirtyRegionMap} so that writing header fields will only cause the
  * dirty fields to be written when the header is flushed.
- * <p>
- * FIXME Comment.
  * 
  * @author Alan Gutierrez
  */
 final class Header extends DirtyRegionMap
 {
+    // TODO Comment.
     private final ByteBuffer bytes;
     
+    // TODO Comment.
     public Header(ByteBuffer bytes)
     {
         super(0L);
         this.bytes = bytes;
     }
     
+    // TODO Comment.
     public int getHeaderSize(Map<URI, Integer> staticBlocks)
     {
         int size = Pack.COUNT_SIZE;
@@ -38,76 +39,90 @@ final class Header extends DirtyRegionMap
         return size;
     }
     
+    // TODO Comment.
     public ByteBuffer getByteBuffer()
     {
         return bytes;
     }
     
+    // TODO Comment.
     public long getStaticPagesStart()
     {
         return Pack.FILE_HEADER_SIZE + getInternalJournalCount() * Pack.POSITION_SIZE;
     }
 
+    // TODO Comment.
     public long getSignature()
     {
         return bytes.getLong(0);
     }
     
+    // TODO Comment.
     public void setSignature(long signature)
     {
         bytes.putLong(0, signature);
         invalidate(0, Pack.CHECKSUM_SIZE);
     }
     
+    // TODO Comment.
     public int getShutdown()
     {
         return bytes.getInt(Pack.CHECKSUM_SIZE);
     }
     
+    // TODO Comment.
     public void setShutdown(int shutdown)
     {
         bytes.putInt(Pack.CHECKSUM_SIZE, shutdown);
         invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
     }
     
+    // TODO Comment.
     public int getPageSize()
     {
         return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE);
     }
     
+    // TODO Comment.
     public void setPageSize(int pageSize)
     {
         bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE, pageSize);
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE, Pack.COUNT_SIZE);
     }
     
+    // TODO Comment.
     public int getAlignment()
     {
         return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2);
     }
     
+    // TODO Comment.
     public void setAlignment(int alignment)
     {
         bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2, alignment);
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2, Pack.COUNT_SIZE);
     }
     
+    // TODO Comment.
     public int getInternalJournalCount()
     {
         return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3);
     }
     
+    // TODO Comment.
     public void setInternalJournalCount(int internalJournalCount)
     {
         bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3, internalJournalCount);
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3, Pack.COUNT_SIZE);
     }
     
+    // TODO Comment.
     public int getStaticPageSize()
     {
         return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4);
     }
     
+    // TODO Comment.
     public void setStaticPageSize(int staticPageSize)
     {
         bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4, staticPageSize);
@@ -187,11 +202,13 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
 
+    // TODO Comment.
     public long getEndOfSheaf()
     {
         return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7);
     }
 
+    // TODO Comment.
     public void setEndOfSheaf(long interimBoundary)
     {
         bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7, interimBoundary);
@@ -222,11 +239,13 @@ final class Header extends DirtyRegionMap
         invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
     }
     
+    // TODO Comment.
     public long getByRemainingTable()
     {
         return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7);
     }
     
+    // TODO Comment.
     public void setByRemainingTable(long vacuumNode)
     {
         bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7, vacuumNode);

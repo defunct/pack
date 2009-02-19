@@ -7,26 +7,58 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
 /**
- * A table to lookup pages by the amount of bytes remaining for block allocation.
- * The table rounds the amount remaining in a given page down to the nearest block alignment, then stores it 
- * in a set for that value. Use the {@link #bestFit(int)} method to find a page
- * that will fit a given block size. Use {@link #reserve(long)} to prevent
- * a page from being returned...
- * 
+ * A table to lookup pages by the amount of bytes remaining for block
+ * allocation. The table rounds the amount remaining in a given page down to the
+ * nearest block alignment, then stores it in a set for that value. Use the
+ * {@link #bestFit(int)} method to find a page that will fit a given block size.
+ * Use {@link #reserve(long)} to prevent a page from being returned...
+ * <p>
  * A table of pages ordered by size that performs a best fit lookup, returning
  * the page in the collection with the least amount of free space that will
  * accommodate a block of a given size.
+ * <p>
+ * <ol>
+ * <li>A position is allocated by a mutator, it tracks that position using the
+ * addresses map in the mutator. The position does not change form the point of
+ * allocation.</li>
+ * <li>At commit, the position is written into the address page as the position
+ * value at the time of allocation.</li>
+ * <li>Vacuum may add the page to the by remaining table, if it does, it
+ * <strong>must</strong> be added using the page position that the mutator wrote
+ * into the address pages.</li>
+ * <li>If the user frees a block, the address will dereference the page position
+ * at allocation. The unadjusted page position <strong>must</strong> be reported
+ * in the free page set.</li>
+ * <li>Freed pages will be removed from the by remaining table, they will be
+ * purged then either added or vacuumed. Once they are removed from the by
+ * remaining table, the adjusted values can be added.</li>
+ * </ol>
+ * FIXME New problem. Free a block. Same block vacuumed, moved.
+ * FIXME Why am I  supporting the notion of user pages? A feature too far? If
+ * you want to use block management, you have to use a block.
+ * FIXME Don't I have isolation now? If you have one writer, you can dirty
+ * up pages, so long as no one else is writing, that dirt can be in isolation.
+ * Here is where you get your dirty pages in strata.
+ * FIXME You can solve exposing a raw empty page to the user later.
+ * FIXME How about, you can have a raw empty page, but you cannot set the
+ * first bit of the page. Instead of reserving the first byte or long, reserve
+ * the first bit. Assert that it is not set before writing. Problem solved,
+ * now return to implementing.
  * 
  * @author Alan Gutierrez
  */
 public final class ByRemainingTable
 {
+    // TODO Comment.
     private LinkedList<Integer> slotSizes;
     
+    // TODO Comment.
     private final Bouquet bouquet;
     
+    // TODO Comment.
     private ByRemainingLookupPage lookupPage;
     
+    // TODO Comment.
     private final DirtyPageSet dirtyPages;
 
     /**
@@ -49,31 +81,34 @@ public final class ByRemainingTable
         this.slotSizes = getSlotSizes(bouquet.getSheaf().getPageSize(), bouquet.getAlignment());
     }
     
+    // TODO Comment.
     public void load(long position)
     {
         if (lookupPage == null)
         {
             if (position == 0L)
             {
-                
+                lookupPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingLookupPage.class, new ByRemainingLookupPage(), dirtyPages, false);
             }
             else
             {
-                lookupPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingLookupPage.class, new ByRemainingLookupPage(), dirtyPages, false);
             }
         }
     }
     
+    // TODO Comment.
     public DirtyPageSet getDirtyPages()
     {
         return dirtyPages;
     }
     
+    // TODO Comment.
     private static int getSlotSize(int pageSize, int slotCount)
     {
         return ((Pack.INT_SIZE - pageSize) / Pack.LONG_SIZE) / slotCount;
     }
     
+    // TODO Comment.
     private static LinkedList<Integer> getSlotSizes(int pageSize, int alignment)
     {
         LinkedList<Integer> slotSizes = new LinkedList<Integer>();
@@ -109,6 +144,7 @@ public final class ByRemainingTable
         add(blocks.getRawPage().getPosition(), blocks.getRemaining());
     }
 
+    // TODO Comment.
     public long newSlotPosition(int slotSizeIndex, int alignmentIndex, long previous)
     {
         long allocateFrom = lookupPage.getFreeSetPosition(slotSizeIndex);
@@ -130,6 +166,7 @@ public final class ByRemainingTable
         return slotPosition;
     }
 
+    // TODO Comment.
     public long foo()
     {
         ByRemainingSlotPage setPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingSlotPage.class, new ByRemainingSlotPage(), dirtyPages, true);
@@ -138,6 +175,7 @@ public final class ByRemainingTable
         return setPage.getRawPage().getPosition();
     }
     
+    // TODO Comment.
     private int alignRemaining(int remaining)
     {
         int alignment = bouquet.getAlignment();
@@ -228,6 +266,7 @@ public final class ByRemainingTable
         }
     }
     
+    // TODO Comment.
     private int alignmentIndex(int aligned)
     {
         int alignment = bouquet.getAlignment();
@@ -244,11 +283,13 @@ public final class ByRemainingTable
         return 0;
     }
     
+    // TODO Comment.
     private ByRemainingSlotPage getSlotPage(long position)
     {
         return bouquet.getUserBoundary().load(bouquet.getSheaf(), position, ByRemainingSlotPage.class, new ByRemainingSlotPage());
     }
     
+    // TODO Comment.
     private long adjust(long position)
     {
         if (position != Long.MIN_VALUE && position != 0L)

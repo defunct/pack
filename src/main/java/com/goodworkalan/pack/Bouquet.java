@@ -16,7 +16,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * depends on another, that service is given as a parameter, rather than having
  * the services combined.
  * <p>
- * FIXME Comment.
+ * TODO Comment.
  * 
  * @author Alan Gutierrez
  */
@@ -37,12 +37,16 @@ final class Bouquet
     /**  Round block allocations to this alignment. */
     private final int alignment;
 
+    // TODO Comment.
     private final TemporaryPool temporaryPool;
     
+    // TODO Comment.
     private final AddressPagePool addressPagePool;
     
+    // TODO Comment.
     private final InterimPagePool interimPagePool;
     
+    // TODO Comment.
     private final UserPagePool userPagePool;
     
     /**
@@ -67,6 +71,7 @@ final class Bouquet
     /** The boundary between address pages and user data pages. */
     private final UserBoundary userBoundary;
     
+    // TODO Comment.
     private final ReadWriteLock pageMoveLock;
     
     /** Housekeeping information stored at the head of the file. */
@@ -109,11 +114,13 @@ final class Bouquet
         this.pageMoveLock = new ReentrantReadWriteLock();
     }
     
+    // TODO Comment.
     public Pack getPack()
     {
         return pack;
     }
     
+    // TODO Comment.
     public Header getHeader()
     {
         return header;
@@ -155,16 +162,19 @@ final class Bouquet
         return addressLocker;
     }
     
+    // TODO Comment.
     public Sheaf getSheaf()
     {
         return sheaf;
     }
     
+    // TODO Comment.
     public AddressPagePool getAddressPagePool()
     {
         return addressPagePool;
     }
 
+    // TODO Comment.
     public InterimPagePool getInterimPagePool()
     {
         return interimPagePool;
@@ -180,11 +190,13 @@ final class Bouquet
         return journalHeaders;
     }
 
+    // TODO Comment.
     public TemporaryPool getTemporaryPool()
     {
         return temporaryPool;
     }
     
+    // TODO Comment.
     public UserPagePool getUserPagePool()
     {
         return userPagePool;
@@ -200,6 +212,7 @@ final class Bouquet
         return userBoundary;
     }
 
+    // TODO Comment.
     public ReadWriteLock getPageMoveLock()
     {
         return pageMoveLock;

@@ -12,7 +12,7 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
  * <p>
- * FIXME Comment constants.
+ * TODO Comment constants.
  */
 public class Pack
 {

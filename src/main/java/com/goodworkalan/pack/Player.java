@@ -9,27 +9,37 @@ import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-// FIXME Comment.
+// TODO Comment.
 final class Player
 {
+    // TODO Comment.
     private final Bouquet bouquet;
 
+    // TODO Comment.
     private final JournalHeader header;
 
+    // TODO Comment.
     private long entryPosition;
 
+    // TODO Comment.
     private final DirtyPageSet dirtyPages;
     
+    // TODO Comment.
     private final SortedSet<Long> addresses;
     
+    // TODO Comment.
     private final Set<Long> temporaryAddresses;
     
+    // TODO Comment.
     private final Set<Long> journalPages;
     
+    // TODO Comment.
     private final Set<Long> freedBlockPages;
     
+    // TODO Comment.
     private final Set<Long> allocatedBlockPages;
     
+    // TODO Comment.
     public Player(Bouquet bouquet, JournalHeader header, DirtyPageSet dirtyPages)
     {
         ByteBuffer bytes = header.getByteBuffer();
@@ -47,11 +57,13 @@ final class Player
         this.allocatedBlockPages = new HashSet<Long>();
     }
     
+    // TODO Comment.
     public Player(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
         this(bouquet, allocateHeader(journal, bouquet, dirtyPages), dirtyPages);
     }
     
+    // TODO Comment.
     private static JournalHeader allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
     {
         JournalHeader header = bouquet.getJournalHeaders().allocate();
@@ -72,41 +84,49 @@ final class Player
         return header;
     }
     
+    // TODO Comment.
     public Bouquet getBouquet()
     {
         return bouquet;
     }
     
+    // TODO Comment.
     public JournalHeader getJournalHeader()
     {
         return header;
     }
     
+    // TODO Comment.
     public DirtyPageSet getDirtyPages()
     {
         return dirtyPages;
     }
     
+    // TODO Comment.
     public SortedSet<Long> getAddresses()
     {
         return addresses;
     }
     
+    // TODO Comment.
     public Set<Long> getTemporaryAddresses()
     {
         return temporaryAddresses;
     }
     
+    // TODO Comment.
     public Set<Long> getFreedBlockPages()
     {
         return freedBlockPages;
     }
     
+    // TODO Comment.
     public Set<Long> getAllocatedBlockPages()
     {
         return allocatedBlockPages;
     }
     
+    // TODO Comment.
     private void execute()
     {
         JournalPage journalPage = bouquet.getSheaf().getPage(entryPosition, JournalPage.class, new JournalPage());
@@ -125,6 +145,7 @@ final class Player
         entryPosition = journalPage.getJournalPosition();
     }
 
+    // TODO Comment.
     public void commit()
     {
         execute();

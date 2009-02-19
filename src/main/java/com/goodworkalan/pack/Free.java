@@ -4,21 +4,25 @@ import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.Sheaf;
 
-//FIXME Comment.
+// TODO Comment.
 final class Free
 extends Operation
 {
+    // TODO Comment.
     private long address;
     
+    // TODO Comment.
     public Free()
     {
     }
 
+    // TODO Comment.
     public Free(long address)
     {
         this.address = address;
     }
 
+    // TODO Comment.
     @Override
     public void commit(Player player)
     {
@@ -60,12 +64,14 @@ extends Operation
         addresses.free(address, player.getDirtyPages());
     }
 
+    // TODO Comment.
     @Override
     public int length()
     {
         return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE;
     }
 
+    // TODO Comment.
     @Override
     public void write(ByteBuffer bytes)
     {
@@ -73,6 +79,7 @@ extends Operation
         bytes.putLong(address);
     }
 
+    // TODO Comment.
     @Override
     public void read(ByteBuffer bytes)
     {

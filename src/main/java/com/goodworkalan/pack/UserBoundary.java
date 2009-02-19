@@ -6,7 +6,7 @@ import java.util.Set;
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Comment.
+// TODO Comment.
 class UserBoundary
 {
     /** The size of a page in the Pack.  */
@@ -31,7 +31,6 @@ class UserBoundary
         this.position = position;
     }
     
-    
     /**
      * Get the position of the boundary.
      * 
@@ -42,7 +41,7 @@ class UserBoundary
         return position;
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public int getPageSize()
     {
         return pageSize;
@@ -87,7 +86,7 @@ class UserBoundary
         return position + offset;
     }
 
-    // FIXME Comment.
+    // TODO Comment.
     public Set<Long> adjust(Sheaf sheaf, Set<Long> positions)
     {
         Set<Long> adjusted = new HashSet<Long>();
@@ -98,7 +97,7 @@ class UserBoundary
         return adjusted;
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     private long get(Sheaf sheaf, long position)
     {
         AddressPage addresses = sheaf.getPage(position, AddressPage.class, new AddressPage());
@@ -136,7 +135,7 @@ class UserBoundary
         return sheaf.getPage(position, BlockPage.class, new BlockPage());
     }
     
-    // FIXME Comment.
+    // TODO Comment.
     public <P extends Page> P load(Sheaf sheaf, long position, Class<P> pageClass, P page)
     {
         while (position < getPosition())

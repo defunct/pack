@@ -11,14 +11,9 @@ import java.util.Set;
  */
 public class BestFitVacuum implements Vacuum
 {
-    // FIXME Comment.
+    // TODO Comment.
     public void vacuum(MoveRecorder moveRecorder, ByRemainingTable byRemaining, Set<Long> allocatedBlockPages, Set<Long> freedBlockPages)
     {
-        for (long position : freedBlockPages)
-        {
-            byRemaining.remove(position);
-        }
-        
         int pageSize = moveRecorder.getPageSize();
         
         Iterator<Long> discontinuous = freedBlockPages.iterator();

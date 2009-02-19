@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-// FIXME Comment.
+// TODO Comment.
 class UserPagePool
 {
     /** The strategy for optimizing the size of the file on disk. */
@@ -117,8 +117,6 @@ class UserPagePool
         }
     }
     
-    // TODO File set, each page divided into blocks with a larger and larger
-    // number of entries.
     // TODO Bit set can be kept on pages, just a very plain page, read
     // and write to raw page.
     public void vacuum(Bouquet bouquet)
@@ -128,6 +126,8 @@ class UserPagePool
         Set<Long> emptyBlockPages = new HashSet<Long>();
         allocatedBlockPages.removeAll(freedBlockPages);
 
+        DirtyPageSet dirtyPages = new DirtyPageSet(16);
+
         Iterator<Long> continuous = freedBlockPages.iterator();
         while (continuous.hasNext())
         {
@@ -135,13 +135,19 @@ class UserPagePool
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
             synchronized (blocks.getRawPage())
             {
-                if (!blocks.isContinuous())
+                // FIXME Moved pages, user boundary returns list of moves.
+                byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining());
+                if (blocks.purge(dirtyPages))
                 {
                     continuous.remove();
-                }
-                if (blocks.getBlockCount() == 0)
-                {
-                    emptyBlockPages.add(position);
+                    if (blocks.getBlockCount() == 0)
+                    {
+                        emptyBlockPages.add(position);
+                    }
+                    else
+                    {
+                        byRemaining.add(blocks.getRawPage().getPosition(), blocks.getRemaining());
+                    }
                 }
             }
         }
@@ -150,7 +156,6 @@ class UserPagePool
         
         vacuum.vacuum(new MoveRecorder(bouquet, moves), byRemaining, allocatedBlockPages, freedBlockPages);
 
-        DirtyPageSet dirtyPages = new DirtyPageSet(16);
         Journal journal = new Journal(bouquet.getSheaf(), bouquet.getInterimPagePool(), dirtyPages);
         
         for (Map.Entry<Long, Long> move : moves.entrySet())

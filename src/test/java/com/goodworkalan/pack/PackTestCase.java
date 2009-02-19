@@ -12,11 +12,6 @@ import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.testng.annotations.Test;
 
@@ -522,24 +517,6 @@ public class PackTestCase
         mutator.commit();
         
         pack.close();
-    }
-    
-    @Test(expectedExceptions=java.lang.UnsupportedOperationException.class)
-    public void bySizeTableIteratorRemove()
-    {
-        List<SortedSet<Long>> listOfListsOfSizes = new ArrayList<SortedSet<Long>>();
-        listOfListsOfSizes.add(new TreeSet<Long>());
-        Iterator<Long> iterator = new ByRemainingTableIterator(listOfListsOfSizes);
-        iterator.remove();
-    }
-    
-    @Test(expectedExceptions=java.lang.ArrayIndexOutOfBoundsException.class)
-    public void bySizeTableIteratorOutOfBounds()
-    {
-        List<SortedSet<Long>> listOfListsOfSizes = new ArrayList<SortedSet<Long>>();
-        listOfListsOfSizes.add(new TreeSet<Long>());
-        Iterator<Long> iterator = new ByRemainingTableIterator(listOfListsOfSizes);
-        iterator.next();
     }
     
     @Test public void staticPages()

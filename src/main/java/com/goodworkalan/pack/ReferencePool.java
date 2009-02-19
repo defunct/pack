@@ -8,7 +8,7 @@ import java.util.Map;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// FIXME Comment.
+// TODO Comment.
 abstract class ReferencePool
 {
     private final LinkedList<Long> referencePages;

@@ -16,40 +16,69 @@ import com.goodworkalan.sheaf.Sheaf;
  * <p>
  * The blocks will be freed when the source page is marked as empty and given to
  * the interim page pool.
- * <p>
- * FIXME Comment.
  * 
  * @author Alan Gutierrez
  */
 class Move extends Operation
 {
-    private long from;
+    /** The position of the source block page. */
+    private long source;
     
-    private long to;
+    /** The position of the destination block page. */
+    private long destination;
     
-    private long truncateAt;
+    /** The address of the last block in destination block page. */ 
+    private long truncate;
 
+    /**
+     * Construct an empty instance that can be populated with the
+     * {@link #read(ByteBuffer) read} method.
+     */
     public Move()
     {
     }
-    
-    public Move(long from, long to, long truncateAt)
+
+    /**
+     * Construct a move operation that copies the blocks from the source block
+     * page to the destination block page after truncating the destination block
+     * page so that it ends with the given truncate block address.
+     * 
+     * @param from
+     *            The source page position.
+     * @param to
+     *            The destination page position.
+     * @param truncate
+     *            The current last block in the destination page.
+     */
+    public Move(long from, long to, long truncate)
     {
-        this.from = from;
-        this.to = to;
-        this.truncateAt = truncateAt;
+        this.source = from;
+        this.destination = to;
+        this.truncate = truncate;
     }
-    
+
+    /**
+     * Copy the blocks from the source page to the destination page after
+     * truncating the destination page so that the last block is the last block
+     * indicated by the truncate address.
+     * 
+     * @param sheaf
+     *            The underlying <code>Sheaf</code> page manager.
+     * @param userBoundary
+     *            The boundary between address pages and user pages.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
     private void commit(Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
-        BlockPage source = userBoundary.load(sheaf, from, BlockPage.class, new BlockPage());
-        synchronized (source.getRawPage())
+        BlockPage sourcePage = userBoundary.load(sheaf, source, BlockPage.class, new BlockPage());
+        synchronized (sourcePage.getRawPage())
         {
-            BlockPage destination = userBoundary.load(sheaf, to, BlockPage.class, new BlockPage());
-            synchronized (destination.getRawPage())
+            BlockPage destinationPage = userBoundary.load(sheaf, destination, BlockPage.class, new BlockPage());
+            synchronized (destinationPage.getRawPage())
             {
-                destination.truncate(truncateAt, dirtyPages);
-                for (long address : source.getAddresses())
+                destinationPage.truncate(truncate, dirtyPages);
+                for (long address : sourcePage.getAddresses())
                 {
                     AddressPage addresses = userBoundary.load(sheaf, address, AddressPage.class, new AddressPage());
                     long current = addresses.dereference(address);
@@ -57,43 +86,71 @@ class Move extends Operation
                     // at a newer version of the block, then committed, while
                     // this journal failed. During playback, we don't want to
                     // overwrite the new reference.
-                    if (current == from || current == to)
+                    if (current == source || current == destination)
                     {
-                        ByteBuffer read = source.read(address, null);
-                        destination.write(address, read, dirtyPages);
-                        addresses.set(address, to, dirtyPages);
+                        ByteBuffer read = sourcePage.read(address, null);
+                        destinationPage.write(address, read, dirtyPages);
+                        addresses.set(address, destination, dirtyPages);
                     }
                 }
             }
         }
     }
-    
+
+    /**
+     * Copy the blocks from the source page to the destination page after
+     * truncating the destination page so that the last block is the last block
+     * indicated by the truncate address.
+     * 
+     * @param player
+     *            The journal player.
+     */
     @Override
     public void commit(Player player)
     {
         commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getDirtyPages());
     }
 
+    /**
+     * Return the length of the operation in the journal including the type
+     * flag.
+     * 
+     * @return The length of this operation in the journal.
+     */
     @Override
     public int length()
     {
         return Pack.FLAG_SIZE + Pack.POSITION_SIZE * 3;
     }
 
+    /**
+     * Write the operation type flag and the operation data to the given byte
+     * buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void write(ByteBuffer bytes)
     {
         bytes.putShort(Pack.MOVE);
-        bytes.putLong(from);
-        bytes.putLong(to);
-        bytes.putLong(truncateAt);
+        bytes.putLong(source);
+        bytes.putLong(destination);
+        bytes.putLong(truncate);
     }
 
+    /**
+     * Read the operation data but not the preceding operation type flag from
+     * the byte buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void read(ByteBuffer bytes)
     {
-        this.from = bytes.getLong();
-        this.to = bytes.getLong();
-        this.truncateAt = bytes.getLong();
+        this.source = bytes.getLong();
+        this.destination = bytes.getLong();
+        this.truncate = bytes.getLong();
     }
 }
