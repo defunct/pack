@@ -64,7 +64,7 @@ class MovePage extends Operation
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE + Pack.POSITION_SIZE * 2;
+        return Pack.SHORT_SIZE + Pack.LONG_SIZE * 2;
     }
 
     /**
@@ -91,7 +91,7 @@ class MovePage extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.MOVE_PAGE);
+        bytes.putShort(MOVE_PAGE);
         bytes.putLong(from);
         bytes.putLong(to);
     }

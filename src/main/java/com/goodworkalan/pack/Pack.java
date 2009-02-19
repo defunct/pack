@@ -11,74 +11,46 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
- * <p>
- * TODO Comment constants.
  */
 public class Pack
 {
-    /**
-     * A constant value of the null address value of 0.
-     */
+    /**  The null address value, zero. */
     public final static long NULL_ADDRESS = 0L;
 
+    /** A value written at start of the file to identify the file. */
     final static long SIGNATURE = 0xAAAAAAAAAAAAAAAAL;
     
+    /** The flag for a soft shutdown. */
     final static int SOFT_SHUTDOWN = 0xAAAAAAAA;
 
+    /** The flag indicating a hard shutdown. */
     final static int HARD_SHUTDOWN = 0x55555555;
     
+    /** Size in bytes of a primitive integer. */
     final static int INT_SIZE = (Integer.SIZE / Byte.SIZE);
     
+    /** Size in bytes of a primitive long. */
     final static int LONG_SIZE = (Long.SIZE / Byte.SIZE);
 
-    final static int FLAG_SIZE = 2;
+    /** Size in bytes of a primitive short. */
+    final static int SHORT_SIZE = (Short.SIZE / Byte.SIZE);
 
-    final static int COUNT_SIZE = 4;
+    /** Size of the file header. */
+    final static int FILE_HEADER_SIZE = INT_SIZE * 7 + LONG_SIZE * 5;
 
-    final static int POSITION_SIZE = 8;
+    /** Size of a block page header, the page size. */
+    public final static int BLOCK_PAGE_HEADER_SIZE = INT_SIZE;
 
-    final static int CHECKSUM_SIZE = 8;
-
-    public final static int ADDRESS_SIZE = Long.SIZE / Byte.SIZE;
-
-    final static int FILE_HEADER_SIZE = COUNT_SIZE * 7 + ADDRESS_SIZE * 5;
-
-    public final static int BLOCK_PAGE_HEADER_SIZE = CHECKSUM_SIZE + COUNT_SIZE;
-
-    final static int BLOCK_HEADER_SIZE = POSITION_SIZE + COUNT_SIZE;
+    /** Size of a block header, back reference address and block size. */
+    final static int BLOCK_HEADER_SIZE = LONG_SIZE + INT_SIZE;
     
-    final static short MOVE_PAGE = 3;
-
-    final static short COMMIT = 4;
-    
-    final static short CREATE_ADDRESS_PAGE = 5;
-    
-    final static short WRITE = 6;
-    
-    final static short FREE = 7;
-
-    final static short NEXT_PAGE = 8;
-
-    final static short MOVE = 9;
-
-    final static short TERMINATE = 10;
-    
-    final static short TEMPORARY = 11;
-
-    final static short CHECKPOINT = 12;
-
-    final static int NEXT_PAGE_SIZE = FLAG_SIZE + ADDRESS_SIZE;
-
-    final static int JOURNAL_PAGE_HEADER_SIZE = CHECKSUM_SIZE;
-    
-    final static int COUNT_MASK = 0xA0000000;
-    
+    /** The bouquet of services. */
     final Bouquet bouquet;
     
     /**
      * Create a pack with the given bouquet of services.
      * 
-     * @param bouquet The bouquet.
+     * @param bouquet The bouquet of services.
      */
     Pack(Bouquet bouquet)
     {
@@ -351,7 +323,7 @@ public class Pack
 
         int size = 0;
         
-        size += Pack.COUNT_SIZE + bouquet.getAddressPagePool().size() * Pack.POSITION_SIZE;
+        size += INT_SIZE + bouquet.getAddressPagePool().size() * Pack.LONG_SIZE;
         
         ByteBuffer reopen = ByteBuffer.allocateDirect(size);
         

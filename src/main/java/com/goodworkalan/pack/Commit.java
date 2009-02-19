@@ -75,7 +75,7 @@ class Commit extends Operation
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE;
+        return Pack.SHORT_SIZE;
     }
 
     /**
@@ -88,7 +88,7 @@ class Commit extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.COMMIT);
+        bytes.putShort(COMMIT);
     }
     
     /**

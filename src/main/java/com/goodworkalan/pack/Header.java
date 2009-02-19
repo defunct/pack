@@ -37,7 +37,7 @@ final class Header extends DirtyRegionMap
     // TODO Comment.
     public long getStaticPagesStart()
     {
-        return Pack.FILE_HEADER_SIZE + getInternalJournalCount() * Pack.POSITION_SIZE;
+        return Pack.FILE_HEADER_SIZE + getInternalJournalCount() * Pack.LONG_SIZE;
     }
 
     // TODO Comment.
@@ -50,72 +50,72 @@ final class Header extends DirtyRegionMap
     public void setSignature(long signature)
     {
         bytes.putLong(0, signature);
-        invalidate(0, Pack.CHECKSUM_SIZE);
+        invalidate(0, Pack.LONG_SIZE);
     }
     
     // TODO Comment.
     public int getShutdown()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE);
+        return bytes.getInt(Pack.LONG_SIZE);
     }
     
     // TODO Comment.
     public void setShutdown(int shutdown)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE, shutdown);
-        invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE, shutdown);
+        invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public int getPageSize()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public void setPageSize(int pageSize)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE, pageSize);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE, pageSize);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE, Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public int getAlignment()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2);
     }
     
     // TODO Comment.
     public void setAlignment(int alignment)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2, alignment);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 2, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2, alignment);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 2, Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public int getInternalJournalCount()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3);
     }
     
     // TODO Comment.
     public void setInternalJournalCount(int internalJournalCount)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3, internalJournalCount);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 3, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3, internalJournalCount);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 3, Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public int getStaticPageSize()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4);
     }
     
     // TODO Comment.
     public void setStaticPageSize(int staticPageSize)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4, staticPageSize);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 4, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4, staticPageSize);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 4, Pack.INT_SIZE);
     }
 
     /**
@@ -126,7 +126,7 @@ final class Header extends DirtyRegionMap
      */
     public int getHeaderSize()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 5);
     }
 
     /**
@@ -138,8 +138,8 @@ final class Header extends DirtyRegionMap
      */    
     public void setHeaderSize(int headerSize)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, headerSize);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 5, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 5, headerSize);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 5, Pack.INT_SIZE);
     }
     
 
@@ -151,7 +151,7 @@ final class Header extends DirtyRegionMap
      */
     public int getAddressPagePoolSize()
     {
-        return bytes.getInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6);
+        return bytes.getInt(Pack.LONG_SIZE + Pack.INT_SIZE * 6);
     }
 
     /**
@@ -163,8 +163,8 @@ final class Header extends DirtyRegionMap
      */    
     public void setAddressPagePoolSize(int addressPagePoolSize)
     {
-        bytes.putInt(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, addressPagePoolSize);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 6, Pack.COUNT_SIZE);
+        bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 6, addressPagePoolSize);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 6, Pack.INT_SIZE);
     }
 
     /**
@@ -175,7 +175,7 @@ final class Header extends DirtyRegionMap
      */
     public long getUserBoundary()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7);
+        return bytes.getLong(Pack.LONG_SIZE + Pack.INT_SIZE * 7);
     }
 
     /**
@@ -187,21 +187,21 @@ final class Header extends DirtyRegionMap
      */
     public void setUserBoundary(long userBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7, userBoundary);
-        invalidate(Pack.CHECKSUM_SIZE + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.LONG_SIZE + Pack.INT_SIZE * 7, userBoundary);
+        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
     // TODO Comment.
     public long getEndOfSheaf()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7);
+        return bytes.getLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7);
     }
 
     // TODO Comment.
     public void setEndOfSheaf(long interimBoundary)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7, interimBoundary);
-        invalidate(Pack.CHECKSUM_SIZE * 2 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, interimBoundary);
+        invalidate(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
     /**
@@ -212,7 +212,7 @@ final class Header extends DirtyRegionMap
      */
     public long getFirstTemporaryNode()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7);
+        return bytes.getLong(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7);
     }
 
     /**
@@ -224,20 +224,20 @@ final class Header extends DirtyRegionMap
      */  
     public void setFirstTemporaryNode(long temporaries)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7, temporaries);
-        invalidate(Pack.CHECKSUM_SIZE * 3 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, temporaries);
+        invalidate(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
     
     // TODO Comment.
     public long getByRemainingTable()
     {
-        return bytes.getLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7);
+        return bytes.getLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7);
     }
     
     // TODO Comment.
     public void setByRemainingTable(long vacuumNode)
     {
-        bytes.putLong(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7, vacuumNode);
-        invalidate(Pack.CHECKSUM_SIZE * 4 + Pack.COUNT_SIZE * 7, Pack.ADDRESS_SIZE);
+        bytes.putLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, vacuumNode);
+        invalidate(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 }

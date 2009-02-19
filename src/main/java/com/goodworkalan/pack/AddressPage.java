@@ -145,13 +145,13 @@ final class AddressPage extends Page
             // Iterate the page buffer looking for a zeroed address that has
             // not been reserved, reserving it and returning it if found.
             
-            for (int offset = 0; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
+            for (int offset = 0; offset < bytes.capacity(); offset += Pack.LONG_SIZE)
             {
                 if (bytes.getLong(offset) == 0L)
                 {
                     dirtyPages.add(getRawPage());
                     bytes.putLong(offset, Long.MAX_VALUE);
-                    getRawPage().invalidate(offset, Pack.POSITION_SIZE);
+                    getRawPage().invalidate(offset, Pack.LONG_SIZE);
                     freeCount--;
                     return getRawPage().getPosition() + offset;
                 }
@@ -180,7 +180,7 @@ final class AddressPage extends Page
             ByteBuffer bytes = getRawPage().getByteBuffer();
             int offset = (int) (address - getRawPage().getPosition());
             bytes.putLong(offset, position);
-            getRawPage().invalidate(offset, Pack.POSITION_SIZE);
+            getRawPage().invalidate(offset, Pack.LONG_SIZE);
             dirtyPages.add(getRawPage());
         }
     }
@@ -220,7 +220,7 @@ final class AddressPage extends Page
             {
                 bytes.putLong(offset, 0L);
                 
-                getRawPage().invalidate(offset, Pack.POSITION_SIZE);
+                getRawPage().invalidate(offset, Pack.LONG_SIZE);
                 dirtyPages.add(getRawPage());
                 
                 freeCount++;
@@ -247,7 +247,7 @@ final class AddressPage extends Page
             long position = getRawPage().getPosition();
             ByteBuffer bytes = getRawPage().getByteBuffer();
             bytes.clear();
-            for (int offset = skip * Pack.ADDRESS_SIZE; offset < bytes.capacity(); offset += Pack.ADDRESS_SIZE)
+            for (int offset = skip * Pack.LONG_SIZE; offset < bytes.capacity(); offset += Pack.LONG_SIZE)
             {
                 long value = bytes.getLong(offset);
                 if (value != 0L && value != Long.MAX_VALUE)

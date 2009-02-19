@@ -27,6 +27,9 @@ import com.goodworkalan.sheaf.Page;
 final class JournalPage
 extends Page
 {
+    /** Journal page header size, journal data length plus checksum. */
+    final static int JOURNAL_PAGE_HEADER_SIZE = Pack.INT_SIZE + Pack.LONG_SIZE;
+    
     /** The offset form which to read the next journal entry. */
     private int offset;
 
@@ -43,16 +46,16 @@ extends Page
         bytes.putLong(0);
         bytes.putInt(0);
 
-        getRawPage().invalidate(0, Pack.JOURNAL_PAGE_HEADER_SIZE);
+        getRawPage().invalidate(0, JOURNAL_PAGE_HEADER_SIZE);
         dirtyPages.add(getRawPage());
         
-        this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
+        this.offset = JOURNAL_PAGE_HEADER_SIZE;
     }
 
     /** Load a journal page from the underlying raw page. */
     public void load()
     {
-        this.offset = Pack.JOURNAL_PAGE_HEADER_SIZE;
+        this.offset = JOURNAL_PAGE_HEADER_SIZE;
     }
     
     /**
@@ -64,7 +67,7 @@ extends Page
     public void writeChecksum(Checksum checksum)
     {
         getRawPage().getByteBuffer().putLong(0, getChecksum(checksum));
-        getRawPage().invalidate(0, Pack.CHECKSUM_SIZE);
+        getRawPage().invalidate(0, Pack.LONG_SIZE);
     }
     
     // TODO Comment.
@@ -72,7 +75,7 @@ extends Page
     {
         checksum.reset();
         ByteBuffer bytes = getRawPage().getByteBuffer();
-        bytes.position(Pack.CHECKSUM_SIZE);
+        bytes.position(Pack.LONG_SIZE);
         while (bytes.position() != offset)
         {
             checksum.update(bytes.get());
@@ -175,43 +178,6 @@ extends Page
     }
 
     /**
-     * Create a blank operation of a type corresponding to the given type flag.
-     * The blank operation is then loaded from the journal page at the current
-     * offset into the journal page.
-     * 
-     * @param type
-     *            The type of operation.
-     * @return An operation corresponding to the given type flag.
-     */
-    private Operation newOperation(short type)
-    {
-        switch (type)
-        {
-            case Pack.MOVE_PAGE: 
-                return new MovePage();
-            case Pack.CREATE_ADDRESS_PAGE:
-                return new CreateAddressPage();
-            case Pack.WRITE:
-                return new Write();
-            case Pack.FREE:
-                return new Free();
-            case Pack.NEXT_PAGE:
-                return new NextOperation();
-            case Pack.MOVE:
-                return new Move();
-            case Pack.TERMINATE:
-                return new Terminate();
-            case Pack.COMMIT:
-                return new Commit();
-            case Pack.TEMPORARY:
-                return new Temporary();
-            case Pack.CHECKPOINT:
-                return new Checkpoint();
-        }
-        throw new IllegalStateException("Invalid type: " + type);
-    }
-
-    /**
      * Read the next operation at of the offset from this page journal
      * operations.
      * <p>
@@ -223,7 +189,7 @@ extends Page
     {
         ByteBuffer bytes = getByteBuffer();
 
-        Operation operation = newOperation(bytes.getShort());
+        Operation operation = Operation.newOperation(bytes.getShort());
         operation.read(bytes);
         
         offset = bytes.position();

@@ -123,10 +123,10 @@ public final class Creator
      */
     private int getStaticBlockMapSize()
     {
-        int size = Pack.COUNT_SIZE;
+        int size = Pack.INT_SIZE;
         for (Map.Entry<URI, Integer> entry: staticPages.entrySet())
         {
-            size += Pack.COUNT_SIZE + Pack.ADDRESS_SIZE;
+            size += Pack.INT_SIZE + Pack.LONG_SIZE;
             size += entry.getKey().toString().length() * 2;
         }
         return size;
@@ -148,7 +148,7 @@ public final class Creator
         header.setAlignment(alignment);
         header.setInternalJournalCount(internalJournalCount);
         header.setStaticPageSize(getStaticBlockMapSize());
-        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.POSITION_SIZE);
+        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticPageSize() + header.getInternalJournalCount() * Pack.LONG_SIZE);
         header.setAddressPagePoolSize(addressPagePoolSize);
         header.setUserBoundary(pageSize);
         header.setEndOfSheaf(0L);
@@ -167,7 +167,7 @@ public final class Creator
         // Create a buffer of journal file positions. Initialize each page
         // position to 0. Write the journal headers to file.
 
-        ByteBuffer journals = ByteBuffer.allocateDirect(internalJournalCount * Pack.POSITION_SIZE);
+        ByteBuffer journals = ByteBuffer.allocateDirect(internalJournalCount * Pack.LONG_SIZE);
 
         for (int i = 0; i < internalJournalCount; i++)
         {

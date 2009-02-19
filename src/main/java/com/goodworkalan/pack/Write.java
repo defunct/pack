@@ -92,7 +92,7 @@ extends Operation
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE + Pack.POSITION_SIZE;
+        return Pack.SHORT_SIZE + Pack.LONG_SIZE + Pack.LONG_SIZE;
     }
     
     /**
@@ -105,7 +105,7 @@ extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.WRITE);
+        bytes.putShort(WRITE);
         bytes.putLong(address);
         bytes.putLong(position);
     }

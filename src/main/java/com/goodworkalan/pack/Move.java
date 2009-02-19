@@ -120,7 +120,7 @@ class Move extends Operation
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE + Pack.POSITION_SIZE * 3;
+        return Pack.SHORT_SIZE + Pack.LONG_SIZE * 3;
     }
 
     /**
@@ -133,7 +133,7 @@ class Move extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.MOVE);
+        bytes.putShort(MOVE);
         bytes.putLong(source);
         bytes.putLong(destination);
         bytes.putLong(truncate);

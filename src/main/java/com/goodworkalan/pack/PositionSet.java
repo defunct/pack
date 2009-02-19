@@ -63,7 +63,7 @@ final class PositionSet
                 if (!reserved[i])
                 {
                     reserved[i] = true;
-                    segment = new JournalHeader(ByteBuffer.allocateDirect(Pack.POSITION_SIZE), position + i * Pack.POSITION_SIZE, this);
+                    segment = new JournalHeader(ByteBuffer.allocateDirect(Pack.LONG_SIZE), position + i * Pack.LONG_SIZE, this);
                 }
             }
             if (segment == null)
@@ -93,7 +93,7 @@ final class PositionSet
      */
     public synchronized void free(JournalHeader pointer)
     {
-        int offset = (int) (pointer.getPosition() - position) / Pack.POSITION_SIZE;
+        int offset = (int) (pointer.getPosition() - position) / Pack.LONG_SIZE;
         reserved[offset] = false;
         notify();
     }

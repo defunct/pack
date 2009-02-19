@@ -20,6 +20,9 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class JournalWriter
 {
+    /** Size of a next page operation. */ 
+    private final static int NEXT_PAGE_SIZE = Pack.SHORT_SIZE + Pack.LONG_SIZE;
+
     /** The sheaf from which to allocate pages. */
     protected final Sheaf sheaf;
     
@@ -40,6 +43,7 @@ class JournalWriter
     /** The set of dirty pages. */
     protected final DirtyPageSet dirtyPages;
     
+    /** Checksum to use to generate the checksum for the journal page. */
     protected final Checksum checksum;
 
     /**
@@ -129,7 +133,7 @@ class JournalWriter
      */
     public boolean write(Operation operation)
     {
-        return journal.write(operation, Pack.NEXT_PAGE_SIZE, dirtyPages);
+        return journal.write(operation, NEXT_PAGE_SIZE, dirtyPages);
     }
 
     /**

@@ -91,7 +91,7 @@ class Checkpoint extends Operation
     @Override
     public int length()
     {
-        return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE;
+        return Pack.SHORT_SIZE + Pack.LONG_SIZE;
     }
 
     /**
@@ -104,7 +104,7 @@ class Checkpoint extends Operation
     @Override
     public void write(ByteBuffer bytes)
     {
-        bytes.putShort(Pack.CHECKPOINT);
+        bytes.putShort(CHECKPOINT);
         bytes.putLong(position);
     }
 

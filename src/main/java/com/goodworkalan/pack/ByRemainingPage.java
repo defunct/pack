@@ -8,14 +8,8 @@ import com.goodworkalan.sheaf.Page;
 // TODO Comment.
 public class ByRemainingPage extends Page
 {
-    // TODO Comment.
-    private final static int INT_SIZE = (Integer.SIZE / Byte.SIZE);
-    
-    // TODO Comment.
-    private final static int LONG_SIZE = (Long.SIZE / Byte.SIZE);
-
-    // TODO Comment.
-    private final static int RECORD_SIZE = INT_SIZE + LONG_SIZE;
+    /** The size of an alignment record; position count and slot position. */ 
+    private final static int RECORD_SIZE = Pack.INT_SIZE + Pack.LONG_SIZE;
     
     // TODO Comment.
     @Override
@@ -54,7 +48,7 @@ public class ByRemainingPage extends Page
     {
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putInt(RECORD_SIZE * alignmentIndex, getSizeCount(alignmentIndex) + 1);
-        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, INT_SIZE);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, Pack.INT_SIZE);
     }
     
     // TODO Comment.
@@ -62,21 +56,21 @@ public class ByRemainingPage extends Page
     {
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putInt(RECORD_SIZE * alignmentIndex, getSizeCount(alignmentIndex) - 1);
-        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, INT_SIZE);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, Pack.INT_SIZE);
     }
 
     // TODO Comment.
     public long getSlotPosition(int alignmentIndex)
     {
-        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * alignmentIndex + INT_SIZE);
+        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * alignmentIndex + Pack.INT_SIZE);
     }
     
     // TODO Comment.
     public void setSlotPosition(int alignmentIndex, long address, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putLong(RECORD_SIZE * alignmentIndex + INT_SIZE, address);
-        getRawPage().invalidate(RECORD_SIZE * alignmentIndex + INT_SIZE, LONG_SIZE);
+        getRawPage().getByteBuffer().putLong(RECORD_SIZE * alignmentIndex + Pack.INT_SIZE, address);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex + Pack.INT_SIZE, Pack.LONG_SIZE);
     }
     
     // TODO Comment.
