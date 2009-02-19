@@ -124,6 +124,9 @@ extends Operation
                         // another thread that changed the address reference,
                         // but this time through we see that the address
                         // reference has not changed.
+                        
+                        // FIXME Think about this more. Can that address be 
+                        // moving, moving? Can it move and move back?
 
                         if (freed || previous == user.getRawPage().getPosition())
                         {

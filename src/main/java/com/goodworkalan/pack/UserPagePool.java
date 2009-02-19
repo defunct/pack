@@ -10,7 +10,14 @@ import com.goodworkalan.pack.vacuum.NullVacuum;
 import com.goodworkalan.pack.vacuum.Vacuum;
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-// TODO Comment.
+/**
+ * Manages the pool of user block pages. The user page pool stores block pages
+ * in a table that groups them by count of bytes available for allocation. It
+ * organizes vacuums of the newly allocated block pages and pages with freed
+ * blocks.
+ * 
+ * @author Alan Gutierrez
+ */
 class UserPagePool
 {
     /** The strategy for optimizing the size of the file on disk. */
@@ -55,6 +62,9 @@ class UserPagePool
 
     /**
      * Set the strategy for optimizing the size of the file on disk.
+     * <p>
+     * Calls to this method must be guarded by synchronizing on
+     * {@link Bouquet#getVacuumMutex()}.
      * 
      * @param vacuum
      *            The strategy for optimizing the size of the file on disk.
@@ -118,9 +128,18 @@ class UserPagePool
             return copy;
         }
     }
-    
-    // TODO Bit set can be kept on pages, just a very plain page, read
-    // and write to raw page.
+
+    /**
+     * Vacuum the user pages by relocating blocks, combining new allocations
+     * with existing allocations, reclaiming space lost in pages due to block
+     * frees.
+     * <p>
+     * Calls to this method must be guarded by synchronizing on
+     * {@link Bouquet#getVacuumMutex()}.
+     * 
+     * @param bouquet
+     *            The bouquet of services.
+     */
     public void vacuum(Bouquet bouquet)
     {
         Set<Long> allocatedBlockPages = getAllocatedBlockPages();
@@ -137,7 +156,6 @@ class UserPagePool
             BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
             synchronized (blocks.getRawPage())
             {
-                // FIXME Moved pages, user boundary returns list of moves.
                 byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining());
                 if (blocks.purge(dirtyPages))
                 {
