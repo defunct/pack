@@ -117,7 +117,7 @@ class BlockPage extends Page
 
         getRawPage().invalidate(0, Pack.BLOCK_PAGE_HEADER_SIZE);
         bytes.putLong(0L);
-        bytes.putInt(getBlockCount());
+        bytes.putInt(getDiskBlockCount());
 
         dirtyPages.add(getRawPage());
     }
@@ -146,8 +146,8 @@ class BlockPage extends Page
         bytes.clear();
         bytes.getLong();
 
-        this.count = bytes.getInt();
-        this.remaining = calcRemaining();
+        count = - bytes.getInt();
+        remaining = calcRemaining();
     }
 
     /**
@@ -161,6 +161,11 @@ class BlockPage extends Page
         {
             return count;
         }
+    }
+    
+    private int getDiskBlockCount()
+    {
+        return -count;
     }
 
     /**
@@ -369,7 +374,7 @@ class BlockPage extends Page
                 }
             }
             getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
-            getRawPage().getByteBuffer().putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+            getRawPage().getByteBuffer().putInt(Pack.CHECKSUM_SIZE, getDiskBlockCount());
         }
     }
 
@@ -416,7 +421,7 @@ class BlockPage extends Page
             count -= free;
             remaining += freed;
             dirtyPages.add(getRawPage());
-            getRawPage().getByteBuffer().putInt(0, count);
+            getRawPage().getByteBuffer().putInt(0, getDiskBlockCount());
         }
         return continuous;
     }
@@ -537,7 +542,7 @@ class BlockPage extends Page
             remaining -= blockSize;
 
             bytes.clear();
-            bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+            bytes.putInt(Pack.CHECKSUM_SIZE, getDiskBlockCount());
             getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
 
             dirtyPages.add(getRawPage());
@@ -775,7 +780,7 @@ class BlockPage extends Page
              count--;
     
             getRawPage().invalidate(Pack.CHECKSUM_SIZE, Pack.COUNT_SIZE);
-            bytes.putInt(Pack.CHECKSUM_SIZE, getBlockCount());
+            bytes.putInt(Pack.CHECKSUM_SIZE, getDiskBlockCount());
         }
     }
 }

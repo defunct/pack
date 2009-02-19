@@ -15,7 +15,10 @@ extends Operation
     // TODO Comment.
     private long movedTo;
     
-    // TODO Comment.
+    /**
+     * Construct an empty instance that can be populated with the
+     * {@link #read(ByteBuffer) read} method.
+     */
     public CreateAddressPage()
     {            
     }
@@ -41,14 +44,25 @@ extends Operation
         commit(player.getBouquet().getSheaf(), player.getDirtyPages());
     }
     
-    // TODO Comment.
+    /**
+     * Return the length of the operation in the journal including the type
+     * flag.
+     * 
+     * @return The length of this operation in the journal.
+     */
     @Override
     public int length()
     {
         return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE * 2;
     }
     
-    // TODO Comment.
+    /**
+     * Write the operation type flag and the operation data to the given byte
+     * buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void write(ByteBuffer bytes)
     {
@@ -57,7 +71,13 @@ extends Operation
         bytes.putLong(movedTo);
     }
     
-    // TODO Comment.
+    /**
+     * Read the operation data but not the preceding operation type flag from
+     * the byte buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void read(ByteBuffer bytes)
     {

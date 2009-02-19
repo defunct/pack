@@ -11,7 +11,10 @@ extends Operation
     // TODO Comment.
     private long address;
     
-    // TODO Comment.
+    /**
+     * Construct an empty instance that can be populated with the
+     * {@link #read(ByteBuffer) read} method.
+     */
     public Free()
     {
     }
@@ -64,14 +67,25 @@ extends Operation
         addresses.free(address, player.getDirtyPages());
     }
 
-    // TODO Comment.
+    /**
+     * Return the length of the operation in the journal including the type
+     * flag.
+     * 
+     * @return The length of this operation in the journal.
+     */
     @Override
     public int length()
     {
         return Pack.FLAG_SIZE + Pack.ADDRESS_SIZE;
     }
 
-    // TODO Comment.
+    /**
+     * Write the operation type flag and the operation data to the given byte
+     * buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void write(ByteBuffer bytes)
     {
@@ -79,7 +93,13 @@ extends Operation
         bytes.putLong(address);
     }
 
-    // TODO Comment.
+    /**
+     * Read the operation data but not the preceding operation type flag from
+     * the byte buffer.
+     * 
+     * @param bytes
+     *            The byte buffer.
+     */
     @Override
     public void read(ByteBuffer bytes)
     {

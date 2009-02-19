@@ -14,8 +14,11 @@ class Checkpoint extends Operation
      * operation in the journal header.
      */
     private long position;
-    
-    // TODO Comment.
+
+    /**
+     * Construct an empty instance that can be populated with the
+     * {@link #read(ByteBuffer) read} method.
+     */
     public Checkpoint()
     {
     }

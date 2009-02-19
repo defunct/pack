@@ -59,7 +59,7 @@ class ByRemainingSlotPage extends Page
      * Add the given position to the set of positions at the given set position.
      * Returns true if the position is added, false if the set is full.
      * 
-     * @param setPosition
+     * @param slotPosition
      *            The position of start the set on disk.
      * @param position
      *            The file position.
@@ -67,10 +67,10 @@ class ByRemainingSlotPage extends Page
      *            The dirty page set.
      * @return True if the position was added, false if the set is full.
      */
-    public boolean add(long setPosition, long position, boolean force, DirtyPageSet dirtyPages)
+    public boolean add(long slotPosition, long position, boolean force, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (setPosition - getRawPage().getPosition());
+        int offset = (int) (slotPosition - getRawPage().getPosition());
         int slotSize = getSlotSize();
         if (!force && byteBuffer.getLong(offset + (slotSize - 1) * Pack.LONG_SIZE) != 0L)
         {
@@ -117,16 +117,16 @@ class ByRemainingSlotPage extends Page
      * if there are not values in this set. If a value is removed from the page,
      * this page is added to the dirty page set.
      * 
-     * @param setPosition
+     * @param slotPosition
      *            The position of start the set on disk.
      * @param dirtyPages
      *            The dirty page set.
      * @return
      */
-    public long remove(long setPosition, DirtyPageSet dirtyPages)
+    public long remove(long slotPosition, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (setPosition - getRawPage().getPosition());
+        int offset = (int) (slotPosition - getRawPage().getPosition());
         int slotSize = getSlotSize();
         for (int i = slotSize - Pack.LONG_SIZE; i != offset + Pack.LONG_SIZE; i -= Pack.LONG_SIZE)
         {
@@ -141,8 +141,21 @@ class ByRemainingSlotPage extends Page
         }
         return 0L;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Remove a given position from the slot at the given slot position if it
+     * exists in the slot. Return true if the position existed and was removed,
+     * false if it did not exist.
+     * 
+     * @param slotPosition
+     *            The slot position.
+     * @param position
+     *            The file position.
+     * @param dirtyPages
+     *            The dirty page set.
+     * @return True if the position existed and was removed, false if it did not
+     *         exist.
+     */
     public boolean remove(long slotPosition, long position, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
@@ -247,17 +260,17 @@ class ByRemainingSlotPage extends Page
      * given next set position. The sets participate in a linked list of sets
      * for a specific alignment.
      * 
-     * @param setPosition
+     * @param slotPosition
      *            The position of start the set on disk.
      * @param next
      *            The next of the previous set.
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void setNext(long setPosition, long next, DirtyPageSet dirtyPages)
+    public void setNext(long slotPosition, long next, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        int offset = (int) (setPosition - getRawPage().getPosition());
+        int offset = (int) (slotPosition - getRawPage().getPosition());
         getRawPage().getByteBuffer().putLong(offset+ Pack.LONG_SIZE, next);
         getRawPage().invalidate(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
     }

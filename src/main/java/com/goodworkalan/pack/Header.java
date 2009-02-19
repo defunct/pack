@@ -1,8 +1,6 @@
 package com.goodworkalan.pack;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 import com.goodworkalan.sheaf.DirtyRegionMap;
 
@@ -15,28 +13,19 @@ import com.goodworkalan.sheaf.DirtyRegionMap;
  */
 final class Header extends DirtyRegionMap
 {
-    // TODO Comment.
+    /** The contents of the header region of the file. */
     private final ByteBuffer bytes;
     
-    // TODO Comment.
+    /**
+     * Create a file header from the given content buffer.
+     * 
+     * @param bytes
+     *            The contents of the header region of the file.
+     */
     public Header(ByteBuffer bytes)
     {
         super(0L);
         this.bytes = bytes;
-    }
-    
-    // TODO Comment.
-    public int getHeaderSize(Map<URI, Integer> staticBlocks)
-    {
-        int size = Pack.COUNT_SIZE;
-        for (Map.Entry<URI, Integer> entry: staticBlocks.entrySet())
-        {
-            size += Pack.COUNT_SIZE + Pack.ADDRESS_SIZE;
-            size += entry.getKey().toString().length() * 2;
-        }
-        size += getInternalJournalCount() * Pack.POSITION_SIZE;
-        size += Pack.FILE_HEADER_SIZE;
-        return size;
     }
     
     // TODO Comment.

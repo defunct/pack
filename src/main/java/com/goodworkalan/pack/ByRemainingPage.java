@@ -6,7 +6,7 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
 // TODO Comment.
-public class ByRemainingLookupPage extends Page
+public class ByRemainingPage extends Page
 {
     // TODO Comment.
     private final static int INT_SIZE = (Integer.SIZE / Byte.SIZE);
@@ -44,56 +44,56 @@ public class ByRemainingLookupPage extends Page
     }
     
     // TODO Comment.
-    public int getSizeCount(int index)
+    public int getSizeCount(int alignmentIndex)
     {
-        return getRawPage().getByteBuffer().getInt(RECORD_SIZE * index);
+        return getRawPage().getByteBuffer().getInt(RECORD_SIZE * alignmentIndex);
     }
     
     // TODO Comment.
-    public void increment(int index, DirtyPageSet dirtyPages)
+    public void increment(int alignmentIndex, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putInt(RECORD_SIZE * index, getSizeCount(index) + 1);
-        getRawPage().invalidate(RECORD_SIZE * index, INT_SIZE);
+        getRawPage().getByteBuffer().putInt(RECORD_SIZE * alignmentIndex, getSizeCount(alignmentIndex) + 1);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, INT_SIZE);
     }
     
     // TODO Comment.
-    public void deccrement(int index, DirtyPageSet dirtyPages)
+    public void decrement(int alignmentIndex, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putInt(RECORD_SIZE * index, getSizeCount(index) - 1);
-        getRawPage().invalidate(RECORD_SIZE * index, INT_SIZE);
+        getRawPage().getByteBuffer().putInt(RECORD_SIZE * alignmentIndex, getSizeCount(alignmentIndex) - 1);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex, INT_SIZE);
     }
 
     // TODO Comment.
-    public long getSetPosition(int index)
+    public long getSlotPosition(int alignmentIndex)
     {
-        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * index + INT_SIZE);
+        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * alignmentIndex + INT_SIZE);
     }
     
     // TODO Comment.
-    public void setSetPosition(int index, long address, DirtyPageSet dirtyPages)
+    public void setSlotPosition(int alignmentIndex, long address, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putLong(RECORD_SIZE * index + INT_SIZE, address);
-        getRawPage().invalidate(RECORD_SIZE * index + INT_SIZE, LONG_SIZE);
+        getRawPage().getByteBuffer().putLong(RECORD_SIZE * alignmentIndex + INT_SIZE, address);
+        getRawPage().invalidate(RECORD_SIZE * alignmentIndex + INT_SIZE, LONG_SIZE);
     }
     
     // TODO Comment.
-    public long getFreeSetPosition(int index)
+    public long getFreeSetPosition(int slotIndex)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();
-        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * index);
+        return getRawPage().getByteBuffer().getLong(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex);
     }
     
     // TODO Comment.
-    public void setFreeSetPosition(int index, long address, DirtyPageSet dirtyPages)
+    public void setFreeSetPosition(int slotIndex, long address, DirtyPageSet dirtyPages)
     {
         int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putLong(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * index, address);
-        getRawPage().invalidate(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * index, Pack.LONG_SIZE);
+        getRawPage().getByteBuffer().putLong(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, address);
+        getRawPage().invalidate(RECORD_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, Pack.LONG_SIZE);
     }
 }
