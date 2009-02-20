@@ -41,7 +41,11 @@
     </repositories>
 
     <dependencies>
-        <!--  JUNIT DEPENDENCY FOR TESTING -->
+        <dependency>
+            <groupId>com.goodworkalan</groupId>
+            <artifactId>lock-many</artifactId>
+            <version>0.1.X</version>
+        </dependency>
         <dependency>
             <groupId>com.goodworkalan</groupId>
             <artifactId>sheaf</artifactId>

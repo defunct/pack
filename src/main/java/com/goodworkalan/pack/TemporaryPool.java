@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
@@ -14,7 +15,7 @@ class TemporaryPool
     private final ReferencePool referencePool;
     
     // TODO Comment.
-    private final AddressLocker temporaryLocker;
+    private final LatchSet<Long> temporaryLocker;
 
     /**
      * Map of temporary block addresses to temporary reference node addresses.
@@ -44,7 +45,7 @@ class TemporaryPool
                 header.setFirstTemporaryNode(position);
             }
         };
-        this.temporaryLocker = new AddressLocker();
+        this.temporaryLocker = new LatchSet<Long>(64);
         this.temporaries = new HashMap<Long, Long>();
         for (Map.Entry<Long, Long> mapping : referencePool.toMap(sheaf, userBoundary).entrySet())
         {
@@ -67,7 +68,7 @@ class TemporaryPool
     // TODO Comment.
     public synchronized void commit(long address, long temporary, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
     {
-        temporaryLocker.bide(temporary);
+        temporaryLocker.enter(temporary);
         AddressPage references = userBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
         references.set(temporary, address, dirtyPages);
         temporaries.put(address, temporary);
@@ -79,7 +80,7 @@ class TemporaryPool
         if (temporaries.containsKey(address))
         {
             long temporary = temporaries.get(address);
-            temporaryLocker.lock(temporary);
+            temporaryLocker.latch(temporary);
             AddressPage references = userBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
             references.free(temporary, dirtyPages);
             temporaries.remove(address);
@@ -91,6 +92,9 @@ class TemporaryPool
     // TODO Comment.
     public void unlock(Set<Long> temporaries)
     {
-        temporaryLocker.unlock(temporaries);
+        for (long position : temporaries)
+        {
+            temporaryLocker.unlatch(position);
+        }
     }
 }

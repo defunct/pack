@@ -227,7 +227,10 @@ final class Player
         // Unlock any addresses that were returned as free to their
         // address pages, but were locked to prevent the commit of a
         // reallocation until this commit completed.
-        bouquet.getAddressLocker().unlock(getLockedAddresses());
+        for (long address : getLockedAddresses())
+        {
+            bouquet.getAddressLocker().unlatch(address);
+        }
         bouquet.getTemporaryPool().unlock(getLockedTemporaryReferences());
         
         

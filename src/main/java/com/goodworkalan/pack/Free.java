@@ -3,6 +3,7 @@ package com.goodworkalan.pack;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
+import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
@@ -60,12 +61,12 @@ extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void free(Sheaf sheaf, AddressLocker addressLocker, UserBoundary userBoundary, TemporaryPool temporaryPool,
+    private void free(Sheaf sheaf, LatchSet<Long> addressLocker, UserBoundary userBoundary, TemporaryPool temporaryPool,
         Set<Long> lockedAddresses, Set<Long> lockedTemporaryAddresses, Set<Long> freedBlockPages, DirtyPageSet dirtyPages)
     {
         // Lock the address against reassignment until after this journal
         // playback completes.
-        addressLocker.lock(address);
+        addressLocker.latch(address);
         lockedAddresses.add(address);
 
         // If there was a temporary reference freed, record tha the temporary

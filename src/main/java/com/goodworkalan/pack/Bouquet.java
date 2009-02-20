@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
@@ -51,7 +52,7 @@ final class Bouquet
      * A synchronization strategy that prevents addresses that have been freed
      * from overwriting reallocations.
      */
-    private final AddressLocker addressLocker;
+    private final LatchSet<Long> addressLocker;
     
     /** The address page pool. */
     private final AddressPagePool addressPagePool;
@@ -110,7 +111,7 @@ final class Bouquet
         this.interimPagePool = new InterimPagePool();
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
-        this.addressLocker = new AddressLocker();
+        this.addressLocker = new LatchSet<Long>(64);
         this.pageMoveLock = new ReentrantReadWriteLock();
     }
 
@@ -187,7 +188,7 @@ final class Bouquet
      * 
      * @return The per pack address locker.
      */
-    public AddressLocker getAddressLocker()
+    public LatchSet<Long> getAddressLocker()
     {
         return addressLocker;
     }
