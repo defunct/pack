@@ -196,15 +196,32 @@ class ByRemainingSlotPage extends Page
         }
         return false;
     }
-    
-    // TODO Comment.
+
+    /**
+     * Return the smallest page position value in the slot indicated by the
+     * given slot position. Returns zero if the slot is empty.
+     * 
+     * @param slotPosition
+     *            The slot position.
+     * @return The smallest page position value in the slot or zero of the slot
+     *         is empty.
+     */
     public long least(long slotPosition)
     {
         int offset = (int) (slotPosition - getRawPage().getPosition());
         return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE * 2);
     }
-    
-    // TODO Comment.
+
+    /**
+     * Cleanup after the removal of a single slot position by overwriting the
+     * empty slot by shifting all the following slots by one slot position
+     * toward the start of the slot array.
+     * 
+     * @param slotPosition
+     *            The slot position.
+     * @param dirtyPages
+     *            The dirty page set.
+     */
     public void compact(long slotPosition, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
