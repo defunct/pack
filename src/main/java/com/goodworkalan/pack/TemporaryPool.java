@@ -8,13 +8,28 @@ import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
-// TODO Comment.
+/**
+ * Manages a pool of references to the addresses of temporary blocks. A
+ * temporary block is a block that is used to store data in an intermediate step
+ * during storage. A set of temporary blocks is made available to the client
+ * programmer via the {@link Opener} when a file is reopened.
+ * <p>
+ * The temporary page pool manages a reference pool that...
+ * <p>
+ * FIXME Why is this not a linked list of sorted arrays of addresses?
+ * 
+ * @author Alan Gutierrez
+ */
 class TemporaryPool
 {
-    // TODO Comment.
+    /** A pool of references to address values. */
     private final ReferencePool referencePool;
-    
-    // TODO Comment.
+
+    /**
+     * A set of latches that prevents a reallocated temporary reference from
+     * committing before the journal playback that freed the temporary reference
+     * completes and commits.
+     */
     private final LatchSet<Long> temporaryLocker;
 
     /**
