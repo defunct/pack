@@ -69,7 +69,7 @@ class Move extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, AddressBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         BlockPage sourcePage = userBoundary.load(sheaf, source, BlockPage.class, new BlockPage());
         synchronized (sourcePage.getRawPage())
@@ -112,7 +112,7 @@ class Move extends Operation
     @Override
     public void execute(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getAddressBoundary(), player.getDirtyPages());
     }
 
     /**

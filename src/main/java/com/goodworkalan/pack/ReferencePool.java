@@ -39,7 +39,7 @@ abstract class ReferencePool
      * @param header
      *            The file header.
      */
-    public ReferencePool(Sheaf sheaf, UserBoundary userBoundary, Header header)
+    public ReferencePool(Sheaf sheaf, AddressBoundary userBoundary, Header header)
     {
         referencePages = new LinkedList<Long>();
         long position = getHeaderField(header);
@@ -65,7 +65,7 @@ abstract class ReferencePool
      * @return A map of non-zero, non-reserved reference page positions with
      *         offset to the page position or address that they reference.
      */
-    public Map<Long, Long> toMap(Sheaf sheaf, UserBoundary userBoundary)
+    public Map<Long, Long> toMap(Sheaf sheaf, AddressBoundary userBoundary)
     {
         Map<Long, Long> map = new HashMap<Long, Long>();
         for (long position : referencePages)
@@ -112,7 +112,7 @@ abstract class ReferencePool
      *            The dirty page set.
      * @return A reserved page reference.
      */
-    private long reserve(Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    private long reserve(Sheaf sheaf, AddressBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         long reference = 0L;
         int size = referencePages.size();
@@ -152,7 +152,7 @@ abstract class ReferencePool
      *            The dirty page set.
      * @return An reference from the reference pool.
      */
-    public synchronized long allocate(Sheaf sheaf, Header header, UserBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages) 
+    public synchronized long allocate(Sheaf sheaf, Header header, AddressBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages) 
     {
         long reference = reserve(sheaf, userBoundary, dirtyPages);
         if (reference == 0L)

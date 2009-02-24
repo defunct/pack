@@ -153,7 +153,7 @@ class UserPagePool
         while (continuous.hasNext())
         {
             long position = continuous.next();
-            BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
+            BlockPage blocks = bouquet.getAddressBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
             synchronized (blocks.getRawPage())
             {
                 byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining());
@@ -180,7 +180,7 @@ class UserPagePool
         
         for (Map.Entry<Long, Long> move : moves.entrySet())
         {
-            BlockPage destination = bouquet.getUserBoundary().load(bouquet.getSheaf(), move.getValue(), BlockPage.class, new BlockPage());
+            BlockPage destination = bouquet.getAddressBoundary().load(bouquet.getSheaf(), move.getValue(), BlockPage.class, new BlockPage());
             journal.write(new Move(move.getKey(), move.getValue(), destination.getLastAddress()));
         }
 
@@ -192,13 +192,13 @@ class UserPagePool
 
         for (long position : allocatedBlockPages)
         {
-            BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
+            BlockPage blocks = bouquet.getAddressBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
             byRemaining.add(blocks);
         }
         
         for (long position : moves.values())
         {
-            BlockPage blocks = bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
+            BlockPage blocks = bouquet.getAddressBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
             byRemaining.add(blocks);
         }
         

@@ -44,7 +44,7 @@ class TemporaryPool
      *            Map of temporary node addresses to byte buffers containing the
      *            address value at the temporary node position.
      */
-    public TemporaryPool(Sheaf sheaf, UserBoundary userBoundary, Header header)
+    public TemporaryPool(Sheaf sheaf, AddressBoundary userBoundary, Header header)
     {
         this.referencePool = new ReferencePool(sheaf, userBoundary, header)
         {
@@ -75,13 +75,13 @@ class TemporaryPool
     }
     
     // TODO Comment.
-    public long allocate(Sheaf sheaf, Header header, UserBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
+    public long allocate(Sheaf sheaf, Header header, AddressBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages)
     {
         return referencePool.allocate(sheaf, header, userBoundary, interimPagePool, dirtyPages);
     }
     
     // TODO Comment.
-    public synchronized void commit(long address, long temporary, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    public synchronized void commit(long address, long temporary, Sheaf sheaf, AddressBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         temporaryLocker.enter(temporary);
         AddressPage references = userBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
@@ -90,7 +90,7 @@ class TemporaryPool
     }
 
     // TODO Comment.
-    public synchronized long free(long address, Sheaf sheaf, UserBoundary userBoundary, DirtyPageSet dirtyPages)
+    public synchronized long free(long address, Sheaf sheaf, AddressBoundary userBoundary, DirtyPageSet dirtyPages)
     {
         if (temporaries.containsKey(address))
         {

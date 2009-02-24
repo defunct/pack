@@ -201,7 +201,7 @@ public final class Creator
         addresses.set(0, Long.MIN_VALUE, dirtyPages);
         dirtyPages.flush();
         
-        UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
+        AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
         TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 userBoundary,

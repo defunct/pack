@@ -116,7 +116,7 @@ class AddressPagePool implements Iterable<Long>
         for (int i = 0; i < newAddressPageCount; i++)
         {
             // The new address page is the user page at the user page boundary.
-            long position = bouquet.getUserBoundary().getPosition();
+            long position = bouquet.getAddressBoundary().getPosition();
             
             // Record the new address page.
             newAddressPages.add(position);
@@ -134,7 +134,7 @@ class AddressPagePool implements Iterable<Long>
             }
 
             // Move the boundary for user pages.
-            bouquet.getUserBoundary().increment();
+            bouquet.getAddressBoundary().increment();
         }
 
         // To move a data page to make space for an address page, we simply copy
@@ -194,14 +194,14 @@ class AddressPagePool implements Iterable<Long>
     {
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
-        bouquet.getPageMoveLock().writeLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().writeLock().lock();
         try
         {
             return tryNewAddressPage(bouquet, count); 
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
     

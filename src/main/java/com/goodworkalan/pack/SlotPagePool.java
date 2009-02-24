@@ -8,18 +8,19 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
 
 // TODO Document.
+// FIXME Rename PositionPagePool.
 public class SlotPagePool
 {
-    // TODO Document.
+    /** The page manager. */
     private final Sheaf sheaf;
     
-    // TODO Document.
-    private final UserBoundary userBoundary;
+    /** The boundary between the address pages and the user pages. */
+    private final AddressBoundary addressBoundary;
     
-    // TODO Document.
+    /** The interim page pool. */
     private InterimPagePool interimPagePool; 
     
-    // TODO Document.
+    /** The strategy to read and write head references to linked list. */ 
     private final PositionIO positionIO;
 
     /** A descending list of the slot sizes. */
@@ -35,10 +36,10 @@ public class SlotPagePool
      * @param slotSizes
      *           A descending list of the slot sizes.
      */
-    public SlotPagePool(Sheaf sheaf, UserBoundary userBoundary, InterimPagePool interimPagePool, PositionIO positionIO, List<Integer> slotSizes)
+    public SlotPagePool(Sheaf sheaf, AddressBoundary userBoundary, InterimPagePool interimPagePool, PositionIO positionIO, List<Integer> slotSizes)
     {
         this.sheaf = sheaf;
-        this.userBoundary = userBoundary;
+        this.addressBoundary = userBoundary;
         this.interimPagePool = interimPagePool;
         this.positionIO = positionIO;
         this.slotSizes = new LinkedList<Integer>(slotSizes);
@@ -90,12 +91,12 @@ public class SlotPagePool
         {
             allocateFrom = newSlotList(slotSizes.getLast(), dirtyPages);
         }
-        SlotPage slotPage = userBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
+        SlotPage slotPage = addressBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
         long slotPosition = slotPage.allocateSlot(previous, dirtyPages);
         if (slotPosition == 0L)
         {
             allocateFrom = newSlotList(getNextSlotIndex(slotPage), dirtyPages);
-            SlotPage newSlotPage = userBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
+            SlotPage newSlotPage = addressBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
             long newSlotPosition = newSlotPage.allocateSlot(previous, dirtyPages);
             slotPage.setNext(slotPosition, newSlotPosition, dirtyPages);
             slotPosition = newSlotPosition;
@@ -113,7 +114,7 @@ public class SlotPagePool
         {
             slotPosition = newSlotPosition(slotSizes.getLast(), Long.MIN_VALUE, dirtyPages);
         }
-        SlotPage slotPage = userBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
+        SlotPage slotPage = addressBoundary.load(sheaf, allocateFrom, SlotPage.class, new SlotPage());
         if (!slotPage.add(allocateFrom, position, false, dirtyPages))
         {
             slotPosition = newSlotPosition(getNextSlotIndex(slotPage), slotPage.getRawPage().getPosition(), dirtyPages);
@@ -127,7 +128,7 @@ public class SlotPagePool
     {
         if (position != Long.MIN_VALUE && position != 0L)
         {
-            position = userBoundary.adjust(sheaf, position);
+            position = addressBoundary.adjust(sheaf, position);
         }
         return position;
     }
@@ -202,7 +203,7 @@ public class SlotPagePool
                 return 0L;
             }
             
-            SlotPage slotPage = userBoundary.load(sheaf, slot, SlotPage.class, new SlotPage());
+            SlotPage slotPage = addressBoundary.load(sheaf, slot, SlotPage.class, new SlotPage());
             long position = slotPage.remove(slot, dirtyPages);
             if (position != 0L)
             {
@@ -231,7 +232,7 @@ public class SlotPagePool
             // remain full and only the alloc slot page has empty slots.
             if (alloc != slot)
             {
-                SlotPage allocSlotPage = userBoundary.load(sheaf, alloc, SlotPage.class, new SlotPage());
+                SlotPage allocSlotPage = addressBoundary.load(sheaf, alloc, SlotPage.class, new SlotPage());
                 
                 // Remove the values for any slot in the alloc page.
                 long[] values = allocSlotPage.removeSlot(dirtyPages);
@@ -255,7 +256,7 @@ public class SlotPagePool
                     // reference to this slot.
                     if (slotPage.getPrevious(slot) != Long.MIN_VALUE)
                     {
-                        SlotPage lastSlotPage = userBoundary.load(sheaf, slotPage.getPrevious(slot), SlotPage.class, new SlotPage());
+                        SlotPage lastSlotPage = addressBoundary.load(sheaf, slotPage.getPrevious(slot), SlotPage.class, new SlotPage());
                         lastSlotPage.setNext(slotPage.getPrevious(slot), slot, dirtyPages);
                     }
         
@@ -263,7 +264,7 @@ public class SlotPagePool
                     // reference to this slot.
                     if (slotPage.getNext(slot) != Long.MIN_VALUE)
                     {
-                        SlotPage nextSlotPage = userBoundary.load(sheaf, slotPage.getNext(slot), SlotPage.class, new SlotPage());
+                        SlotPage nextSlotPage = addressBoundary.load(sheaf, slotPage.getNext(slot), SlotPage.class, new SlotPage());
                         nextSlotPage.setPrevious(slotPage.getNext(slot), slot, dirtyPages);
                     }
                 }

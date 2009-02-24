@@ -52,7 +52,7 @@ extends Operation
     }
     
     // TODO Comment.
-    private void commit(Sheaf sheaf, UserBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, AddressBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
     {
         temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);
     }
@@ -65,7 +65,7 @@ extends Operation
     @Override
     public void execute(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getBouquet().getTemporaryPool(), player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getAddressBoundary(), player.getBouquet().getTemporaryPool(), player.getDirtyPages());
     }
 
     /**

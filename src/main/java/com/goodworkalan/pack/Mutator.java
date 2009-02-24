@@ -79,7 +79,7 @@ public final class Mutator
     Mutator(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
         Sheaf sheaf = bouquet.getSheaf();
-        UserBoundary userBoundary = bouquet.getUserBoundary();
+        AddressBoundary userBoundary = bouquet.getAddressBoundary();
         InterimPagePool interimPagePool = bouquet.getInterimPagePool();
         int alignment = bouquet.getHeader().getAlignment();
         int maximumBlockSize = bouquet.getPack().getMaximumBlockSize();
@@ -121,15 +121,15 @@ public final class Mutator
             throw new IllegalStateException();
         }
 
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
-            long reference = bouquet.getTemporaryPool().allocate(bouquet.getSheaf(), bouquet.getHeader(), bouquet.getUserBoundary(), bouquet.getInterimPagePool(), dirtyPages);
+            long reference = bouquet.getTemporaryPool().allocate(bouquet.getSheaf(), bouquet.getHeader(), bouquet.getAddressBoundary(), bouquet.getInterimPagePool(), dirtyPages);
             journal.write(new Temporary(address, reference));
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -161,7 +161,7 @@ public final class Mutator
                 
         final int fullSize = blockSize + Pack.BLOCK_HEADER_SIZE;
            
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             // If we already have a wilderness data page that will fit the
@@ -190,7 +190,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -221,7 +221,7 @@ public final class Mutator
             throw new IllegalStateException();
         }
      
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             // For now, the first test will write to an allocated block, so
@@ -234,7 +234,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -263,7 +263,7 @@ public final class Mutator
      */
     public boolean isContinued(long address)
     {
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             Boolean isContinued = null;
@@ -272,14 +272,14 @@ public final class Mutator
             {
                 do
                 {
-                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                    BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
                     isContinued = user.isContinued(address);
                 }
                 while (isContinued == null);
             }
             else
             {
-                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
                 isContinued = interim.isContinued(address);
             }
     
@@ -287,7 +287,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -309,7 +309,7 @@ public final class Mutator
      */
     public void write(final long address, final ByteBuffer source)
     {
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             // For now, the first test will write to an allocated block, so
@@ -322,7 +322,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -343,7 +343,7 @@ public final class Mutator
             int blockSize = 0;
             do
             {
-                BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                BlockPage blocks = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
                 blockSize = blocks.getBlockSize(address);
             }
             while (blockSize == 0);
@@ -366,7 +366,7 @@ public final class Mutator
             ByteBuffer copy = ByteBuffer.allocateDirect(blockSize - Pack.BLOCK_HEADER_SIZE);
             do
             {
-                BlockPage blocks = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                BlockPage blocks = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
                 read = blocks.read(address, copy);
             }
             while (read == null);
@@ -377,7 +377,7 @@ public final class Mutator
         }
         else
         {
-            interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+            interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
         }
         return interim;
     }
@@ -450,7 +450,7 @@ public final class Mutator
      */
     private ByteBuffer tryRead(long address, ByteBuffer destination)
     {
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             ByteBuffer read = null;
@@ -459,14 +459,14 @@ public final class Mutator
             {
                 do
                 {
-                    BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                    BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
                     read = user.read(address, destination);
                 }
                 while (read == null);
             }
             else
             {
-                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
                 read = interim.read(address, destination);
             }
     
@@ -474,7 +474,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -503,7 +503,7 @@ public final class Mutator
         }
 
         // Ensure that no pages move.
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             // If true, the block was allocated during this mutation and
@@ -530,7 +530,7 @@ public final class Mutator
             if (isolated != null)
             {
                 // Free the block from the interim page.
-                BlockPage interim = bouquet.getUserBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
                 allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
                 interim.unallocate(address, dirtyPages);
                 
@@ -554,7 +554,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
     
@@ -589,7 +589,7 @@ public final class Mutator
         // by the opener when the file is reopened, needs to be rolled back. 
         for (long temporary : temporaries)
         {
-            bouquet.getTemporaryPool().free(temporary, bouquet.getSheaf(), bouquet.getUserBoundary(), dirtyPages);
+            bouquet.getTemporaryPool().free(temporary, bouquet.getSheaf(), bouquet.getAddressBoundary(), dirtyPages);
         }
         
         // Write any dirty pages.
@@ -597,12 +597,12 @@ public final class Mutator
         
         // Put the interim pages we used back into the set of free interim
         // pages.
-        for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), interims))
+        for (long position : bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), interims))
         {
             bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
         
-        for (long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages()))
+        for (long position : bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages()))
         {
             bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }
@@ -633,14 +633,14 @@ public final class Mutator
     {
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             tryRollback();
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
 
         clear();
@@ -676,7 +676,7 @@ public final class Mutator
     {
         // Obtain shared lock on the compact lock, preventing pack file
         // vacuum for the duration of the address page allocation.
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             // Create a move latch list from our move latch list, with the
@@ -687,7 +687,7 @@ public final class Mutator
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
         clear();
     }

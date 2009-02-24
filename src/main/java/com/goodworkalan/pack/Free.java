@@ -61,7 +61,7 @@ extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void free(Sheaf sheaf, LatchSet<Long> addressLocker, UserBoundary userBoundary, TemporaryPool temporaryPool,
+    private void free(Sheaf sheaf, LatchSet<Long> addressLocker, AddressBoundary userBoundary, TemporaryPool temporaryPool,
         Set<Long> lockedAddresses, Set<Long> lockedTemporaryAddresses, Set<Long> freedBlockPages, DirtyPageSet dirtyPages)
     {
         // Lock the address against reassignment until after this journal
@@ -137,7 +137,7 @@ extends Operation
     @Override
     public void execute(Player player)
     {
-        free(player.getBouquet().getSheaf(), player.getBouquet().getAddressLocker(), player.getBouquet().getUserBoundary(), player.getBouquet().getTemporaryPool(), player.getLockedAddresses(), player.getLockedTemporaryReferences(), player.getFreedBlockPages(), player.getDirtyPages());
+        free(player.getBouquet().getSheaf(), player.getBouquet().getAddressLocker(), player.getBouquet().getAddressBoundary(), player.getBouquet().getTemporaryPool(), player.getLockedAddresses(), player.getLockedTemporaryReferences(), player.getFreedBlockPages(), player.getDirtyPages());
     }
     
     /**

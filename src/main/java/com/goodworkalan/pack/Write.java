@@ -70,7 +70,7 @@ extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, UserBoundary userBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, AddressBoundary userBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
     {
         // Get the address page for the address.
         AddressPage addresses = sheaf.getPage(address < 0 ? -address : address, AddressPage.class, new AddressPage());
@@ -161,7 +161,7 @@ extends Operation
     @Override
     public void execute(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getBouquet().getUserBoundary(), player.getFreedBlockPages(),
+        commit(player.getBouquet().getSheaf(), player.getBouquet().getAddressBoundary(), player.getFreedBlockPages(),
             player.getAllocatedBlockPages(), player.getDirtyPages());
     }
     

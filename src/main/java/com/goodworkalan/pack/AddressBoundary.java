@@ -2,6 +2,8 @@ package com.goodworkalan.pack;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.goodworkalan.sheaf.Page;
 import com.goodworkalan.sheaf.Sheaf;
@@ -12,18 +14,19 @@ import com.goodworkalan.sheaf.Sheaf;
  * the bouquet is held exclusively.
  * <p>
  * FIXME Move the read/write lock into this class.
- * <p>
- * FIXME Rename this class AddressBoundary.
  * 
  * @author Alan Gutierrez
  */
-class UserBoundary
+class AddressBoundary
 {
     /** The size of a page in the Pack.  */
     private final int pageSize;
     
     /** The position of the boundary.  */
     private long position;
+    
+    /** A read/write lock to guard the address page to user boundary. */
+    private final ReadWriteLock pageMoveLock;
     
     /**
      * Create a boundary tracker for pages of the given size that is set at the
@@ -35,10 +38,23 @@ class UserBoundary
      * @param position
      *            The initial position.
      */
-    public UserBoundary(int pageSize, long position)
+    public AddressBoundary(int pageSize, long position)
     {
         this.pageSize = pageSize;
         this.position = position;
+        this.pageMoveLock = new ReentrantReadWriteLock();
+    }
+    
+    /**
+     * Get the read/write lock used to guard the user boundary. The read lock
+     * of this read/write lock must be held by any operation attempting to
+     * read a non-address page.
+     * 
+     * @return The read/write lock used to guard the user boundary.
+     */
+    public ReadWriteLock getPageMoveLock()
+    {
+        return pageMoveLock;
     }
     
     /**

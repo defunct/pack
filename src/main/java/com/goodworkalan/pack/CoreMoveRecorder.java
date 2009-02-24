@@ -58,7 +58,7 @@ class CoreMoveRecorder implements MoveRecorder
      */
     private BlockPage getBlockPage(long position)
     {
-        return bouquet.getUserBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
+        return bouquet.getAddressBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
     }
 
     /* (non-Javadoc)

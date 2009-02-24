@@ -108,7 +108,7 @@ final class Player
     private static JournalHeader allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
     {
         JournalHeader header = bouquet.getJournalHeaders().allocate();
-        header.getByteBuffer().putLong(bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journal.getJournalStart()));
+        header.getByteBuffer().putLong(bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), journal.getJournalStart()));
         
         // Write and force our journal.
         dirtyPages.flush();
@@ -234,7 +234,7 @@ final class Player
         bouquet.getTemporaryPool().unlock(getLockedTemporaryReferences());
         
         
-        for(long position : bouquet.getUserBoundary().adjust(bouquet.getSheaf(), journalPages))
+        for(long position : bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), journalPages))
         {
             bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
         }

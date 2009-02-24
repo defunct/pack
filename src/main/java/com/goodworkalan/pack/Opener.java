@@ -173,7 +173,7 @@ public final class Opener
         }
         
         Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        UserBoundary userBoundary = new UserBoundary(sheaf.getPageSize(), header.getUserBoundary());
+        AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
         TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
         temporaryBlocks.addAll(temporaryPool.toMap().keySet());
         

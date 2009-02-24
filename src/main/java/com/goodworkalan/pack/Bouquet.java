@@ -2,8 +2,6 @@ package com.goodworkalan.pack;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
@@ -45,9 +43,6 @@ final class Bouquet
     /** The page manager. */
     private final Sheaf sheaf;
     
-    /** A read/write lock to guard the address page to user boundary. */
-    private final ReadWriteLock pageMoveLock;
-
     /**
      * A synchronization strategy that prevents addresses that have been freed
      * from overwriting reallocations.
@@ -58,7 +53,7 @@ final class Bouquet
     private final AddressPagePool addressPagePool;
 
     /** The boundary between address pages and user data pages. */
-    private final UserBoundary userBoundary;
+    private final AddressBoundary addressBoundary;
 
     /** The user page pool. */
     private final UserPagePool userPagePool;
@@ -97,13 +92,13 @@ final class Bouquet
      * @param temporaryFactory
      *            The temporary address reference pool.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, UserBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryPool temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, AddressBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryPool temporaryFactory)
     {
         this.pack = new Pack(this);
         this.header = header;
         this.staticBlocks = staticBlocks;
         this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getJournalCount());
-        this.userBoundary = userBoundary;
+        this.addressBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.vacuumDirtyPages = new DirtyPageSet();
@@ -112,7 +107,6 @@ final class Bouquet
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
         this.addressLocker = new LatchSet<Long>(64);
-        this.pageMoveLock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -167,18 +161,6 @@ final class Bouquet
     {
         return sheaf;
     }
-    
-    /**
-     * Get the read/write lock used to guard the user boundary. The read lock
-     * of this read/write lock must be held by any operation attempting to
-     * read a non-address page.
-     * 
-     * @return The read/write lock used to guard the user boundary.
-     */
-    public ReadWriteLock getPageMoveLock()
-    {
-        return pageMoveLock;
-    }
 
     /**
      * Returns the address locker which will block a reallocation from
@@ -208,9 +190,9 @@ final class Bouquet
      *
      * @return The boundary between address pages and user data pages.
      */
-    public UserBoundary getUserBoundary()
+    public AddressBoundary getAddressBoundary()
     {
-        return userBoundary;
+        return addressBoundary;
     }
 
     /**

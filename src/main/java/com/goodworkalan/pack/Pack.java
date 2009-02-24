@@ -91,13 +91,13 @@ public class Pack
      */
     private ByteBuffer tryRead(long address, ByteBuffer destination)
     {
-        bouquet.getPageMoveLock().readLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
             ByteBuffer read = null;
             do
             {
-                BlockPage user = bouquet.getUserBoundary().dereference(bouquet.getSheaf(), address);
+                BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
                 read = user.read(address, destination);
             }
             while (read == null);
@@ -106,7 +106,7 @@ public class Pack
         }
         finally
         {
-            bouquet.getPageMoveLock().readLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
         }
     }
 
@@ -210,14 +210,14 @@ public class Pack
     {
         synchronized (bouquet.getVacuumMutex())
         {
-            bouquet.getPageMoveLock().readLock().lock();
+            bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
             try
             {
                 bouquet.getUserPagePool().vacuum(bouquet);
             }
             finally
             {
-                bouquet.getPageMoveLock().readLock().unlock();
+                bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
             }
         }
     }
@@ -231,7 +231,7 @@ public class Pack
         // Grab the exclusive compact lock, which will wait for any concurrent
         // commits to complete.
     
-        bouquet.getPageMoveLock().writeLock().lock();
+        bouquet.getAddressBoundary().getPageMoveLock().writeLock().lock();
     
         try
         {
@@ -247,7 +247,7 @@ public class Pack
         }
         finally
         {
-            bouquet.getPageMoveLock().writeLock().unlock();
+            bouquet.getAddressBoundary().getPageMoveLock().writeLock().unlock();
         }
     }
     
@@ -381,7 +381,7 @@ public class Pack
             throw new PackException(PackException.ERROR_IO_TRUNCATE, e);
         }
         
-        bouquet.getHeader().setUserBoundary(bouquet.getUserBoundary().getPosition());
+        bouquet.getHeader().setUserBoundary(bouquet.getAddressBoundary().getPosition());
         bouquet.getHeader().setEndOfSheaf(endOfSheaf);
 
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);

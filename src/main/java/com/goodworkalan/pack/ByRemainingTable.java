@@ -44,7 +44,7 @@ final class ByRemainingTable implements ByRemaining
     /** The bouquet of services. */
     private final Sheaf sheaf;
     
-    private final UserBoundary userBoundary;
+    private final AddressBoundary userBoundary;
     
     private final InterimPagePool interimPagePool;
     
@@ -79,7 +79,7 @@ final class ByRemainingTable implements ByRemaining
      * @param alignment
      *            The block alignment.
      */
-    public ByRemainingTable(Sheaf sheaf, UserBoundary userBoundary, InterimPagePool interimPagePool, int alignment, int maximumBlockSize, DirtyPageSet dirtyPages)
+    public ByRemainingTable(Sheaf sheaf, AddressBoundary userBoundary, InterimPagePool interimPagePool, int alignment, int maximumBlockSize, DirtyPageSet dirtyPages)
     {
         this.sheaf = sheaf;
         this.userBoundary = userBoundary;
