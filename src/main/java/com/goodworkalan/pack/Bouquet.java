@@ -107,8 +107,8 @@ final class Bouquet
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.vacuumDirtyPages = new DirtyPageSet();
-        this.userPagePool = new UserPagePool(new ByRemainingTable(this, vacuumDirtyPages), header.getPageSize(), header.getAlignment());
         this.interimPagePool = new InterimPagePool();
+        this.userPagePool = new UserPagePool(new ByRemainingTable(sheaf, userBoundary, interimPagePool, header.getAlignment(), pack.getMaximumBlockSize(), vacuumDirtyPages), header.getPageSize(), header.getAlignment());
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
         this.addressLocker = new LatchSet<Long>(64);

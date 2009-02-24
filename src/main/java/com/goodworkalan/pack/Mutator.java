@@ -10,6 +10,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Sheaf;
 
 /**
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
@@ -77,7 +78,13 @@ public final class Mutator
      */
     Mutator(Bouquet bouquet, Journal journal, DirtyPageSet dirtyPages)
     {
-        ByRemainingTable allocByRemaining = new ByRemainingTable(bouquet, dirtyPages);
+        Sheaf sheaf = bouquet.getSheaf();
+        UserBoundary userBoundary = bouquet.getUserBoundary();
+        InterimPagePool interimPagePool = bouquet.getInterimPagePool();
+        int alignment = bouquet.getHeader().getAlignment();
+        int maximumBlockSize = bouquet.getPack().getMaximumBlockSize();
+
+        ByRemainingTable allocByRemaining = new ByRemainingTable(sheaf, userBoundary, interimPagePool, alignment, maximumBlockSize, dirtyPages);
 
         this.bouquet = bouquet;
         this.journal = journal;
