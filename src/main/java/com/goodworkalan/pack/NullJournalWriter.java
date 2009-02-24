@@ -58,7 +58,12 @@ extends JournalWriter
         return false;
     }
 
-    // TODO Comment.
+    /**
+     * Get an empty set of page positions to indicate that there are no pages
+     * used by this journal.
+     * 
+     * @return The set of page positions used by this journal.
+     */
     @Override
     public Set<Long> getJournalPages()
     {

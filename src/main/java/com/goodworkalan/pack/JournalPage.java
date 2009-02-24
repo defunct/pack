@@ -5,6 +5,7 @@ import java.util.zip.Checksum;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 
 /**
  * A page that stores journal entries in the interim region of the pack.
@@ -66,27 +67,64 @@ extends Page
      */
     public void writeChecksum(Checksum checksum)
     {
-        getRawPage().getByteBuffer().putLong(0, getChecksum(checksum));
-        getRawPage().invalidate(0, Pack.LONG_SIZE);
+        long value = getChecksum(offset, checksum);
+        RawPage rawPage = getRawPage();
+        synchronized (rawPage)
+        {
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            byteBuffer.clear();
+            byteBuffer.putInt(offset);
+            byteBuffer.putLong(value);
+            rawPage.invalidate(0, JOURNAL_PAGE_HEADER_SIZE);
+        }
     }
-    
-    // TODO Comment.
-    private long getChecksum(Checksum checksum)
+
+    /**
+     * Generate a checksum of the underlying byte content from the first journal
+     * operation past the journal header to the given limit.
+     * <p>
+     * This method must be called on a synchronized block that synchronizes
+     * on the underlying raw page.
+     * 
+     * @param limit
+     *            End of journal content.
+     * @param checksum
+     *            The checksum algorithm.
+     * @return A checksum value.
+     */
+    private long getChecksum(int stop, Checksum checksum)
     {
         checksum.reset();
+
         ByteBuffer bytes = getRawPage().getByteBuffer();
-        bytes.position(Pack.LONG_SIZE);
-        while (bytes.position() != offset)
+        bytes.position(JOURNAL_PAGE_HEADER_SIZE);
+        bytes.limit(stop);
+        while (bytes.remaining() != 0)
         {
             checksum.update(bytes.get());
         }
+
         return checksum.getValue();
     }
-    
-    // TODO Comment.
+
+    /**
+     * Validate the stored checksum of the journal content.
+     * 
+     * @param checksum
+     *            The checksum algorithm.
+     * @return True of the generated checksum value matches the checksum stored
+     *         in the journal header.
+     */
     public boolean isValidChecksum(Checksum checksum)
     {
-        return getRawPage().getByteBuffer().getLong(0) == getChecksum(checksum);
+        RawPage rawPage = getRawPage();
+        synchronized (rawPage)
+        {
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int limit = byteBuffer.getInt();
+            long value = byteBuffer.getLong();
+            return value == getChecksum(limit, checksum);
+        }
     }
 
     /**

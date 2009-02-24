@@ -19,10 +19,12 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 public final class Opener
 {
-    // TODO Comment.
+    /** A set of user defined temporary blocks to store intermeiate states. */ 
     private final Set<Long> temporaryBlocks;
    
-    // TODO Comment.
+    /**
+     * Create a new file opener.
+     */
     public Opener()
     {
         this.temporaryBlocks = new HashSet<Long>();
@@ -39,12 +41,6 @@ public final class Opener
         return temporaryBlocks;
     }
     
-    // TODO Comment.
-    private boolean badAddress(Header header, long address)
-    {
-        return address < 8 || address > header.getUserBoundary();
-    }
-
     /**
      * Read the map of static blocks URIs to block address from the given file
      * channel using the housekeeping information in the given header.
@@ -78,10 +74,6 @@ public final class Opener
                 uri.append(bytes.getChar());
             }
             long address = bytes.getLong();
-            if (badAddress(header, address))
-            {
-                throw new PackException(PackException.ERROR_IO_STATIC_PAGES);
-            }
             try
             {
                 staticBlocks.put(new URI(uri.toString()), address);
