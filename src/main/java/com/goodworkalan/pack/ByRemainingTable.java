@@ -165,12 +165,12 @@ final class ByRemainingTable implements ByRemaining
         {
             allocateFrom = newSlotList(slotSizes.getLast());
         }
-        ByRemainingSlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
+        SlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, SlotPage.class, new SlotPage());
         long slotPosition = slotPage.allocateSlot(previous, dirtyPages);
         if (slotPosition == 0L)
         {
             allocateFrom = newSlotList(getNextSlotIndex(slotPage));
-            ByRemainingSlotPage newSlotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
+            SlotPage newSlotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, SlotPage.class, new SlotPage());
             long newSlotPosition = newSlotPage.allocateSlot(previous, dirtyPages);
             slotPage.setNext(slotPosition, newSlotPosition, dirtyPages);
             slotPosition = newSlotPosition;
@@ -185,7 +185,7 @@ final class ByRemainingTable implements ByRemaining
      */
     public long newSlotList(int slotSizeIndex)
     {
-        ByRemainingSlotPage setPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), ByRemainingSlotPage.class, new ByRemainingSlotPage(), dirtyPages, true);
+        SlotPage setPage = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), SlotPage.class, new SlotPage(), dirtyPages, true);
         setPage.setSlotSize(slotSizeIndex, dirtyPages);
         byRemainingPage.setAllocSlotPosition(slotSizeIndex, setPage.getRawPage().getPosition(), dirtyPages);
         return setPage.getRawPage().getPosition();
@@ -204,7 +204,7 @@ final class ByRemainingTable implements ByRemaining
         return remaining / alignment * alignment;
     }
     
-    private int getNextSlotIndex(ByRemainingSlotPage slotPage)
+    private int getNextSlotIndex(SlotPage slotPage)
     {
         int slotSize = 0;
         ListIterator<Integer> sizes = slotSizes.listIterator();
@@ -246,7 +246,7 @@ final class ByRemainingTable implements ByRemaining
             {
                 slotPosition = newSlotPosition(slotSizes.size() - 1, alignmentIndex, Long.MIN_VALUE);
             }
-            ByRemainingSlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, ByRemainingSlotPage.class, new ByRemainingSlotPage());
+            SlotPage slotPage = bouquet.getUserBoundary().load(bouquet.getSheaf(), allocateFrom, SlotPage.class, new SlotPage());
             if (!slotPage.add(allocateFrom, position, false, dirtyPages))
             {
                 slotPosition = newSlotPosition(getNextSlotIndex(slotPage), alignmentIndex, slotPage.getRawPage().getPosition());
@@ -275,7 +275,7 @@ final class ByRemainingTable implements ByRemaining
         while (slot != Long.MIN_VALUE)
         {
             // Start with head slot of the linked list of slots.
-            ByRemainingSlotPage slotPage = getSlotPage(slot);
+            SlotPage slotPage = getSlotPage(slot);
             if (slotPage.remove(slot, position, dirtyPages))
             {
                 if (slot == firstSlot)
@@ -284,12 +284,12 @@ final class ByRemainingTable implements ByRemaining
                 }
                 else
                 {
-                    ByRemainingSlotPage firstSlotPage = getSlotPage(firstSlot);
+                    SlotPage firstSlotPage = getSlotPage(firstSlot);
                     long replace = firstSlotPage.remove(firstSlot, dirtyPages);
                     if (replace == 0L)
                     {
                         long lastSlot = adjust(firstSlotPage.getPrevious(firstSlot));
-                        ByRemainingSlotPage lastSlotPage = getSlotPage(lastSlot);
+                        SlotPage lastSlotPage = getSlotPage(lastSlot);
                         lastSlotPage.setNext(lastSlot, Long.MIN_VALUE, dirtyPages);
                         byRemainingPage.setSlotPosition(alignmentIndex, lastSlot, dirtyPages);
                         if (lastSlot == slot)
@@ -314,9 +314,9 @@ final class ByRemainingTable implements ByRemaining
     }
     
     // TODO Comment.
-    private ByRemainingSlotPage getSlotPage(long position)
+    private SlotPage getSlotPage(long position)
     {
-        return bouquet.getUserBoundary().load(bouquet.getSheaf(), position, ByRemainingSlotPage.class, new ByRemainingSlotPage());
+        return bouquet.getUserBoundary().load(bouquet.getSheaf(), position, SlotPage.class, new SlotPage());
     }
     
     // TODO Comment.
@@ -354,7 +354,7 @@ final class ByRemainingTable implements ByRemaining
             {
                 // Start with head slot of the linked list of slots.
                 long slot = adjust(byRemainingPage.getSlotPosition(alignmentIndex));
-                ByRemainingSlotPage slotPage = getSlotPage(slot);
+                SlotPage slotPage = getSlotPage(slot);
                 position = slotPage.remove(slot, dirtyPages);
     
                 // If there is no position, we need to go to the previous slot. We
@@ -387,7 +387,7 @@ final class ByRemainingTable implements ByRemaining
                     // remain full and only the alloc slot page has empty slots.
                     if (alloc != slot)
                     {
-                        ByRemainingSlotPage allocSlotPage = getSlotPage(alloc);
+                        SlotPage allocSlotPage = getSlotPage(alloc);
     
                         // Remove the values for any slot in the alloc page.
                         long[] values = allocSlotPage.removeSlot(dirtyPages);
@@ -411,7 +411,7 @@ final class ByRemainingTable implements ByRemaining
                             // reference to this slot.
                             if (slotPage.getPrevious(slot) != Long.MIN_VALUE)
                             {
-                                ByRemainingSlotPage lastSlotPage = getSlotPage(slotPage.getPrevious(slot));
+                                SlotPage lastSlotPage = getSlotPage(slotPage.getPrevious(slot));
                                 lastSlotPage.setNext(slotPage.getPrevious(slot), slot, dirtyPages);
                             }
     
@@ -419,7 +419,7 @@ final class ByRemainingTable implements ByRemaining
                             // reference to this slot.
                             if (slotPage.getNext(slot) != Long.MIN_VALUE)
                             {
-                                ByRemainingSlotPage nextSlotPage = getSlotPage(slotPage.getNext(slot));
+                                SlotPage nextSlotPage = getSlotPage(slotPage.getNext(slot));
                                 nextSlotPage.setPrevious(slotPage.getNext(slot), slot, dirtyPages);
                             }
                         }

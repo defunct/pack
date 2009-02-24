@@ -11,7 +11,7 @@ import com.goodworkalan.sheaf.Page;
  * 
  * @author Alan Gutierrez
  */
-class ByRemainingSlotPage extends Page
+class SlotPage extends Page
 {
     /**
      * Create a by remaining slot page by writing zero to the entire new page.
