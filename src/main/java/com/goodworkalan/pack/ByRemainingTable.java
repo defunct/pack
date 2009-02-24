@@ -101,14 +101,24 @@ final class ByRemainingTable implements ByRemaining
         this.maximumBlockSize = maximumBlockSize;
     }
     
-    // TODO Comment.
+    /**
+     * Create a list of slots sizes, starting from the full page size less the
+     * slot header, then a sequence that divides the previous value in half,
+     * ending with a slot size that is no less than 8 slots.
+     * 
+     * @param pageSize
+     *            The page size.
+     * @param alignment
+     *            The block alignment.
+     * @return A list of
+     */
     private static LinkedList<Integer> getSlotSizes(int pageSize, int alignment)
     {
         LinkedList<Integer> slotSizes = new LinkedList<Integer>();
         int slotCount = 1;
         for (;;)
         {
-            int slotSize = getSlotSize(pageSize, slotCount);
+            int slotSize = getPositionBlockCount(pageSize, slotCount);
             if (slotSize < 8)
             {
                 break;
@@ -119,8 +129,10 @@ final class ByRemainingTable implements ByRemaining
         return slotSizes;
     }
 
-    // TODO Comment.
-    private void newSlotPagePools()
+    /**
+     * Populate the list of position pages indexed by alignment index.
+     */
+    private void createSlotPagePools()
     {
         int pageSize = sheaf.getPageSize();
         int alignmentCount = pageSize / alignment;
@@ -130,8 +142,14 @@ final class ByRemainingTable implements ByRemaining
             slotPagePools.add(new SlotPagePool(sheaf, userBoundary, interimPagePool, new ByRemainingPositionIO(byRemainingPage, i), getSlotSizes(pageSize, alignment)));
         }
     }
-    
-    // TODO Comment.
+
+    /**
+     * Load the by remaining table from the given position or create a new by
+     * remaining table if the position is zero.
+     * 
+     * @param position
+     *            The position of the by remaining table header page.
+     */
     public void load(long position)
     {
         if (byRemainingPage == null)
@@ -144,13 +162,22 @@ final class ByRemainingTable implements ByRemaining
             {
             }
         }
-        newSlotPagePools();
+        createSlotPagePools();
     }
-    
-    // TODO Comment.
-    private static int getSlotSize(int pageSize, int slotCount)
+
+    /**
+     * Return the count of position blocks in a page for the given position
+     * count.
+     * 
+     * @param pageSize
+     *            The page size.
+     * @param positionCount
+     *            The number of positions in a position block in a page.
+     * @return The number of position blocks that will fit on the page.
+     */
+    private static int getPositionBlockCount(int pageSize, int positionCount)
     {
-        return ((Pack.INT_SIZE - pageSize) / Pack.LONG_SIZE) / slotCount;
+        return ((Pack.INT_SIZE - pageSize) / Pack.LONG_SIZE) / positionCount;
     }
     
     /**
