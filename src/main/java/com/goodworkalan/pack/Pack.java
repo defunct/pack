@@ -12,6 +12,19 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
+ * <p>
+ * Although this file structure is concurrent, isolated, and durable, it is not
+ * atomic. A commit will update addresses so that isolated blocks become the
+ * common blocks, however other mutators will see this change the moment it
+ * happens. If two blocks allocated by a mutator, as the mutator commits, one
+ * block will become visible to the user before the other block becomes visible.
+ * <p>
+ * Pack also supports exposing raw pages that are managed by the user. Raw pages
+ * allocated via the file structure are dereferenced by an address, so they can
+ * move to accommodate new address pages. The file structure reserves the first
+ * bit of the page for housekeeping information. First bit, that is, not byte,
+ * so you can use the first byte to store primitive Java types so long as the
+ * value is not negative.
  */
 public class Pack
 {

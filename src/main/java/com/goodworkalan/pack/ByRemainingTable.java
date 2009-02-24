@@ -36,17 +36,6 @@ import com.goodworkalan.sheaf.Sheaf;
  * purged then either added or vacuumed. Once they are removed from the by
  * remaining table, the adjusted values can be added.</li>
  * </ol>
- * FIXME New problem. Free a block. Same block vacuumed, moved.
- * FIXME Why am I  supporting the notion of user pages? A feature too far? If
- * you want to use block management, you have to use a block.
- * FIXME Don't I have isolation now? If you have one writer, you can dirty
- * up pages, so long as no one else is writing, that dirt can be in isolation.
- * Here is where you get your dirty pages in strata.
- * FIXME You can solve exposing a raw empty page to the user later.
- * FIXME How about, you can have a raw empty page, but you cannot set the
- * first bit of the page. Instead of reserving the first byte or long, reserve
- * the first bit. Assert that it is not set before writing. Problem solved,
- * now return to implementing.
  * 
  * @author Alan Gutierrez
  */
