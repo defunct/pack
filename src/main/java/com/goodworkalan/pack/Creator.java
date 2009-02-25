@@ -253,6 +253,8 @@ public final class Creator
 
         new Pack(bouquet).shutdown();
         
-        return new Opener().open(fileChannel);
+        Opener opener = new Opener();
+        opener.open(fileChannel);
+        return opener.getPack();
     }
 }

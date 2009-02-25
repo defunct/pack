@@ -42,7 +42,7 @@ public class PackTestCase
         }
         catch (FileNotFoundException e)
         {
-            throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
+            throw new RuntimeException(e);
         }
         return fileChannel;
     }
@@ -61,7 +61,7 @@ public class PackTestCase
             }
             catch (FileNotFoundException e)
             {
-                throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
+                throw new RuntimeException(e);
             }
             return fileChannel;
         }
@@ -118,8 +118,12 @@ public class PackTestCase
     {
         File file = newFile();
         new Creator().create(newFileChannel(file)).close();
-        new Opener().open(newFileChannel(file)).close();
-        new Opener().open(newFileChannel(file)).close();
+        Opener opener = new Opener();
+        assertTrue(opener.open(newFileChannel(file)));
+        opener.getPack().close();
+        opener = new Opener();
+        assertTrue(opener.open(newFileChannel(file)));
+        opener.getPack().close();
     }
 
     @Test public void commit()
@@ -131,7 +135,9 @@ public class PackTestCase
         mutator.commit();
         pack.close();
         fileChannel = newFileChannel(file);
-        new Opener().open(fileChannel).close();
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        opener.getPack().close();
     }
 
     @Test public void allocate()
@@ -143,7 +149,9 @@ public class PackTestCase
         mutator.allocate(64);
         mutator.commit();
         pack.close();
-        new Opener().open(newFileChannel(file)).close();
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        opener.getPack().close();
     }
     
     @Test public void badSignature() throws IOException
@@ -430,7 +438,9 @@ public class PackTestCase
         
         pack.close();
         fileChannel = newFileChannel(file);
-        pack = new Opener().open(fileChannel);
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         
         mutator = pack.mutate();
         mutator.free(address);
@@ -560,8 +570,8 @@ public class PackTestCase
                 return fileChannel.truncate(size);
             }
         }); */
-        FileChannel file = newFileChannel();
-        Pack pack = newPack.create(file);
+        FileChannel fileChannel = newFileChannel();
+        Pack pack = newPack.create(fileChannel);
         Mutator mutator = pack.mutate();
         long address = mutator.allocate(64);
         ByteBuffer bytes = ByteBuffer.allocateDirect(64);
@@ -583,7 +593,8 @@ public class PackTestCase
         }
         assertTrue(thrown);
         Opener opener = new Opener();
-        pack = opener.open(file);
+        assertTrue(opener.open(fileChannel));
+        opener.getPack().close();
         mutator = pack.mutate();
         assertBuffer(mutator, address, 64);
         mutator.commit();
@@ -603,9 +614,13 @@ public class PackTestCase
         mutator.rollback();
         pack.close();
         fileChannel = newFileChannel(file);
-        new Opener().open(fileChannel).close();
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        opener.getPack().close();
         fileChannel = newFileChannel(file);
-        pack = new Opener().open(fileChannel);
+        opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         mutator = pack.mutate();
         assertEquals(address, mutator.allocate(64));
         mutator.rollback();
@@ -622,7 +637,9 @@ public class PackTestCase
         mutator.commit();
         pack.vacuum();
         pack.close();
-        new Opener().open(newFileChannel(file)).close();
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        opener.getPack().close();
     }
 
     @Test public void vacuum2()
@@ -637,7 +654,9 @@ public class PackTestCase
         rewrite(pack, 4);
         pack.close();
         fileChannel = newFileChannel(file);
-        pack = new Opener().open(fileChannel);
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         mutator = pack.mutate();
         mutator.free(address);
         mutator.commit();
@@ -661,7 +680,9 @@ public class PackTestCase
         rewrite(pack, 4);
         pack.close();
         fileChannel = newFileChannel(file); 
-        pack = new Opener().open(fileChannel);
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         mutator = pack.mutate();
         mutator.free(address1);
         mutator.free(address2);
@@ -683,9 +704,10 @@ public class PackTestCase
         mutator.commit();
         pack.close();
         
-        Opener opener = new Opener();
         fileChannel = newFileChannel(file);
-        pack = opener.open(fileChannel);
+        Opener opener = new Opener();
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         mutator = pack.mutate();
         for (long address : opener.getTemporaryBlocks())
         {
@@ -696,7 +718,8 @@ public class PackTestCase
         
         fileChannel = newFileChannel(file);
         opener = new Opener();
-        pack = opener.open(fileChannel);
+        assertTrue(opener.open(fileChannel));
+        pack = opener.getPack();
         assertEquals(0, opener.getTemporaryBlocks().size());
     }
     

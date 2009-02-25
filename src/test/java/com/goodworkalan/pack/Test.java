@@ -27,11 +27,6 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
-import com.goodworkalan.pack.Creator;
-import com.goodworkalan.pack.Mutator;
-import com.goodworkalan.pack.Opener;
-import com.goodworkalan.pack.Pack;
-
 public class Test
 {
     @Option(name = "-r", usage = "Replay a file.")
@@ -60,7 +55,7 @@ public class Test
             }
             catch (FileNotFoundException e)
             {
-                throw new PackException(PackException.ERROR_FILE_NOT_FOUND, e);
+                throw new RuntimeException(e);
             }
             return fileChannel;
         }
@@ -352,7 +347,9 @@ public class Test
         public void reopen()
         {
             environment.pack.close();
-            environment.pack = new Opener().open(environment.file);
+            Opener opener = new Opener();
+            opener.open(environment.file);
+            environment.pack = opener.getPack();
             mutator = environment.pack.mutate();
         }
 

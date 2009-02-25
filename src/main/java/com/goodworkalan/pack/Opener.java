@@ -21,6 +21,9 @@ public final class Opener
 {
     /** A set of user defined temporary blocks to store intermeiate states. */ 
     private final Set<Long> temporaryBlocks;
+    
+    /** The pack opened by this opener. */
+    private Pack pack;
    
     /**
      * Create a new file opener.
@@ -50,19 +53,14 @@ public final class Opener
      * @param fileChannel
      *            The file channel.
      * @return A map of static block URIs to block addresses.
+     * @throws URISyntaxException If a static URI used to name a block address is malformed.
+     * @throws IOException If an I/O error occurs while reading the static blocks.
      */
-    private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) 
+    private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) throws URISyntaxException, IOException 
     {
         Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
         ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticBlockCount());
-        try
-        {
-            fileChannel.read(bytes, header.getStaticBlockMapStart());
-        }
-        catch (IOException e)
-        {
-            throw new PackException(PackException.ERROR_IO_READ, e);
-        }
+        fileChannel.read(bytes, header.getStaticBlockMapStart());
         bytes.flip();
         int count = bytes.getInt();
         for (int i = 0; i < count; i++)
@@ -74,14 +72,7 @@ public final class Opener
                 uri.append(bytes.getChar());
             }
             long address = bytes.getLong();
-            try
-            {
-                staticBlocks.put(new URI(uri.toString()), address);
-            }
-            catch (URISyntaxException e)
-            {
-                throw new PackException(PackException.ERROR_IO_STATIC_PAGES, e);
-            }
+            staticBlocks.put(new URI(uri.toString()), address);
         }
         return staticBlocks;
     }
@@ -92,7 +83,8 @@ public final class Opener
      * @param fileChannel
      *            The file channel.
      * @return The file header.
-     * @throws PackException If an I/O error occours.
+     * @throws PackException
+     *             If an I/O error occurs.
      */
     private Header readHeader(FileChannel fileChannel)
     {
@@ -108,109 +100,119 @@ public final class Opener
         return new Header(bytes);
     }
 
-    // FIXME Return null?
-    // TODO Comment.
-    public Pack open(FileChannel fileChannel)
+    /**
+     * Opens a file structure that is stored in the given file channel. Returns
+     * false if the file structure was subject to a hard shutdown. If the file
+     * was subject to a hard shutdown, the {@link #getPack()} method will return
+     * a null value.
+     * <p>
+     * When subject to a hard shutdown, client programmers should take action to
+     * backup the file and to run a recovery using a {@link Medic}.
+     * <p>
+     * The opener will only test to see if the file is a {@link Pack} file and
+     * check the shutdown flag. A false return value could mean that the file
+     * was subject to a hard shutdown or could mean that the file is not a
+     * {@link Pack} file at all. A client programmer can learn more about the
+     * state of the underlying file using {@link Medic}.
+     * 
+     * @param fileChannel
+     *            The file channel.
+     * @return True if the file opened successfully, false if the file is not a
+     *         <code>Pack</code> or it was subject to a hard shutdown.
+     * @throws IllegalStateException
+     *             If the opener has already opened a file channel.
+     * 
+     */
+    public boolean open(FileChannel fileChannel)
     {
-        // Read the header and obtain the basic file properties.
-
-        Header header = readHeader(fileChannel);
-
-        if (header.getSignature() != Pack.SIGNATURE)
+        if (pack != null)
         {
-            throw new PackException(PackException.ERROR_SIGNATURE);
-        }
-        
-        int shutdown = header.getShutdown();
-        if (!(shutdown == Pack.HARD_SHUTDOWN || shutdown == Pack.SOFT_SHUTDOWN))
-        {
-            throw new PackException(PackException.ERROR_SHUTDOWN);
-        }
-        
-        if (shutdown == Pack.HARD_SHUTDOWN)
-        {
-            return null;
+            throw new IllegalStateException();
         }
 
-        Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
-
-        int reopenSize = 0;
         try
         {
+            // Read the header and obtain the basic file properties.
+            Header header = readHeader(fileChannel);
+    
+            if (header.getSignature() != Pack.SIGNATURE)
+            {
+                return false;
+            }
+            
+            int shutdown = header.getShutdown();
+            if (shutdown != Pack.SOFT_SHUTDOWN)
+            {
+                return false;
+            }
+    
+            Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
+    
+            int reopenSize = 0;
             reopenSize = (int) (fileChannel.size() - header.getEndOfSheaf());
-        }
-        catch (IOException e)
-        {
-            throw new PackException(PackException.ERROR_IO_SIZE, e);
-        }
-        
-        ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
-        try
-        {
+            
+            ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
             fileChannel.read(reopen, header.getEndOfSheaf());
-        }
-        catch (IOException e)
-        {
-            throw new PackException(PackException.ERROR_IO_READ, e);
-        }
-        reopen.flip();
-        
-        SortedSet<Long> addressPages = new TreeSet<Long>();
-        
-        int addressPageCount = reopen.getInt();
-        for (int i = 0; i < addressPageCount; i++)
-        {
-            addressPages.add(reopen.getLong());
-        }
-        
-        try
-        {
+            reopen.flip();
+            
+            SortedSet<Long> addressPages = new TreeSet<Long>();
+            
+            int addressPageCount = reopen.getInt();
+            for (int i = 0; i < addressPageCount; i++)
+            {
+                addressPages.add(reopen.getLong());
+            }
+            
             fileChannel.truncate(header.getEndOfSheaf());
-        }
-        catch (IOException e)
-        {
-            throw new PackException(PackException.ERROR_IO_TRUNCATE, e);
-        }
-        
-        Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-        AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
-        TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
-        temporaryBlocks.addAll(temporaryPool.toMap().keySet());
-        
-        Set<Long> freedBlockPages = new HashSet<Long>();
-        int blockPageCount = reopen.getInt();
-        for (int i = 0; i < blockPageCount; i++)
-        {
-            long position = reopen.getLong();
-            BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
-            freedBlockPages.add(user.getRawPage().getPosition());
-        }
-
-        header.setShutdown(Pack.HARD_SHUTDOWN);
-        header.setEndOfSheaf(0L);
-
-        try
-        {
+            
+            Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+            AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
+            TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
+            temporaryBlocks.addAll(temporaryPool.toMap().keySet());
+            
+            Set<Long> freedBlockPages = new HashSet<Long>();
+            int blockPageCount = reopen.getInt();
+            for (int i = 0; i < blockPageCount; i++)
+            {
+                long position = reopen.getLong();
+                BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
+                freedBlockPages.add(user.getRawPage().getPosition());
+            }
+    
+            header.setShutdown(Pack.HARD_SHUTDOWN);
+            header.setEndOfSheaf(0L);
+    
             header.write(fileChannel, 0);
-        }
-        catch (IOException e)
-        {
-            throw new PackException(PackException.ERROR_IO_WRITE, e);
-        }
-        
-        try
-        {
+            
             fileChannel.force(true);
+    
+            Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
+                        new AddressPagePool(header.getAddressPagePoolSize(), addressPages), 
+                        temporaryPool);
+            bouquet.getUserPagePool().vacuum(bouquet);
+            pack = bouquet.getPack();
+            
+            return true;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            throw new PackException(PackException.ERROR_IO_FORCE, e);
+            return false;
         }
+    }
 
-        Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
-                    new AddressPagePool(header.getAddressPagePoolSize(), addressPages), 
-                    temporaryPool);
-        bouquet.getUserPagePool().vacuum(bouquet);
-        return bouquet.getPack();
+    /**
+     * Get the pack opened by this opener.
+     * 
+     * @return The pack opened by this opener.
+     * @throws IllegalStateException
+     *             If the opener has not successfully opened a file.
+     */
+    public Pack getPack()
+    {
+        if (pack == null)
+        {
+            throw new IllegalStateException();
+        }
+        return pack;
     }
 }
