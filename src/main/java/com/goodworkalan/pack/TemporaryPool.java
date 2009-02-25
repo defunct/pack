@@ -16,7 +16,8 @@ import com.goodworkalan.sheaf.Sheaf;
  * <p>
  * The temporary page pool manages a reference pool that...
  * <p>
- * FIXME Why is this not a linked list of sorted arrays of addresses?
+ * FIXME Why is this not a linked list of sorted arrays of addresses? No,
+ * because that is a tricky file structure to create via journaling.
  * 
  * @author Alan Gutierrez
  */

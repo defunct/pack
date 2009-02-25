@@ -80,7 +80,15 @@ extends RuntimeException
         this.code = code;
     }
 
-    // TODO Document.
+    /**
+     * Create an exception with the given error code that wraps the given causal
+     * exception.
+     * 
+     * @param code
+     *            The error code.
+     * @param cause
+     *            The wrapped exception.
+     */
     public PackException(int code, Throwable cause)
     {
         super(Integer.toString(code), cause);
