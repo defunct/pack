@@ -47,7 +47,7 @@ extends Page
         bytes.putLong(0);
         bytes.putInt(0);
 
-        getRawPage().invalidate(0, JOURNAL_PAGE_HEADER_SIZE);
+        getRawPage().dirty(0, JOURNAL_PAGE_HEADER_SIZE);
         dirtyPages.add(getRawPage());
         
         this.offset = JOURNAL_PAGE_HEADER_SIZE;
@@ -75,7 +75,7 @@ extends Page
             byteBuffer.clear();
             byteBuffer.putInt(offset);
             byteBuffer.putLong(value);
-            rawPage.invalidate(0, JOURNAL_PAGE_HEADER_SIZE);
+            rawPage.dirty(0, JOURNAL_PAGE_HEADER_SIZE);
         }
     }
 
@@ -171,7 +171,7 @@ extends Page
 
             if (operation.length() + remaining < bytes.remaining())
             {
-                getRawPage().invalidate(offset, operation.length());
+                getRawPage().dirty(offset, operation.length());
                 operation.write(bytes);
                 offset = bytes.position();
                 dirtyPages.add(getRawPage());

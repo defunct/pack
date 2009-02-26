@@ -29,7 +29,7 @@ class ByRemainingPage extends Page
         {
             byteBuffer.put((byte) 0);
         }
-        getRawPage().invalidate(0, getRawPage().getSheaf().getPageSize());
+        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
     }
 
     /**
@@ -87,7 +87,7 @@ class ByRemainingPage extends Page
     {
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putLong(Pack.LONG_SIZE * alignmentIndex, address);
-        getRawPage().invalidate(Pack.LONG_SIZE * alignmentIndex, Pack.LONG_SIZE);
+        getRawPage().dirty(Pack.LONG_SIZE * alignmentIndex, Pack.LONG_SIZE);
     }
 
     /**
@@ -124,6 +124,6 @@ class ByRemainingPage extends Page
         int alignment = getAlignment();
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putLong(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, position);
-        getRawPage().invalidate(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, Pack.LONG_SIZE);
+        getRawPage().dirty(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, Pack.LONG_SIZE);
     }
 }

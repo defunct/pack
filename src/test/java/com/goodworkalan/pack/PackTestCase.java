@@ -15,7 +15,7 @@ import java.nio.channels.FileChannel;
 
 import org.testng.annotations.Test;
 
-import com.goodworkalan.sheaf.DirtyRegionMap;
+import com.goodworkalan.sheaf.DirtyMap;
 
 public class PackTestCase
 {
@@ -80,7 +80,7 @@ public class PackTestCase
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        DirtyRegionMap regional = new DirtyRegionMap(0L)
+        DirtyMap regional = new DirtyMap(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -88,14 +88,14 @@ public class PackTestCase
                 return expected;
             }
         };
-        regional.invalidate(-1, 10);
+        regional.dirty(-1, 10);
     }
 
     @Test(expectedExceptions=java.lang.IllegalStateException.class) public void regionalUpperRange()
     {
         final ByteBuffer expected = ByteBuffer.allocateDirect(64);
 
-        DirtyRegionMap regional = new DirtyRegionMap(0L)
+        DirtyMap regional = new DirtyMap(0L)
         {
             @Override
             public ByteBuffer getByteBuffer()
@@ -103,7 +103,7 @@ public class PackTestCase
                 return expected;
             }
         };
-        regional.invalidate(0, 65);
+        regional.dirty(0, 65);
     }
 
     @Test public void header()

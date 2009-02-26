@@ -115,7 +115,7 @@ class BlockPage extends Page
 
         bytes.clear();
 
-        getRawPage().invalidate(0, Pack.BLOCK_PAGE_HEADER_SIZE);
+        getRawPage().dirty(0, Pack.BLOCK_PAGE_HEADER_SIZE);
         bytes.putLong(0L);
         bytes.putInt(getDiskBlockCount());
 
@@ -379,7 +379,7 @@ class BlockPage extends Page
                     advance(bytes, size);
                 }
             }
-            getRawPage().invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
+            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
             getRawPage().getByteBuffer().putInt(Pack.LONG_SIZE, getDiskBlockCount());
         }
     }
@@ -547,7 +547,7 @@ class BlockPage extends Page
                 throw new IllegalStateException();
             }
 
-            getRawPage().invalidate(bytes.position(), blockSize);
+            getRawPage().dirty(bytes.position(), blockSize);
 
             bytes.putInt(blockSize);
             bytes.putLong(address);
@@ -557,7 +557,7 @@ class BlockPage extends Page
 
             bytes.clear();
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
-            getRawPage().invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
+            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
 
             dirtyPages.add(getRawPage());
         }
@@ -605,7 +605,7 @@ class BlockPage extends Page
                 {
                     throw new BufferOverflowException();
                 }
-                getRawPage().invalidate(bytes.position(), bytes.remaining());
+                getRawPage().dirty(bytes.position(), bytes.remaining());
                 bytes.put(data);
                 bytes.limit(bytes.capacity());
                 dirtyPages.add(getRawPage());
@@ -707,7 +707,7 @@ class BlockPage extends Page
                     size = -size;
                 }
     
-                getRawPage().invalidate(offset, Pack.INT_SIZE);
+                getRawPage().dirty(offset, Pack.INT_SIZE);
                 bytes.putInt(offset, size);
     
                 dirtyPages.add(getRawPage());
@@ -788,12 +788,12 @@ class BlockPage extends Page
             
             if (length != 0)
             {
-                getRawPage().invalidate(to, length);
+                getRawPage().dirty(to, length);
             }
     
              count--;
     
-            getRawPage().invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
+            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
         }
     }

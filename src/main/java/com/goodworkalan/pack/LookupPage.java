@@ -28,7 +28,7 @@ class LookupPage extends Page
         {
             byteBuffer.put((byte) 0);
         }
-        getRawPage().invalidate(0, getRawPage().getSheaf().getPageSize());
+        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
     }
 
     /**
@@ -43,7 +43,7 @@ class LookupPage extends Page
     {
         dirtyPages.add(getRawPage());
         getRawPage().getByteBuffer().putInt(0, blockSize);
-        getRawPage().invalidate(0, Pack.INT_SIZE);
+        getRawPage().dirty(0, Pack.INT_SIZE);
     }
     
     /**
@@ -86,7 +86,7 @@ class LookupPage extends Page
             {
                 byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
                 byteBuffer.putLong(i, 0L);
-                getRawPage().invalidate(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
             }
         }
         
@@ -94,7 +94,7 @@ class LookupPage extends Page
         {
             byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
             byteBuffer.putLong(i, value);
-            getRawPage().invalidate(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+            getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
             return true;
         }
         
@@ -103,7 +103,7 @@ class LookupPage extends Page
         {
         }
 
-        getRawPage().invalidate(i, j - i);
+        getRawPage().dirty(i, j - i);
         for (; j != i; j -= Pack.LONG_SIZE)
         {
             byteBuffer.putLong(j - Pack.LONG_SIZE, byteBuffer.getLong(j));
@@ -137,7 +137,7 @@ class LookupPage extends Page
             {
                 dirtyPages.add(getRawPage());
                 byteBuffer.putLong(offset, 0L);
-                getRawPage().invalidate(offset, Pack.LONG_SIZE);
+                getRawPage().dirty(offset, Pack.LONG_SIZE);
                 return value;
             }
         }
@@ -193,7 +193,7 @@ class LookupPage extends Page
         {
             dirtyPages.add(getRawPage());
             byteBuffer.putLong(offset + Pack.LONG_SIZE * (2 + mid), 0L);
-            getRawPage().invalidate(offset + Pack.LONG_SIZE * (2 + mid), Pack.LONG_SIZE);
+            getRawPage().dirty(offset + Pack.LONG_SIZE * (2 + mid), Pack.LONG_SIZE);
             return true;
         }
         return false;
@@ -236,7 +236,7 @@ class LookupPage extends Page
             {
                 byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
                 byteBuffer.putLong(i, 0L);
-                getRawPage().invalidate(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
             }
         }
     }
@@ -257,7 +257,7 @@ class LookupPage extends Page
         dirtyPages.add(getRawPage());
         int offset = (int) (position - getRawPage().getPosition());
         getRawPage().getByteBuffer().putLong(offset, previous);
-        getRawPage().invalidate(offset, Pack.LONG_SIZE);
+        getRawPage().dirty(offset, Pack.LONG_SIZE);
     }
 
     /**
@@ -290,7 +290,7 @@ class LookupPage extends Page
         dirtyPages.add(getRawPage());
         int offset = (int) (position - getRawPage().getPosition());
         getRawPage().getByteBuffer().putLong(offset+ Pack.LONG_SIZE, next);
-        getRawPage().invalidate(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
+        getRawPage().dirty(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
     }
 
     /**
@@ -329,7 +329,7 @@ class LookupPage extends Page
             if (byteBuffer.getLong(i) == 0L)
             {
                 dirtyPages.add(getRawPage());
-                getRawPage().invalidate(i, Pack.LONG_SIZE);
+                getRawPage().dirty(i, Pack.LONG_SIZE);
                 byteBuffer.putLong(i, previous);
                 byteBuffer.putLong(i +  Pack.LONG_SIZE , Long.MIN_VALUE);
                 return getRawPage().getPosition() + i;

@@ -102,7 +102,7 @@ final class AddressPage extends Page
             freeCount++;
         }
 
-        getRawPage().invalidate(0, getRawPage().getSheaf().getPageSize());
+        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
         dirtyPages.add(getRawPage());
     }
     
@@ -151,7 +151,7 @@ final class AddressPage extends Page
                 {
                     dirtyPages.add(getRawPage());
                     bytes.putLong(offset, Long.MAX_VALUE);
-                    getRawPage().invalidate(offset, Pack.LONG_SIZE);
+                    getRawPage().dirty(offset, Pack.LONG_SIZE);
                     freeCount--;
                     return getRawPage().getPosition() + offset;
                 }
@@ -180,7 +180,7 @@ final class AddressPage extends Page
             ByteBuffer bytes = getRawPage().getByteBuffer();
             int offset = (int) (address - getRawPage().getPosition());
             bytes.putLong(offset, position);
-            getRawPage().invalidate(offset, Pack.LONG_SIZE);
+            getRawPage().dirty(offset, Pack.LONG_SIZE);
             dirtyPages.add(getRawPage());
         }
     }
@@ -220,7 +220,7 @@ final class AddressPage extends Page
             {
                 bytes.putLong(offset, 0L);
                 
-                getRawPage().invalidate(offset, Pack.LONG_SIZE);
+                getRawPage().dirty(offset, Pack.LONG_SIZE);
                 dirtyPages.add(getRawPage());
                 
                 freeCount++;

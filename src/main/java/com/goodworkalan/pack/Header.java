@@ -2,16 +2,16 @@ package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
 
-import com.goodworkalan.sheaf.DirtyRegionMap;
+import com.goodworkalan.sheaf.DirtyMap;
 
 /**
  * Reads and writes the header fields of a pack file. The header is built on top
- * of {@link DirtyRegionMap} so that writing header fields will only cause the
+ * of {@link DirtyMap} so that writing header fields will only cause the
  * dirty fields to be written when the header is flushed.
  * 
  * @author Alan Gutierrez
  */
-final class Header extends DirtyRegionMap
+final class Header extends DirtyMap
 {
     /** The contents of the header region of the file. */
     private final ByteBuffer bytes;
@@ -70,7 +70,7 @@ final class Header extends DirtyRegionMap
     public void setSignature(long signature)
     {
         bytes.putLong(0, signature);
-        invalidate(0, Pack.LONG_SIZE);
+        dirty(0, Pack.LONG_SIZE);
     }
 
     /**
@@ -96,7 +96,7 @@ final class Header extends DirtyRegionMap
     public void setShutdown(int shutdown)
     {
         bytes.putInt(Pack.LONG_SIZE, shutdown);
-        invalidate(Pack.LONG_SIZE, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
     }
 
     /**
@@ -118,7 +118,7 @@ final class Header extends DirtyRegionMap
     public void setPageSize(int pageSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE, pageSize);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE, Pack.INT_SIZE);
     }
 
     /**
@@ -140,7 +140,7 @@ final class Header extends DirtyRegionMap
     public void setAlignment(int alignment)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 2, alignment);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 2, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 2, Pack.INT_SIZE);
     }
 
     /**
@@ -162,7 +162,7 @@ final class Header extends DirtyRegionMap
     public void setJournalCount(int journalCount)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 3, journalCount);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 3, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 3, Pack.INT_SIZE);
     }
 
     /**
@@ -184,7 +184,7 @@ final class Header extends DirtyRegionMap
     public void setStaticBlockCount(int staticPageCount)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 4, staticPageCount);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 4, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 4, Pack.INT_SIZE);
     }
 
     /**
@@ -208,7 +208,7 @@ final class Header extends DirtyRegionMap
     public void setHeaderSize(int headerSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 5, headerSize);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 5, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 5, Pack.INT_SIZE);
     }
 
     /**
@@ -232,7 +232,7 @@ final class Header extends DirtyRegionMap
     public void setAddressPagePoolSize(int addressPagePoolSize)
     {
         bytes.putInt(Pack.LONG_SIZE + Pack.INT_SIZE * 6, addressPagePoolSize);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 6, Pack.INT_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 6, Pack.INT_SIZE);
     }
 
     /**
@@ -256,7 +256,7 @@ final class Header extends DirtyRegionMap
     public void setUserBoundary(long userBoundary)
     {
         bytes.putLong(Pack.LONG_SIZE + Pack.INT_SIZE * 7, userBoundary);
-        invalidate(Pack.LONG_SIZE + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
+        dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
     // FIXME Outgoing.
@@ -269,7 +269,7 @@ final class Header extends DirtyRegionMap
     public void setEndOfSheaf(long interimBoundary)
     {
         bytes.putLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, interimBoundary);
-        invalidate(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
+        dirty(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
     /**
@@ -293,7 +293,7 @@ final class Header extends DirtyRegionMap
     public void setFirstTemporaryNode(long temporaries)
     {
         bytes.putLong(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, temporaries);
-        invalidate(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
+        dirty(Pack.LONG_SIZE * 3 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
     /**
@@ -317,6 +317,6 @@ final class Header extends DirtyRegionMap
     public void setByRemainingTable(long byRemainingTable)
     {
         bytes.putLong(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, byRemainingTable);
-        invalidate(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
+        dirty(Pack.LONG_SIZE * 4 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 }
