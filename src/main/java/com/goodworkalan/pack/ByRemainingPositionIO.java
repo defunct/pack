@@ -2,34 +2,31 @@ package com.goodworkalan.pack;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 
-public class ByRemainingPositionIO implements PositionIO
+// TODO Document.
+public class ByRemainingPositionIO implements LookupBlockPositionIO
 {
-    private final ByRemainingPage byRemainingTable;
+    // TODO Document.
+    private final ByRemainingPage byRemainingPage;
     
+    // TODO Document.
     private final int alignmentIndex;
     
-    public ByRemainingPositionIO(ByRemainingPage byRemainingTable, int alignmentIndex)
+    // TODO Document.
+    public ByRemainingPositionIO(ByRemainingPage byRemainingPage, int alignmentIndex)
     {
-        this.byRemainingTable = byRemainingTable;
+        this.byRemainingPage = byRemainingPage;
         this.alignmentIndex = alignmentIndex;
     }
     
+    // TODO Document.
     public void write(long position, DirtyPageSet dirtyPages)
     {
-        byRemainingTable.setSlotPosition(alignmentIndex, position, dirtyPages);
+        byRemainingPage.setSlotPosition(alignmentIndex, position, dirtyPages);
     }
+
+    // TODO Document.
     public long read()
     {
-        return byRemainingTable.getSlotPosition(alignmentIndex);
-    }
-    
-    public void writeAlloc(int slotIndex, long position, DirtyPageSet dirtyPages)
-    {
-        byRemainingTable.setAllocSlotPosition(slotIndex, position, dirtyPages);
-    }
-    
-    public long readAlloc(int slotIndex)
-    {
-        return byRemainingTable.getAllocSlotPosition(slotIndex);
+        return byRemainingPage.getSlotPosition(alignmentIndex);
     }
 }

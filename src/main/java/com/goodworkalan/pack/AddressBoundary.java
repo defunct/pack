@@ -12,8 +12,6 @@ import com.goodworkalan.sheaf.Sheaf;
  * The boundary between address pages and non-address pages. The boundary can
  * only be modified if the {@link Bouquet#getPageMoveLock() page move lock} of
  * the bouquet is held exclusively.
- * <p>
- * FIXME Move the read/write lock into this class.
  * 
  * @author Alan Gutierrez
  */
@@ -74,10 +72,12 @@ class AddressBoundary
     {
         position += pageSize;
     }
-    
+
     /**
-     * Return a file position based on the given file position adjusted by page
-     * moves stored in the bouquets move map.
+     * Return a file position based on the given file position adjusting the
+     * position if it references a page that was moved to a new position to
+     * create an address page in the address page region at the start of the
+     * file.
      * <p>
      * The adjustment will account for offset into the page position. This is
      * necessary for next operations in journals, which may jump to any

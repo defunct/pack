@@ -6,15 +6,15 @@ import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
 
 /**
- * A page for managing slots of file regions containing file positions in a
- * doubly linked list of said slots.
+ * A page for managing sorted blocks of long values in a doubly linked list of
+ * said blocks.
  * 
  * @author Alan Gutierrez
  */
-class SlotPage extends Page
+class LookupPage extends Page
 {
     /**
-     * Create a by remaining slot page by writing zero to the entire new page.
+     * Create a long page by writing zero to the entire new page.
      * 
      * @param dirtyPages
      *            The dirty page set.
@@ -32,54 +32,55 @@ class SlotPage extends Page
     }
 
     /**
-     * Set the size of a slot in this page as a count of longs.
+     * Set the size of a block in this page as a count of longs.
      * 
-     * @param slotSize
-     *            The slot size.
+     * @param blockSize
+     *            The block size.
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void setSlotSize(int slotSize, DirtyPageSet dirtyPages)
+    public void setBlockSize(int blockSize, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putInt(0, slotSize);
+        getRawPage().getByteBuffer().putInt(0, blockSize);
         getRawPage().invalidate(0, Pack.INT_SIZE);
     }
     
     /**
-     * Get the size of a slot in this page as a count of longs.
+     * Get the size of a block of longs in this page.
      * 
-     * @return The slot size.
+     * @return The block size.
      */
-    public int getSlotSize()
+    public int getBlockSize()
     {
         return getRawPage().getByteBuffer().getInt(0);
     }
 
     /**
-     * Add the given position to the set of positions at the given set position.
-     * Returns true if the position is added, false if the set is full.
+     * Add the given long value to the block of long values at the given block
+     * position. Returns true if the long value is added, false if the block is
+     * full.
      * 
-     * @param slotPosition
-     *            The position of start the set on disk.
      * @param position
-     *            The file position.
+     *            The position of start the block on disk.
+     * @param value
+     *            The long value.
      * @param dirtyPages
      *            The dirty page set.
      * @return True if the position was added, false if the set is full.
      */
-    public boolean add(long slotPosition, long position, boolean force, DirtyPageSet dirtyPages)
+    public boolean add(long position, long value, boolean force, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (slotPosition - getRawPage().getPosition());
-        int slotSize = getSlotSize();
-        if (!force && byteBuffer.getLong(offset + (slotSize - 1) * Pack.LONG_SIZE) != 0L)
+        int offset = (int) (position - getRawPage().getPosition());
+        int blockSize = getBlockSize();
+        if (!force && byteBuffer.getLong(offset + (blockSize - 1) * Pack.LONG_SIZE) != 0L)
         {
             return false;
         }
 
         int i;
-        for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) < position; i += Pack.LONG_SIZE)
+        for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) < value; i += Pack.LONG_SIZE)
         {
             if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
             {
@@ -92,7 +93,7 @@ class SlotPage extends Page
         if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
         {
             byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
-            byteBuffer.putLong(i, position);
+            byteBuffer.putLong(i, value);
             getRawPage().invalidate(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
             return true;
         }
@@ -108,28 +109,28 @@ class SlotPage extends Page
             byteBuffer.putLong(j - Pack.LONG_SIZE, byteBuffer.getLong(j));
         }
 
-        byteBuffer.putLong(i, position);
+        byteBuffer.putLong(i, value);
         
         return true;
     }
 
     /**
-     * Remove and return a value from the set at the given set position or zero
-     * if there are not values in this set. If a value is removed from the page,
-     * this page is added to the dirty page set.
+     * Remove and return a long value from the block of long values at the given
+     * block position or zero if there are no values in the block. If a value is
+     * removed from the page, this page is added to the dirty page set.
      * 
-     * @param slotPosition
-     *            The position of start the set on disk.
+     * @param position
+     *            The position of start the block on disk.
      * @param dirtyPages
      *            The dirty page set.
-     * @return
+     * @return The removed long value or zero of the block is empty.
      */
-    public long remove(long slotPosition, DirtyPageSet dirtyPages)
+    public long remove(long position, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (slotPosition - getRawPage().getPosition());
-        int slotSize = getSlotSize();
-        for (int i = slotSize - Pack.LONG_SIZE; i != offset + Pack.LONG_SIZE; i -= Pack.LONG_SIZE)
+        int offset = (int) (position - getRawPage().getPosition());
+        int blockSize = getBlockSize();
+        for (int i = blockSize - Pack.LONG_SIZE; i != offset + Pack.LONG_SIZE; i -= Pack.LONG_SIZE)
         {
             long value = byteBuffer.getLong(offset);
             if (value != 0L)
@@ -144,24 +145,25 @@ class SlotPage extends Page
     }
 
     /**
-     * Remove a given position from the slot at the given slot position if it
-     * exists in the slot. Return true if the position existed and was removed,
-     * false if it did not exist.
+     * Remove a given long value from the block of long values at the given
+     * block position if the long value exists in the block. Return true if the
+     * long value existed and was removed, false if it did not exist in the
+     * block.
      * 
-     * @param slotPosition
-     *            The slot position.
      * @param position
+     *            The position of the block.
+     * @param value
      *            The file position.
      * @param dirtyPages
      *            The dirty page set.
-     * @return True if the position existed and was removed, false if it did not
-     *         exist.
+     * @return True if the long value existed and was removed, false if it did
+     *         not exist in the block.
      */
-    public boolean remove(long slotPosition, long position, DirtyPageSet dirtyPages)
+    public boolean remove(long position, long value, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (slotPosition - getRawPage().getPosition());
-        int slotSize = getSlotSize();
+        int offset = (int) (position - getRawPage().getPosition());
+        int slotSize = getBlockSize();
         int low = 0;
         int j;
         for (j = offset + slotSize * Pack.LONG_SIZE; byteBuffer.getLong(j) == 0L; j -= Pack.LONG_SIZE)
@@ -169,16 +171,16 @@ class SlotPage extends Page
         }
         int high = (j - offset) - 2;
         int mid = -1;
-        long value = 0L;
+        long found = 0L;
         while (low <= high)
         {
             mid = low + ((high - low) / 2);
-            value = byteBuffer.getLong(offset + Pack.LONG_SIZE * (2 + mid));
-            if (value > position)
+            found = byteBuffer.getLong(offset + Pack.LONG_SIZE * (2 + mid));
+            if (found > value)
             {
                 high = mid - 1;
             }
-            else if (value < position)
+            else if (found < value)
             {
                 low = mid + 1;
             }
@@ -187,7 +189,7 @@ class SlotPage extends Page
                 break;
             }
         }
-        if (value == position)
+        if (found == value)
         {
             dirtyPages.add(getRawPage());
             byteBuffer.putLong(offset + Pack.LONG_SIZE * (2 + mid), 0L);
@@ -198,35 +200,35 @@ class SlotPage extends Page
     }
 
     /**
-     * Return the smallest page position value in the slot indicated by the
-     * given slot position. Returns zero if the slot is empty.
+     * Return the smallest long value in the block of long values indicated by
+     * the given position. Returns zero if the block is empty.
      * 
-     * @param slotPosition
-     *            The slot position.
-     * @return The smallest page position value in the slot or zero of the slot
+     * @param block
+     *            The block position.
+     * @return The smallest page long value in the block or zero of the block
      *         is empty.
      */
-    public long least(long slotPosition)
+    public long least(long block)
     {
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (block - getRawPage().getPosition());
         return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE * 2);
     }
 
     /**
-     * Cleanup after the removal of a single slot position by overwriting the
-     * empty slot by shifting all the following slots by one slot position
-     * toward the start of the slot array.
+     * Cleanup after the removal of a long value by overwriting the empty long
+     * value by shifting all the following long values by one long value toward
+     * the start of the slot array.
      * 
-     * @param slotPosition
-     *            The slot position.
+     * @param position
+     *            The block position.
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void compact(long slotPosition, DirtyPageSet dirtyPages)
+    public void compact(long position, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (position - getRawPage().getPosition());
         int i;
         for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) != 0L; i += Pack.LONG_SIZE)
         {
@@ -240,89 +242,88 @@ class SlotPage extends Page
     }
 
     /**
-     * Set the previous set position of the set at the given set position to the
-     * given previous set position. The sets participate in a linked list of
-     * sets for a specific alignment.
+     * Set the previous block position of the block of long values at the given
+     * block position to the given previous block position.
      * 
-     * @param slotPosition
+     * @param position
      *            The position of start the set on disk.
      * @param previous
      *            The position of the previous set.
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void setPrevious(long slotPosition, long previous, DirtyPageSet dirtyPages)
+    public void setPrevious(long position, long previous, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (position - getRawPage().getPosition());
         getRawPage().getByteBuffer().putLong(offset, previous);
         getRawPage().invalidate(offset, Pack.LONG_SIZE);
     }
 
     /**
-     * Get the previous set position of the set at the given set position. The
-     * sets participate in a linked list of sets for a specific alignment.
+     * Get the previous block position of the block of long values at the given
+     * block position.
      * 
-     * @param slotPosition
-     *            The slot position on disk.
-     * @return The previous slot position.
+     * @param position
+     *            The block position.
+     * @return The previous block position.
      */
-    public long getPrevious(long slotPosition)
+    public long getPrevious(long position)
     {
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (position - getRawPage().getPosition());
         return getRawPage().getByteBuffer().getLong(offset);
     }
 
     /**
-     * Set the next set position of the set at the given set position to the
-     * given next set position. The sets participate in a linked list of sets
-     * for a specific alignment.
+     * Set the previous block position of the block of long values at the given
+     * block position.
      * 
-     * @param slotPosition
-     *            The position of start the set on disk.
+     * @param position
+     *           The block position.
      * @param next
-     *            The next of the previous set.
+     *            The position of the next block.
      * @param dirtyPages
      *            The dirty page set.
      */
-    public void setNext(long slotPosition, long next, DirtyPageSet dirtyPages)
+    public void setNext(long position, long next, DirtyPageSet dirtyPages)
     {
         dirtyPages.add(getRawPage());
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (position - getRawPage().getPosition());
         getRawPage().getByteBuffer().putLong(offset+ Pack.LONG_SIZE, next);
         getRawPage().invalidate(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
     }
 
     /**
-     * Get the previous set position of the set at the given set position. The
-     * sets participate in a linked list of sets for a specific alignment.
+     * Get the previous block position of the block of long values at the given
+     * block position.
      * 
-     * @param slotPosition
-     *            The slot position on disk.
-     * @return The previous slot position.
+     * @param position
+     *            The block position.
+     * @return The previous block position.
      */
-    public long getNext(long slotPosition)
+    public long getNext(long position)
     {
-        int offset = (int) (slotPosition - getRawPage().getPosition());
+        int offset = (int) (position - getRawPage().getPosition());
         return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE);
     }
 
     /**
-     * Allocate a new slot from this page whose previous slot is set to the
-     * given previous slot position. Returns the position of the newly allocated
-     * slot or zero of there are no more slots available in this page.
+     * Allocate a new block of longs from this page whose previous block is set
+     * to the given previous block position. Returns the position of the newly
+     * allocated block of longs or zero of there are no more blocks available in
+     * this page.
      * 
      * @param previous
      *            The previous slot.
      * @param dirtyPages
      *            The dirty page set.
-     * @return The address of the newly allocated slot or zero.
+     * @return The address of the newly allocated block or zero.
      */
-    public long allocateSlot(long previous, DirtyPageSet dirtyPages)
+    public long allocateBlock(long previous, DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
         int pageSize = getRawPage().getSheaf().getPageSize();
-        int slotSize = getSlotSize() * Pack.LONG_SIZE;
+        int slotSize = getBlockSize() * Pack.LONG_SIZE;
         for (int i = Pack.INT_SIZE; i + slotSize < pageSize; i += slotSize)
         {
             if (byteBuffer.getLong(i) == 0L)
@@ -338,26 +339,26 @@ class SlotPage extends Page
     }
 
     /**
-     * Remove a slot from the slot page returning an array of the the slot
-     * contents including the previous and next slot positions. Returns null if
-     * there are no slots allocated in this page.
+     * Remove a block of longs from the slot long returning an array of the the
+     * long values including the previous and next long block positions. Returns
+     * null if there are no blocks allocated in this page.
      * 
      * @param dirtyPages
      *            The dirty page set.
-     * @return The contents of the removed slot or null if there are no slots.
+     * @return The contents of the removed block or null if there are no blocks.
      */
-    public long[] removeSlot(DirtyPageSet dirtyPages)
+    public long[] removeBlock(DirtyPageSet dirtyPages)
     {
         ByteBuffer byteBuffer = getRawPage().getByteBuffer();
         int pageSize = getRawPage().getSheaf().getPageSize();
-        int slotSize = getSlotSize() * Pack.LONG_SIZE;
-        for (int i = Pack.INT_SIZE; i + slotSize < pageSize; i += slotSize)
+        int blockSize = getBlockSize() * Pack.LONG_SIZE;
+        for (int i = Pack.INT_SIZE; i + blockSize < pageSize; i += blockSize)
         {
             if (byteBuffer.getLong(i) != 0L)
             {
                 dirtyPages.add(getRawPage());
-                long[] values = new long[getSlotSize()];
-                for (int j = i; j < getSlotSize(); j++)
+                long[] values = new long[getBlockSize()];
+                for (int j = i; j < getBlockSize(); j++)
                 {
                     values[j] = byteBuffer.getLong(i + j * Pack.LONG_SIZE);
                     byteBuffer.putLong(i + j * Pack.LONG_SIZE, 0L);

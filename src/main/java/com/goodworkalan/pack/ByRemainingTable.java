@@ -1,7 +1,6 @@
 package com.goodworkalan.pack;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 import com.goodworkalan.pack.vacuum.ByRemaining;
@@ -58,7 +57,8 @@ final class ByRemainingTable implements ByRemaining
      */
     private ByRemainingPage byRemainingPage;
     
-    private final List<SlotPagePool> slotPagePools;
+    // TODO Document.
+    private final List<LookupPagePool> lookupPagePools;
     
     /**
      * The dirty page set to use when writing the by remaining page and slot
@@ -86,37 +86,10 @@ final class ByRemainingTable implements ByRemaining
         this.interimPagePool = interimPagePool;
         this.alignment = alignment;
         this.dirtyPages = new DirtyPageSet();
-        this.slotPagePools = new ArrayList<SlotPagePool>();
+        this.lookupPagePools = new ArrayList<LookupPagePool>();
         this.maximumBlockSize = maximumBlockSize;
     }
-    
-    /**
-     * Create a list of slots sizes, starting from the full page size less the
-     * slot header, then a sequence that divides the previous value in half,
-     * ending with a slot size that is no less than 8 slots.
-     * 
-     * @param pageSize
-     *            The page size.
-     * @param alignment
-     *            The block alignment.
-     * @return A list of
-     */
-    private static LinkedList<Integer> getSlotSizes(int pageSize, int alignment)
-    {
-        LinkedList<Integer> slotSizes = new LinkedList<Integer>();
-        int slotCount = 1;
-        for (;;)
-        {
-            int slotSize = getPositionBlockCount(pageSize, slotCount);
-            if (slotSize < 8)
-            {
-                break;
-            }
-            slotSizes.add(slotSize);
-            slotCount *= 2;
-        }
-        return slotSizes;
-    }
+
 
     /**
      * Populate the list of position pages indexed by alignment index.
@@ -125,10 +98,10 @@ final class ByRemainingTable implements ByRemaining
     {
         int pageSize = sheaf.getPageSize();
         int alignmentCount = pageSize / alignment;
-        List<SlotPagePool> slotPagePools = new ArrayList<SlotPagePool>(alignmentCount);
+        LookupPagePositionIO lookupPagePositionIO = new ByRemainingPagePositionIO(byRemainingPage, pageSize, alignment);
         for (int i = 0; i < alignmentCount; i++)
         {
-            slotPagePools.add(new SlotPagePool(sheaf, userBoundary, interimPagePool, new ByRemainingPositionIO(byRemainingPage, i), getSlotSizes(pageSize, alignment)));
+            lookupPagePools.add(new LookupPagePool(sheaf, userBoundary, interimPagePool, lookupPagePositionIO, new ByRemainingPositionIO(byRemainingPage, i)));
         }
     }
 
@@ -154,20 +127,6 @@ final class ByRemainingTable implements ByRemaining
         createSlotPagePools();
     }
 
-    /**
-     * Return the count of position blocks in a page for the given position
-     * count.
-     * 
-     * @param pageSize
-     *            The page size.
-     * @param positionCount
-     *            The number of positions in a position block in a page.
-     * @return The number of position blocks that will fit on the page.
-     */
-    private static int getPositionBlockCount(int pageSize, int positionCount)
-    {
-        return ((Pack.INT_SIZE - pageSize) / Pack.LONG_SIZE) / positionCount;
-    }
     
     /**
      * Add the page position and amount of bytes remaining for block allocation
@@ -222,7 +181,7 @@ final class ByRemainingTable implements ByRemaining
         if (aligned != 0)
         {
             int alignmentIndex = aligned / alignment;
-            slotPagePools.get(alignmentIndex).add(remaining, dirtyPages); 
+            lookupPagePools.get(alignmentIndex).add(remaining, dirtyPages); 
         }
     }
 
@@ -240,7 +199,7 @@ final class ByRemainingTable implements ByRemaining
     {
         int aligned = remaining / alignment * alignment;
         int alignmentIndex = alignment / aligned;
-        slotPagePools.get(alignmentIndex).remove(position, dirtyPages);
+        lookupPagePools.get(alignmentIndex).remove(position, dirtyPages);
     }
     
     /**
@@ -263,7 +222,7 @@ final class ByRemainingTable implements ByRemaining
         {
             for (;;)
             {
-                position = slotPagePools.get(alignmentIndex).poll(dirtyPages);
+                position = lookupPagePools.get(alignmentIndex).poll(dirtyPages);
                 if (position == 0L)
                 {
                     break;
