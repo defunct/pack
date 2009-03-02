@@ -42,13 +42,13 @@ final class ByRemainingTable implements ByRemaining
 {
     /** The bouquet of services. */
     private final Sheaf sheaf;
-    
+
     private final AddressBoundary userBoundary;
-    
+
     private final InterimPagePool interimPagePool;
-    
+
     private final int alignment;
-    
+
     private final int maximumBlockSize;
 
     /**
@@ -56,10 +56,12 @@ final class ByRemainingTable implements ByRemaining
      * grouped by slot size.
      */
     private ByRemainingPage byRemainingPage;
-    
-    // TODO Document.
+
+    /**
+     * A list of lookup page pools, one for each aligned by remaining value.
+     */
     private final List<LookupPagePool> lookupPagePools;
-    
+
     /**
      * The dirty page set to use when writing the by remaining page and slot
      * pages.
@@ -79,7 +81,9 @@ final class ByRemainingTable implements ByRemaining
      * @param alignment
      *            The block alignment.
      */
-    public ByRemainingTable(Sheaf sheaf, AddressBoundary userBoundary, InterimPagePool interimPagePool, int alignment, int maximumBlockSize, DirtyPageSet dirtyPages)
+    public ByRemainingTable(Sheaf sheaf, AddressBoundary userBoundary,
+            InterimPagePool interimPagePool, int alignment,
+            int maximumBlockSize, DirtyPageSet dirtyPages)
     {
         this.sheaf = sheaf;
         this.userBoundary = userBoundary;
@@ -90,7 +94,6 @@ final class ByRemainingTable implements ByRemaining
         this.maximumBlockSize = maximumBlockSize;
     }
 
-
     /**
      * Populate the list of position pages indexed by alignment index.
      */
@@ -98,10 +101,13 @@ final class ByRemainingTable implements ByRemaining
     {
         int pageSize = sheaf.getPageSize();
         int alignmentCount = pageSize / alignment;
-        LookupPagePositionIO lookupPagePositionIO = new ByRemainingPagePositionIO(byRemainingPage, pageSize, alignment);
+        LookupPagePositionIO lookupPagePositionIO = new ByRemainingPagePositionIO(
+                byRemainingPage, pageSize);
         for (int i = 0; i < alignmentCount; i++)
         {
-            lookupPagePools.add(new LookupPagePool(sheaf, userBoundary, interimPagePool, lookupPagePositionIO, new ByRemainingPositionIO(byRemainingPage, i)));
+            lookupPagePools.add(new LookupPagePool(sheaf, userBoundary,
+                    interimPagePool, lookupPagePositionIO,
+                    new ByRemainingPositionIO(byRemainingPage, i)));
         }
     }
 
@@ -118,7 +124,9 @@ final class ByRemainingTable implements ByRemaining
         {
             if (position == 0L)
             {
-                byRemainingPage = interimPagePool.newInterimPage(sheaf, ByRemainingPage.class, new ByRemainingPage(), dirtyPages, false);
+                byRemainingPage = interimPagePool.newInterimPage(sheaf,
+                        ByRemainingPage.class, new ByRemainingPage(),
+                        dirtyPages, false);
             }
             else
             {
@@ -127,16 +135,15 @@ final class ByRemainingTable implements ByRemaining
         createSlotPagePools();
     }
 
-    
     /**
      * Add the page position and amount of bytes remaining for block allocation
      * of the given block page to the table. If the amount of bytes remaining
      * for block allocation rounds down to zero, the page position is not added
      * to the table.
      * <p>
-     * If the page position of the block has been reserved, the page will be
-     * put into a waiting state until the page has been released, at which
-     * point it will be added.
+     * If the page position of the block has been reserved, the page will be put
+     * into a waiting state until the page has been released, at which point it
+     * will be added.
      * 
      * @param blocks
      *            The block page to add.
@@ -176,12 +183,12 @@ final class ByRemainingTable implements ByRemaining
     public void add(long position, int remaining)
     {
         load(0L);
-        
+
         int aligned = remaining / alignment * alignment;
         if (aligned != 0)
         {
             int alignmentIndex = aligned / alignment;
-            lookupPagePools.get(alignmentIndex).add(remaining, dirtyPages); 
+            lookupPagePools.get(alignmentIndex).add(remaining, dirtyPages);
         }
     }
 
@@ -189,8 +196,8 @@ final class ByRemainingTable implements ByRemaining
      * Remove the given page position from the table.
      * <p>
      * Returns the amount of blocks remaining rounded down to the nearest
-     * alignment. This is used by the {@link ByRemainingTableMoveTracker} to relocate
-     * the page and amount remaining in the table, when the page moves.
+     * alignment. This is used by the {@link ByRemainingTableMoveTracker} to
+     * relocate the page and amount remaining in the table, when the page moves.
      * 
      * @param position
      *            The page position.
@@ -201,7 +208,7 @@ final class ByRemainingTable implements ByRemaining
         int alignmentIndex = alignment / aligned;
         lookupPagePools.get(alignmentIndex).remove(position, dirtyPages);
     }
-    
+
     /**
      * @see com.goodworkalan.pack.ByRemaining#bestFit(int)
      */
@@ -218,7 +225,8 @@ final class ByRemainingTable implements ByRemaining
         long position = 0L;
 
         int pageSize = sheaf.getPageSize();
-        for (int alignmentIndex = aligned / alignment; position == 0L &&  alignmentIndex < pageSize / alignment; alignmentIndex++)
+        for (int alignmentIndex = aligned / alignment; position == 0L
+                && alignmentIndex < pageSize / alignment; alignmentIndex++)
         {
             for (;;)
             {
@@ -233,8 +241,10 @@ final class ByRemainingTable implements ByRemaining
                 {
                     if (page.getRawPage().getByteBuffer().getInt(0) < 0)
                     {
-                        BlockPage blocks = sheaf.getPage(adjusted, BlockPage.class, new BlockPage());
-                        if (alignRemaining(blocks.getRemaining()) != alignmentIndex * alignment)
+                        BlockPage blocks = sheaf.getPage(adjusted,
+                                BlockPage.class, new BlockPage());
+                        if (alignRemaining(blocks.getRemaining()) != alignmentIndex
+                                * alignment)
                         {
                             break;
                         }
@@ -245,9 +255,9 @@ final class ByRemainingTable implements ByRemaining
 
         return position;
     }
-    
+
     /**
-     * Clear the table, removing all pages and ignores.   
+     * Clear the table, removing all pages and ignores.
      */
     public void clear()
     {

@@ -382,7 +382,7 @@ public class Pack
         }
         
         bouquet.getHeader().setUserBoundary(bouquet.getAddressBoundary().getPosition());
-        bouquet.getHeader().setEndOfSheaf(endOfSheaf);
+        bouquet.getHeader().setAddressLookupPagePool(endOfSheaf);
 
         bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
         try

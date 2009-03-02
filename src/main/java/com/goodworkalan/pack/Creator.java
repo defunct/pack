@@ -151,7 +151,7 @@ public final class Creator
         header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticBlockCount() + header.getJournalCount() * Pack.LONG_SIZE);
         header.setAddressPagePoolSize(addressPagePoolSize);
         header.setUserBoundary(pageSize);
-        header.setEndOfSheaf(0L);
+        header.setAddressLookupPagePool(0L);
         header.setFirstTemporaryNode(Long.MIN_VALUE);
         header.setByRemainingTable(Long.MIN_VALUE);
 

@@ -149,10 +149,10 @@ public final class Opener
             Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
     
             int reopenSize = 0;
-            reopenSize = (int) (fileChannel.size() - header.getEndOfSheaf());
+            reopenSize = (int) (fileChannel.size() - header.getAddressLookupPagePool());
             
             ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
-            fileChannel.read(reopen, header.getEndOfSheaf());
+            fileChannel.read(reopen, header.getAddressLookupPagePool());
             reopen.flip();
             
             SortedSet<Long> addressPages = new TreeSet<Long>();
@@ -163,7 +163,7 @@ public final class Opener
                 addressPages.add(reopen.getLong());
             }
             
-            fileChannel.truncate(header.getEndOfSheaf());
+            fileChannel.truncate(header.getAddressLookupPagePool());
             
             Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
             AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
@@ -180,7 +180,7 @@ public final class Opener
             }
     
             header.setShutdown(Pack.HARD_SHUTDOWN);
-            header.setEndOfSheaf(0L);
+            header.setAddressLookupPagePool(0L);
     
             header.write(fileChannel, 0);
             

@@ -259,16 +259,27 @@ final class Header extends DirtyMap
         dirty(Pack.LONG_SIZE + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 
-    // FIXME Outgoing.
-    public long getEndOfSheaf()
+    /**
+     * Get the address of the lookup page pool used to track address pages with
+     * at least one address remaining for allocation.
+     * 
+     * @return The position of the address lookup page pool.
+     */
+    public long getAddressLookupPagePool()
     {
         return bytes.getLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7);
     }
 
-    // FIXME Outgoing.
-    public void setEndOfSheaf(long interimBoundary)
+    /**
+     * Set the address of the lookup page pool used to track address pages with
+     * at least one address remaining for allocation.
+     * 
+     * @param position
+     *            The position of the address lookup page pool.
+     */
+    public void setAddressLookupPagePool(long position)
     {
-        bytes.putLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, interimBoundary);
+        bytes.putLong(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, position);
         dirty(Pack.LONG_SIZE * 2 + Pack.INT_SIZE * 7, Pack.LONG_SIZE);
     }
 

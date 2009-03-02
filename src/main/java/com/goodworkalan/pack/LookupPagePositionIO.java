@@ -5,7 +5,6 @@ import java.util.List;
 import com.goodworkalan.sheaf.DirtyPageSet;
 
 // TODO Document.
-// FIXME Move the size list here.
 public interface LookupPagePositionIO
 {
     // TODO Document.

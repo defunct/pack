@@ -34,8 +34,10 @@ class MovePage extends Operation
      * Construct an instance that will write the relocatable page move to the
      * journal using the <code>write</code> method.
      * 
-     * @param from The position to move from.
-     * @param to The position to move to.
+     * @param from
+     *            The position to move from.
+     * @param to
+     *            The position to move to.
      */
     public MovePage(long from, long to)
     {
