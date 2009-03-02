@@ -10,7 +10,7 @@ import com.goodworkalan.sheaf.SheafException;
  * A structure referencing a position value stored at a specific position in the
  * file guarded by a mutex.
  * <p>
- * FIXME Maybe you can use Region.
+ * TODO Maybe you can use Region.
  * 
  * @author Alan Gutierrez
  */

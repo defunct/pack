@@ -59,7 +59,7 @@ extends Operation
      * 
      * @param sheaf
      *            The page manager.
-     * @param userBoundary
+     * @param addressBoundary
      *            The boundary between the address pages and user pages.
      * @param freedBlockPages
      *            The set of blocks that have had pages freed during this
@@ -70,7 +70,7 @@ extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, AddressBoundary userBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, AddressBoundary addressBoundary, Set<Long> freedBlockPages, Set<Long> allocatedBlockPages, DirtyPageSet dirtyPages)
     {
         // Get the address page for the address.
         AddressPage addresses = sheaf.getPage(address < 0 ? -address : address, AddressPage.class, new AddressPage());
@@ -83,8 +83,10 @@ extends Operation
             for (;;)
             {
                 // Get the adjusted user page block page.
-                BlockPage user = userBoundary.dereference(sheaf, address);
-                // FIXME What if page moves here? What if it changes type? 
+                BlockPage user = addressBoundary.dereference(sheaf, address);
+                // FIXME What if page moves here? What if it changes type?
+                // You can't use deference, you have to follow a specific
+                // pattern every place where you want to dereference.
                 synchronized (user.getRawPage())
                 {
                     // Ensure that the page did not move since we dereferenced

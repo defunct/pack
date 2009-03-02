@@ -20,6 +20,18 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 abstract class ReferencePool
 {
+    /** The page manager. */
+    private final Sheaf sheaf;
+    
+    /** The file header. */
+    private final Header header;
+    
+    /** The boundary between address pages and user pages. */
+    private final AddressBoundary addressBoundary;
+    
+    /** The interim page pool to use to allocate new reference pages. */
+    private final InterimPagePool interimPagePool;
+    
     /**
      * A linked list of reference pages. Note that the pages are maintained as
      * singly linked list of pages on disk as well.
@@ -34,21 +46,27 @@ abstract class ReferencePool
      * 
      * @param sheaf
      *            The page manager.
-     * @param userBoundary
-     *            The boundary between address pages and user pages.
      * @param header
      *            The file header.
+     * @param addressBoundary
+     *            The boundary between address pages and user pages.
+     * @param interimPagePool
+     *            The interim page pool to use to allocate new reference pages.
      */
-    public ReferencePool(Sheaf sheaf, AddressBoundary userBoundary, Header header)
+    public ReferencePool(Sheaf sheaf, Header header, AddressBoundary addressBoundary, InterimPagePool interimPagePool)
     {
         referencePages = new LinkedList<Long>();
         long position = getHeaderField(header);
         while (position != Long.MIN_VALUE)
         {
             referencePages.add(position);
-            AddressPage references = userBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
+            AddressPage references = addressBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
             position = references.dereference(position);
         }
+        this.sheaf = sheaf;
+        this.addressBoundary = addressBoundary;
+        this.header = header;
+        this.interimPagePool = interimPagePool;
     }
 
     /**
@@ -139,22 +157,14 @@ abstract class ReferencePool
      * reference page is created and linked to the header reference.
      * <p>
      * FIXME This must be a journaled operation.
-     * 
-     * @param sheaf
-     *            The page manager.
-     * @param header
-     *            The file header.
-     * @param userBoundary
-     *            The boundary between address pages and user pages.
-     * @param interimPagePool
-     *            The interim page pool.
+     *
      * @param dirtyPages
      *            The dirty page set.
      * @return An reference from the reference pool.
      */
-    public synchronized long allocate(Sheaf sheaf, Header header, AddressBoundary userBoundary, InterimPagePool interimPagePool, DirtyPageSet dirtyPages) 
+    public synchronized long allocate(DirtyPageSet dirtyPages) 
     {
-        long reference = reserve(sheaf, userBoundary, dirtyPages);
+        long reference = reserve(sheaf, addressBoundary, dirtyPages);
         if (reference == 0L)
         {
             DirtyPageSet allocDirtyPages = new DirtyPageSet();
@@ -184,7 +194,7 @@ abstract class ReferencePool
                 referencePages.addFirst(position);
             }
             
-            reference = reserve(sheaf, userBoundary, dirtyPages);
+            reference = reserve(sheaf, addressBoundary, dirtyPages);
         }
         return reference;
     }

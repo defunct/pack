@@ -89,10 +89,12 @@ final class Bouquet
      *            Page management.
      * @param addressPagePool
      *            The address page pool
+     * @param interimPagePool
+     *            The interim page pool
      * @param temporaryFactory
      *            The temporary address reference pool.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, AddressBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, TemporaryPool temporaryFactory)
+    public Bouquet(Header header, Map<URI, Long> staticBlocks, AddressBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, InterimPagePool interimPagePool, TemporaryPool temporaryFactory)
     {
         this.pack = new Pack(this);
         this.header = header;
@@ -102,7 +104,7 @@ final class Bouquet
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.vacuumDirtyPages = new DirtyPageSet();
-        this.interimPagePool = new InterimPagePool();
+        this.interimPagePool = interimPagePool;
         this.userPagePool = new UserPagePool(new ByRemainingTable(sheaf, userBoundary, interimPagePool, header.getAlignment(), pack.getMaximumBlockSize(), vacuumDirtyPages), header.getPageSize(), header.getAlignment());
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();

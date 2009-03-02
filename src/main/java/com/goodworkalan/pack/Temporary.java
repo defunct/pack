@@ -51,10 +51,22 @@ extends Operation
         this.temporary = temporary;
     }
     
-    // TODO Comment.
+    /**
+     * Commit a temporary reference to a temporary block by writing the block
+     * address to the page position of the temporary reference.
+     * 
+     * @param sheaf
+     *            The page manager.
+     * @param userBoundary
+     *            The boundary between address pages and user pages.
+     * @param temporaryPool
+     *            The temporary reference pool
+     * @param dirtyPages
+     *            The dirty page set.
+     */
     private void commit(Sheaf sheaf, AddressBoundary userBoundary, TemporaryPool temporaryPool, DirtyPageSet dirtyPages)
     {
-        temporaryPool.commit(address, temporary, sheaf, userBoundary, dirtyPages);
+        temporaryPool.commit(temporary, address, dirtyPages);
     }
     
     /**

@@ -124,7 +124,7 @@ public final class Mutator
         bouquet.getAddressBoundary().getPageMoveLock().readLock().lock();
         try
         {
-            long reference = bouquet.getTemporaryPool().allocate(bouquet.getSheaf(), bouquet.getHeader(), bouquet.getAddressBoundary(), bouquet.getInterimPagePool(), dirtyPages);
+            long reference = bouquet.getTemporaryPool().allocate(dirtyPages);
             journal.write(new Temporary(address, reference));
         }
         finally
@@ -589,7 +589,7 @@ public final class Mutator
         // by the opener when the file is reopened, needs to be rolled back. 
         for (long temporary : temporaries)
         {
-            bouquet.getTemporaryPool().free(temporary, bouquet.getSheaf(), bouquet.getAddressBoundary(), dirtyPages);
+            bouquet.getTemporaryPool().rollback(temporary, dirtyPages);
         }
         
         // Write any dirty pages.

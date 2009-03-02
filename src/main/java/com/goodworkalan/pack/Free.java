@@ -72,7 +72,7 @@ extends Operation
         // If there was a temporary reference freed, record tha the temporary
         // reference is locked against reassignment.
         long temporary;
-        if ((temporary = temporaryPool.free(address, sheaf, userBoundary, dirtyPages)) != 0L)
+        if ((temporary = temporaryPool.free(address, dirtyPages)) != 0L)
         {
             lockedTemporaryAddresses.add(temporary);
         }

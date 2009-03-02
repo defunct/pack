@@ -47,10 +47,16 @@ public class LookupPagePool
     /** The interim page pool. */
     private InterimPagePool interimPagePool; 
     
-    /** The strategy to read and write head references to linked list. */ 
+    /**
+     * The strategy to read and write head references to a linked list of lookup
+     * blocks.
+     */ 
     private final LookupBlockPositionIO lookupBlockPositionIO;
-    
-    // TODO Document.
+
+    /**
+     * The strategy to read and write head reference to linked lists of lookup
+     * pages for a specific block size index from the a list of block sizes.
+     */
     private final LookupPagePositionIO lookupPagePositionIO;
 
     /** A descending list of the slot sizes. */

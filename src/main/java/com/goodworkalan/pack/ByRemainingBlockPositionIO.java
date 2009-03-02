@@ -40,7 +40,7 @@ public class ByRemainingBlockPositionIO implements LookupBlockPositionIO
     }
 
     /**
-     * Write the head value of the linked list of of lookup blocks.The dirty
+     * Write the head value of the linked list of of lookup blocks. The dirty
      * page set is used to track any pages that are allocated or update by this
      * method.
      * 

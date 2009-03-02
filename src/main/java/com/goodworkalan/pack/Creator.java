@@ -202,11 +202,12 @@ public final class Creator
         dirtyPages.flush();
         
         AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
-        TemporaryPool temporaryPool = new TemporaryPool(sheaf, userBoundary, header);
+        InterimPagePool interimPagePool = new InterimPagePool();
+        TemporaryPool temporaryPool = new TemporaryPool(sheaf, header, userBoundary, interimPagePool);
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 userBoundary,
                 sheaf,
-                new AddressPagePool(header.getAddressPagePoolSize(), addressPages),
+                new AddressPagePool(header.getAddressPagePoolSize(), addressPages), interimPagePool,
               temporaryPool);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
