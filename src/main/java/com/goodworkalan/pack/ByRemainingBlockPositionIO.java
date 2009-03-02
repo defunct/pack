@@ -13,7 +13,7 @@ import com.goodworkalan.sheaf.DirtyPageSet;
  * 
  * @author Alan Gutierrez
  */
-public class ByRemainingPositionIO implements LookupBlockPositionIO
+public class ByRemainingBlockPositionIO implements LookupBlockPositionIO
 {
     /** The page used by the by remaining table to track header values. */
     private final ByRemainingPage byRemainingPage;
@@ -33,7 +33,7 @@ public class ByRemainingPositionIO implements LookupBlockPositionIO
      * @param alignmentIndex
      *            The alginment index.
      */
-    public ByRemainingPositionIO(ByRemainingPage byRemainingPage, int alignmentIndex)
+    public ByRemainingBlockPositionIO(ByRemainingPage byRemainingPage, int alignmentIndex)
     {
         this.byRemainingPage = byRemainingPage;
         this.alignmentIndex = alignmentIndex;

@@ -107,7 +107,7 @@ final class ByRemainingTable implements ByRemaining
         {
             lookupPagePools.add(new LookupPagePool(sheaf, userBoundary,
                     interimPagePool, lookupPagePositionIO,
-                    new ByRemainingPositionIO(byRemainingPage, i)));
+                    new ByRemainingBlockPositionIO(byRemainingPage, i)));
         }
     }
 
