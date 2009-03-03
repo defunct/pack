@@ -8,8 +8,6 @@ import com.goodworkalan.sheaf.DirtyMap;
  * Reads and writes the header fields of a pack file. The header is built on top
  * of {@link DirtyMap} so that writing header fields will only cause the
  * dirty fields to be written when the header is flushed.
- * <p>
- * FIXME Need to lock on the header.
  * 
  * @author Alan Gutierrez
  */

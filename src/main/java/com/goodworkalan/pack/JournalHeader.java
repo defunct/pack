@@ -68,7 +68,7 @@ final class JournalHeader
      * Return the mutex used to guard the writing of the value position in the
      * file.
      * <p>
-     * FIXME Not actually in use.
+     * TODO Not actually in use.
      *
      * @return The mutex.
      */

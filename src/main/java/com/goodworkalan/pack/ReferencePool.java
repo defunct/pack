@@ -155,9 +155,7 @@ abstract class ReferencePool
      * Allocate a reference from the reference pool. If there are no free
      * reference positions available in any of the reference pages, a new
      * reference page is created and linked to the header reference.
-     * <p>
-     * FIXME This must be a journaled operation.
-     *
+     * 
      * @param dirtyPages
      *            The dirty page set.
      * @return An reference from the reference pool.
@@ -173,8 +171,16 @@ abstract class ReferencePool
             synchronized (header)
             {
                 references.set(position, getHeaderField(header), dirtyPages);
-                setHeaderField(header, position);
                 allocDirtyPages.flush();
+                try
+                {
+                    sheaf.getFileChannel().force(false);
+                }
+                catch (IOException e)
+                {
+                    throw new PackException(PackException.ERROR_IO_FORCE, e);
+                }
+                setHeaderField(header, position);
                 try
                 {
                     header.write(sheaf.getFileChannel(), 0);

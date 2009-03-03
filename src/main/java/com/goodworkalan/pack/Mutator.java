@@ -17,7 +17,7 @@ import com.goodworkalan.sheaf.Sheaf;
  * order to allocate, read, write or free blocks, one must create a
  * <code>Mutator</code> by calling {@link Pack#mutate()}.
  * <p>
- * FIXME Make sure you call flush. Add a setter for page cache count.
+ * TODO Make sure you call flush. Add a setter for page cache count.
  */
 public final class Mutator
 {
