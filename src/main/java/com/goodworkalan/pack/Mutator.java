@@ -171,7 +171,7 @@ public final class Mutator
             long bestFit = allocByRemaining.bestFit(fullSize);
             if (bestFit == 0L)
             {
-                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
+                interim = bouquet.getInterimPagePool().newInterimPage(BlockPage.class, new BlockPage(), dirtyPages, false);
             }
             else
             {
@@ -272,10 +272,10 @@ public final class Mutator
             {
                 do
                 {
-                    Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                    Dereference dereference = bouquet.getAddressBoundary().dereference(address);
                     synchronized (dereference.getMonitor())
                     {
-                        BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                        BlockPage blocks = dereference.getBlockPage();
                         if (blocks != null)
                         {
                             isContinued = blocks.isContinued(address);
@@ -286,7 +286,7 @@ public final class Mutator
             }
             else
             {
-                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
                 isContinued = interim.isContinued(address);
             }
     
@@ -350,10 +350,10 @@ public final class Mutator
             int blockSize = 0;
             do
             {
-                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(address);
                 synchronized (dereference.getMonitor())
                 {
-                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
                     {
                         blockSize = blocks.getBlockSize(address);
@@ -365,7 +365,7 @@ public final class Mutator
             long bestFit = allocByRemaining.bestFit(blockSize);
             if (bestFit == 0L)
             {
-                interim = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, false);
+                interim = bouquet.getInterimPagePool().newInterimPage(BlockPage.class, new BlockPage(), dirtyPages, false);
             }
             else
             {
@@ -380,10 +380,10 @@ public final class Mutator
             ByteBuffer copy = ByteBuffer.allocateDirect(blockSize - Pack.BLOCK_HEADER_SIZE);
             do
             {
-                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(address);
                 synchronized (dereference.getMonitor())
                 {
-                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
                     {
                         read = blocks.read(address, copy);
@@ -398,7 +398,7 @@ public final class Mutator
         }
         else
         {
-            interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+            interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
         }
         return interim;
     }
@@ -478,10 +478,10 @@ public final class Mutator
             Long isolated = getIsolated(address);
             if (isolated == null)
             {
-                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(address);
                 synchronized (dereference.getMonitor())
                 {
-                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
                     {
                         read = blocks.read(address, destination);
@@ -491,7 +491,7 @@ public final class Mutator
             }
             else
             {
-                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
                 read = interim.read(address, destination);
             }
     
@@ -555,7 +555,7 @@ public final class Mutator
             if (isolated != null)
             {
                 // Free the block from the interim page.
-                BlockPage interim = bouquet.getAddressBoundary().load(bouquet.getSheaf(), isolated, BlockPage.class, new BlockPage());
+                BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
                 allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
                 interim.unallocate(address, dirtyPages);
                 
@@ -622,14 +622,14 @@ public final class Mutator
         
         // Put the interim pages we used back into the set of free interim
         // pages.
-        for (long position : bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), interims))
+        for (long position : bouquet.getAddressBoundary().adjust(interims))
         {
-            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
+            bouquet.getInterimPagePool().free(position);
         }
         
-        for (long position : bouquet.getAddressBoundary().adjust(bouquet.getSheaf(), journal.getJournalPages()))
+        for (long position : bouquet.getAddressBoundary().adjust(journal.getJournalPages()))
         {
-            bouquet.getInterimPagePool().free(bouquet.getSheaf(), position);
+            bouquet.getInterimPagePool().free(position);
         }
     }
     

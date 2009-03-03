@@ -72,11 +72,11 @@ class Move extends Operation
     private void commit(Sheaf sheaf, AddressBoundary addressBoundary, DirtyPageSet dirtyPages)
     {
         // The deference method is not necessary since only one thread moves
-        // blocks outsize of a user write or free.
-        BlockPage sourcePage = addressBoundary.load(sheaf, source, BlockPage.class, new BlockPage());
+        // blocks outside of a user write or free.
+        BlockPage sourcePage = addressBoundary.load(source, BlockPage.class, new BlockPage());
         synchronized (sourcePage.getRawPage())
         {
-            BlockPage destinationPage = addressBoundary.load(sheaf, destination, BlockPage.class, new BlockPage());
+            BlockPage destinationPage = addressBoundary.load(destination, BlockPage.class, new BlockPage());
             synchronized (destinationPage.getRawPage())
             {
                 destinationPage.truncate(truncate, dirtyPages);

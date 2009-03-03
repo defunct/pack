@@ -18,8 +18,8 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class AddressBoundary
 {
-    /** The size of a page in the Pack.  */
-    private final int pageSize;
+    /** The page manager. */
+    private final Sheaf sheaf;
     
     /** The position of the boundary.  */
     private long position;
@@ -37,9 +37,9 @@ class AddressBoundary
      * @param position
      *            The initial position.
      */
-    public AddressBoundary(int pageSize, long position)
+    public AddressBoundary(Sheaf sheaf, long position)
     {
-        this.pageSize = pageSize;
+        this.sheaf = sheaf;
         this.position = position;
         this.pageMoveLock = new ReentrantReadWriteLock();
     }
@@ -71,7 +71,7 @@ class AddressBoundary
      */
     public void increment()
     {
-        position += pageSize;
+        position += sheaf.getPageSize();
     }
 
     /**
@@ -88,13 +88,13 @@ class AddressBoundary
      *            The file position to track.
      * @return The file position adjusted by the recorded page moves.
      */
-    public long adjust(Sheaf sheaf, long position)
+    public long adjust(long position)
     {
-        int offset = (int) (position % pageSize);
+        int offset = (int) (position % sheaf.getPageSize());
         position = position - offset;
         if (position < getPosition())
         {
-            position = getForwardReference(sheaf, position);
+            position = getForwardReference(position);
         }
         return position + offset;
     }
@@ -110,12 +110,12 @@ class AddressBoundary
      *            A set of page positions.
      * @return A set of page positions adjusted for page moves.
      */
-    public Set<Long> adjust(Sheaf sheaf, Set<Long> positions)
+    public Set<Long> adjust(Set<Long> positions)
     {
         Set<Long> adjusted = new HashSet<Long>();
         for (long position : positions)
         {
-            adjusted.add(adjust(sheaf, position));
+            adjusted.add(adjust(position));
         }
         return adjusted;
     }
@@ -130,7 +130,7 @@ class AddressBoundary
      *            The page position.
      * @return The page position the user page was moved to.
      */
-    private long getForwardReference(Sheaf sheaf, long position)
+    private long getForwardReference(long position)
     {
         AddressPage addresses = sheaf.getPage(position, AddressPage.class, new AddressPage());
         return addresses.dereference(0);
@@ -148,7 +148,7 @@ class AddressBoundary
      *            The block address.
      * @return A dereference object used to double check the dereference.
      */
-    public Dereference dereference(Sheaf sheaf, long address)
+    public Dereference dereference(long address)
     {
         // Get the address page.
         AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
@@ -166,7 +166,7 @@ class AddressBoundary
         long position = initial;
         while (position < getPosition())
         {
-            position = getForwardReference(sheaf, position);
+            position = getForwardReference(position);
         }
         
         // Get the raw page with the base page class.
@@ -195,11 +195,11 @@ class AddressBoundary
      * @return A page of the given page type mapped to the contents at the page
      *         position.
      */
-    public <P extends Page> P load(Sheaf sheaf, long position, Class<P> pageClass, P page)
+    public <P extends Page> P load(long position, Class<P> pageClass, P page)
     {
         while (position < getPosition())
         {
-            position = getForwardReference(sheaf, position);
+            position = getForwardReference(position);
         }
         
         return sheaf.getPage(position, pageClass, page);

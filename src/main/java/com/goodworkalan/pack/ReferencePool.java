@@ -60,7 +60,7 @@ abstract class ReferencePool
         while (position != Long.MIN_VALUE)
         {
             referencePages.add(position);
-            AddressPage references = addressBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
+            AddressPage references = addressBoundary.load(position, AddressPage.class, new AddressPage());
             position = references.dereference(position);
         }
         this.sheaf = sheaf;
@@ -88,7 +88,7 @@ abstract class ReferencePool
         Map<Long, Long> map = new HashMap<Long, Long>();
         for (long position : referencePages)
         {
-            AddressPage references = userBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
+            AddressPage references = userBoundary.load(position, AddressPage.class, new AddressPage());
             map.putAll(references.toMap(1));
         }
         return map;
@@ -137,7 +137,7 @@ abstract class ReferencePool
         for (int i = 0; i < size; i++)
         {
             long position = referencePages.getFirst();
-            AddressPage references = userBoundary.load(sheaf, position, AddressPage.class, new AddressPage());
+            AddressPage references = userBoundary.load(position, AddressPage.class, new AddressPage());
             synchronized (references.getRawPage())
             {
                 if (references.getFreeCount() != 0)
@@ -166,7 +166,7 @@ abstract class ReferencePool
         if (reference == 0L)
         {
             DirtyPageSet allocDirtyPages = new DirtyPageSet();
-            long position = interimPagePool.newBlankInterimPage(sheaf, true);
+            long position = interimPagePool.newBlankInterimPage(true);
             AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages);
             synchronized (header)
             {

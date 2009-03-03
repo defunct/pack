@@ -43,7 +43,7 @@ final class ByRemainingTable implements ByRemaining
     /** The bouquet of services. */
     private final Sheaf sheaf;
 
-    private final AddressBoundary userBoundary;
+    private final AddressBoundary addressBoundary;
 
     private final InterimPagePool interimPagePool;
 
@@ -86,7 +86,7 @@ final class ByRemainingTable implements ByRemaining
             int maximumBlockSize, DirtyPageSet dirtyPages)
     {
         this.sheaf = sheaf;
-        this.userBoundary = userBoundary;
+        this.addressBoundary = userBoundary;
         this.interimPagePool = interimPagePool;
         this.alignment = alignment;
         this.dirtyPages = new DirtyPageSet();
@@ -105,7 +105,7 @@ final class ByRemainingTable implements ByRemaining
                 byRemainingPage, pageSize);
         for (int i = 0; i < alignmentCount; i++)
         {
-            lookupPagePools.add(new LookupPagePool(sheaf, userBoundary,
+            lookupPagePools.add(new LookupPagePool(sheaf, addressBoundary,
                     interimPagePool, lookupPagePositionIO,
                     new ByRemainingBlockPositionIO(byRemainingPage, i)));
         }
@@ -124,9 +124,7 @@ final class ByRemainingTable implements ByRemaining
         {
             if (position == 0L)
             {
-                byRemainingPage = interimPagePool.newInterimPage(sheaf,
-                        ByRemainingPage.class, new ByRemainingPage(),
-                        dirtyPages, false);
+                byRemainingPage = interimPagePool.newInterimPage(ByRemainingPage.class, new ByRemainingPage(), dirtyPages, false);
             }
             else
             {
@@ -235,7 +233,7 @@ final class ByRemainingTable implements ByRemaining
                 {
                     break;
                 }
-                long adjusted = userBoundary.adjust(sheaf, position);
+                long adjusted = addressBoundary.adjust(position);
                 Page page = sheaf.getPage(adjusted, Page.class, new Page());
                 synchronized (page.getRawPage())
                 {

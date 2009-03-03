@@ -41,12 +41,11 @@ public class Dereference
      * Get the dereferenced block page returning null if the block page has
      * moved since the block was dereferenced.
      * 
-     * @param sheaf
-     *            The page manager.
      * @return The dereferenced block page or null if the block has moved.
      */
-    public BlockPage getBlockPage(Sheaf sheaf)
+    public BlockPage getBlockPage()
     {
+        Sheaf sheaf = rawPage.getSheaf();
         AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
         if (addresses.dereference(address) == position)
         {

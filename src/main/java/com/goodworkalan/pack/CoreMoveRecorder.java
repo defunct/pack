@@ -58,7 +58,7 @@ class CoreMoveRecorder implements MoveRecorder
      */
     private BlockPage getBlockPage(long position)
     {
-        return bouquet.getAddressBoundary().load(bouquet.getSheaf(), position, BlockPage.class, new BlockPage());
+        return bouquet.getAddressBoundary().load(position, BlockPage.class, new BlockPage());
     }
 
     /* (non-Javadoc)
@@ -99,7 +99,7 @@ class CoreMoveRecorder implements MoveRecorder
      */
     public void move(long source)
     {
-        BlockPage destnation = bouquet.getInterimPagePool().newInterimPage(bouquet.getSheaf(), BlockPage.class, new BlockPage(), dirtyPages, true);
+        BlockPage destnation = bouquet.getInterimPagePool().newInterimPage(BlockPage.class, new BlockPage(), dirtyPages, true);
         moves.put(source, destnation.getRawPage().getPosition());
     }
 }

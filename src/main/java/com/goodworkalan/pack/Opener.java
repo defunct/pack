@@ -166,8 +166,8 @@ public final class Opener
             fileChannel.truncate(header.getAddressLookupPagePool());
             
             Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-            AddressBoundary userBoundary = new AddressBoundary(sheaf.getPageSize(), header.getUserBoundary());
-            InterimPagePool interimPagePool = new InterimPagePool();
+            AddressBoundary userBoundary = new AddressBoundary(sheaf, header.getUserBoundary());
+            InterimPagePool interimPagePool = new InterimPagePool(sheaf);
             TemporaryPool temporaryPool = new TemporaryPool(sheaf, header, userBoundary, interimPagePool);
             temporaryBlocks.addAll(temporaryPool.toMap().keySet());
             

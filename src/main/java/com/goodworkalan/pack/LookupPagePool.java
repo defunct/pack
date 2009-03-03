@@ -111,7 +111,7 @@ public class LookupPagePool
      */
     private void newLookupPage(int blockSizeIndex, DirtyPageSet dirtyPages)
     {
-        LookupPage setPage = interimPagePool.newInterimPage(sheaf, LookupPage.class, new LookupPage(), dirtyPages, true);
+        LookupPage setPage = interimPagePool.newInterimPage(LookupPage.class, new LookupPage(), dirtyPages, true);
         setPage.setBlockSize(blockSizes.get(blockSizeIndex), dirtyPages);
         lookupPagePositionIO.write(blockSizeIndex, setPage.getRawPage().getPosition(), dirtyPages);
     }
@@ -134,13 +134,13 @@ public class LookupPagePool
             newLookupPage(blockSizes.getLast(), dirtyPages);
             allocPagePosition = lookupPagePositionIO.read(blockSizeIndex);
         }
-        LookupPage lookupPage = addressBoundary.load(sheaf, allocPagePosition, LookupPage.class, new LookupPage());
+        LookupPage lookupPage = addressBoundary.load(allocPagePosition, LookupPage.class, new LookupPage());
         long blockPosition = lookupPage.allocateBlock(previous, dirtyPages);
         if (blockPosition == 0L)
         {
             newLookupPage(getNextBlockSizeIndex(lookupPage), dirtyPages);
             allocPagePosition = lookupPagePositionIO.read(blockSizeIndex); 
-            LookupPage newLookupPage = addressBoundary.load(sheaf, allocPagePosition, LookupPage.class, new LookupPage());
+            LookupPage newLookupPage = addressBoundary.load(allocPagePosition, LookupPage.class, new LookupPage());
             long newBlockPosition = newLookupPage.allocateBlock(previous, dirtyPages);
             lookupPage.setNext(blockPosition, newBlockPosition, dirtyPages);
             blockPosition = newBlockPosition;
@@ -162,7 +162,7 @@ public class LookupPagePool
     {
         if (position != Long.MIN_VALUE && position != 0L)
         {
-            position = addressBoundary.adjust(sheaf, position);
+            position = addressBoundary.adjust(position);
         }
         return position;
     }
@@ -185,7 +185,7 @@ public class LookupPagePool
             newLookupBlock(blockSizes.getLast(), Long.MIN_VALUE, dirtyPages);
             position = lookupBlockPositionIO.read();
         }
-        LookupPage lookupPage = addressBoundary.load(sheaf, position, LookupPage.class, new LookupPage());
+        LookupPage lookupPage = addressBoundary.load(position, LookupPage.class, new LookupPage());
         if (!lookupPage.add(position, value, false, dirtyPages))
         {
             newLookupBlock(getNextBlockSizeIndex(lookupPage), lookupPage.getRawPage().getPosition(), dirtyPages);
@@ -281,7 +281,7 @@ public class LookupPagePool
                 return 0L;
             }
             
-            LookupPage lookupPage = addressBoundary.load(sheaf, block, LookupPage.class, new LookupPage());
+            LookupPage lookupPage = addressBoundary.load(block, LookupPage.class, new LookupPage());
             long position = lookupPage.remove(block, dirtyPages);
             if (position != 0L)
             {
@@ -310,7 +310,7 @@ public class LookupPagePool
             // remain full and only the alloc slot page has empty slots.
             if (alloc != block)
             {
-                LookupPage allocBlockPage = addressBoundary.load(sheaf, alloc, LookupPage.class, new LookupPage());
+                LookupPage allocBlockPage = addressBoundary.load(alloc, LookupPage.class, new LookupPage());
                 
                 // Remove the values for any slot in the alloc page.
                 long[] values = allocBlockPage.removeBlock(dirtyPages);
@@ -334,7 +334,7 @@ public class LookupPagePool
                     // reference to this slot.
                     if (lookupPage.getPrevious(block) != Long.MIN_VALUE)
                     {
-                        LookupPage lastLookupPage = addressBoundary.load(sheaf, lookupPage.getPrevious(block), LookupPage.class, new LookupPage());
+                        LookupPage lastLookupPage = addressBoundary.load(lookupPage.getPrevious(block), LookupPage.class, new LookupPage());
                         lastLookupPage.setNext(lookupPage.getPrevious(block), block, dirtyPages);
                     }
         
@@ -342,7 +342,7 @@ public class LookupPagePool
                     // reference to this slot.
                     if (lookupPage.getNext(block) != Long.MIN_VALUE)
                     {
-                        LookupPage nextLookupPage = addressBoundary.load(sheaf, lookupPage.getNext(block), LookupPage.class, new LookupPage());
+                        LookupPage nextLookupPage = addressBoundary.load(lookupPage.getNext(block), LookupPage.class, new LookupPage());
                         nextLookupPage.setPrevious(lookupPage.getNext(block), block, dirtyPages);
                     }
                 }
@@ -351,7 +351,7 @@ public class LookupPagePool
                     // The alloc slot page is empty, so lets free it and
                     // make the previous slot page the allocation slot page.
                     lookupPagePositionIO.write(blockSizeIndex, previous, dirtyPages);
-                    interimPagePool.free(sheaf, alloc);
+                    interimPagePool.free(alloc);
                 }
             }
         }

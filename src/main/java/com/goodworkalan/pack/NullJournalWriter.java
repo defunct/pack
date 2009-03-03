@@ -79,7 +79,7 @@ extends JournalWriter
     public JournalWriter extend()
     {
         Set<Long> journalPages = new HashSet<Long>();
-        JournalPage journal = interimPagePool.newInterimPage(sheaf, JournalPage.class, new JournalPage(), dirtyPages, false);
+        JournalPage journal = interimPagePool.newInterimPage(JournalPage.class, new JournalPage(), dirtyPages, false);
         journal.writeChecksum(checksum);
         journalPages.add(journal.getRawPage().getPosition());
         return new JournalWriter(sheaf, interimPagePool, checksum, journal.getJournalPosition(), journal, journalPages, dirtyPages);

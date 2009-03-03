@@ -14,6 +14,9 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class InterimPagePool
 {
+    /** The page manager. */
+    private final Sheaf sheaf;
+    
     /**
      * The maximum number of user pages that should be on the user side of the
      * user page boundary.
@@ -28,12 +31,16 @@ class InterimPagePool
     
     /** The set of free interim pages. */
     private final SortedSet<Long> freeInterimPages;
-    
+
     /**
      * Create an empty interim page pool.
+     * 
+     * @param sheaf
+     *            The page manager.
      */
-    public InterimPagePool()
+    public InterimPagePool(Sheaf sheaf)
     {
+        this.sheaf = sheaf;
         this.maxUserPoolSize = 24;
         this.freeInterimPages = new TreeSet<Long>();
     }
@@ -52,7 +59,7 @@ class InterimPagePool
      * @return A blank position in the interim area that for use as the target
      *         of a move.
      */
-    public long newBlankInterimPage(Sheaf sheaf, boolean durable)
+    public long newBlankInterimPage(boolean durable)
     {
         long position = 0L;
         synchronized (freeInterimPages)
@@ -123,7 +130,7 @@ class InterimPagePool
      * @param position
      *            The page position to free.
      */
-    public void free(Sheaf sheaf, long position)
+    public void free(long position)
     {
         sheaf.free(position);
         synchronized (freeInterimPages)
@@ -171,7 +178,7 @@ class InterimPagePool
      *            A map of dirty pages.
      * @return A new interim page.
      */
-    public <T extends Page> T newInterimPage(Sheaf sheaf, Class<T> pageClass, T page, DirtyPageSet dirtyPages, boolean durable)
+    public <T extends Page> T newInterimPage(Class<T> pageClass, T page, DirtyPageSet dirtyPages, boolean durable)
     {
         // We pull from the end of the interim space to take pressure of of
         // the durable pages, which are more than likely multiply in number
@@ -180,7 +187,7 @@ class InterimPagePool
         // from the front of the interim page space, if we want to rewind
         // the interim page space and shrink the file more frequently.
     
-        long position = newBlankInterimPage(sheaf, durable);
+        long position = newBlankInterimPage(durable);
     
         // If we do not have a free interim page available, we will obtain
         // create one out of the wilderness.

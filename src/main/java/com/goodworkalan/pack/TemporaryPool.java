@@ -29,9 +29,6 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 class TemporaryPool
 {
-    /** The page manager. */
-    private final Sheaf sheaf;
-    
     /** The boundary between address pages and user pages. */
     private final AddressBoundary addressBoundary;
     
@@ -84,7 +81,6 @@ class TemporaryPool
         {
             temporaries.put(mapping.getValue(), mapping.getKey());
         }
-        this.sheaf = sheaf;
         this.addressBoundary = addressBoundary;
     }
 
@@ -132,7 +128,7 @@ class TemporaryPool
     public synchronized void commit(long temporary, long address, DirtyPageSet dirtyPages)
     {
         latchSet.enter(temporary);
-        AddressPage references = addressBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
+        AddressPage references = addressBoundary.load(temporary, AddressPage.class, new AddressPage());
         references.set(temporary, address, dirtyPages);
         temporaries.put(address, temporary);
     }
@@ -163,7 +159,7 @@ class TemporaryPool
         {
             long temporary = temporaries.get(address);
             latchSet.latch(temporary);
-            AddressPage references = addressBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
+            AddressPage references = addressBoundary.load(temporary, AddressPage.class, new AddressPage());
             references.free(temporary, dirtyPages);
             temporaries.remove(address);
             return temporary;
@@ -192,7 +188,7 @@ class TemporaryPool
             temporaries.values().remove(temporary);
         }
         latchSet.enter(temporary);
-        AddressPage references = addressBoundary.load(sheaf, temporary, AddressPage.class, new AddressPage());
+        AddressPage references = addressBoundary.load(temporary, AddressPage.class, new AddressPage());
         references.free(temporary, dirtyPages);
     }
 

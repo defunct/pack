@@ -79,11 +79,11 @@ extends Operation
         
         for (;;)
         {
-            Dereference dereference = addressBoundary.dereference(sheaf, address);
+            Dereference dereference = addressBoundary.dereference(address);
             synchronized (dereference.getMonitor())
             {
                 // Ensure that the page did not move since we dereferenced it.
-                BlockPage user = dereference.getBlockPage(sheaf);
+                BlockPage user = dereference.getBlockPage();
                 if (user == null)
                 {
                     continue;

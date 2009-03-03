@@ -161,7 +161,7 @@ class AddressPagePool implements Iterable<Long>
             // Allocation a destination for the contents of the moved user page.
             // The destination will not be one of the other moved pages because
             // they would have been removed from the interim page pool.
-            long to = bouquet.getInterimPagePool().newBlankInterimPage(bouquet.getSheaf(), true);
+            long to = bouquet.getInterimPagePool().newBlankInterimPage(true);
             journal.write(new MovePage(from, to));
             moves.put(from, to);
         }
