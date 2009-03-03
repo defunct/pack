@@ -64,17 +64,19 @@ class Move extends Operation
      * 
      * @param sheaf
      *            The underlying <code>Sheaf</code> page manager.
-     * @param userBoundary
+     * @param addressBoundary
      *            The boundary between address pages and user pages.
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, AddressBoundary userBoundary, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, AddressBoundary addressBoundary, DirtyPageSet dirtyPages)
     {
-        BlockPage sourcePage = userBoundary.load(sheaf, source, BlockPage.class, new BlockPage());
+        // The deference method is not necessary since only one thread moves
+        // blocks outsize of a user write or free.
+        BlockPage sourcePage = addressBoundary.load(sheaf, source, BlockPage.class, new BlockPage());
         synchronized (sourcePage.getRawPage())
         {
-            BlockPage destinationPage = userBoundary.load(sheaf, destination, BlockPage.class, new BlockPage());
+            BlockPage destinationPage = addressBoundary.load(sheaf, destination, BlockPage.class, new BlockPage());
             synchronized (destinationPage.getRawPage())
             {
                 destinationPage.truncate(truncate, dirtyPages);

@@ -97,8 +97,15 @@ public class Pack
             ByteBuffer read = null;
             do
             {
-                BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
-                read = user.read(address, destination);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                synchronized (dereference.getMonitor())
+                {
+                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    if (blocks != null)
+                    {
+                        read = blocks.read(address, destination);
+                    }
+                }
             }
             while (read == null);
             

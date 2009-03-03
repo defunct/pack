@@ -23,7 +23,7 @@ final class JournalHeader
     private final long position;
 
     /** A mutex to hold when writing to this segment. */
-    private final Object mutex;
+    private final Object monitor;
 
     /**
      * Create a segment that writes the given byte buffer to the given position.
@@ -41,7 +41,7 @@ final class JournalHeader
     {
         this.byteBuffer = byteBuffer;
         this.position = position;
-        this.mutex = mutex;
+        this.monitor = mutex;
     }
 
     /**
@@ -72,9 +72,9 @@ final class JournalHeader
      *
      * @return The mutex.
      */
-    public Object getMutex()
+    public Object getMonitor()
     {
-        return mutex;
+        return monitor;
     }
     
     /**

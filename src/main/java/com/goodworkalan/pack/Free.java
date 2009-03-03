@@ -45,7 +45,7 @@ extends Operation
      *            The page manager.
      * @param addressLocker
      *            Lock addresses against premature reassignment.
-     * @param userBoundary
+     * @param addressBoundary
      *            The boundary between address and non-address pages.
      * @param temporaryPool
      *            The pool of references to temporary blocks.
@@ -61,7 +61,7 @@ extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void free(Sheaf sheaf, LatchSet<Long> addressLocker, AddressBoundary userBoundary, TemporaryPool temporaryPool,
+    private void free(Sheaf sheaf, LatchSet<Long> addressLocker, AddressBoundary addressBoundary, TemporaryPool temporaryPool,
         Set<Long> lockedAddresses, Set<Long> lockedTemporaryAddresses, Set<Long> freedBlockPages, DirtyPageSet dirtyPages)
     {
         // Lock the address against reassignment until after this journal
@@ -77,50 +77,44 @@ extends Operation
             lockedTemporaryAddresses.add(temporary);
         }
         
-        long previous = 0L;
         for (;;)
         {
-            BlockPage user = userBoundary.dereference(sheaf, address);
-            synchronized (user.getRawPage())
+            Dereference dereference = addressBoundary.dereference(sheaf, address);
+            synchronized (dereference.getMonitor())
             {
                 // Ensure that the page did not move since we dereferenced it.
-                if (user.getRawPage().getPage() == user)
+                BlockPage user = dereference.getBlockPage(sheaf);
+                if (user == null)
                 {
-                    // Moving synchronizes on the source page, then synchronizes
-                    // on the destination page. It synchronizes on the address
-                    // page for a block address. It frees a block from the
-                    // source page, adds a block to the destination page. Then
-                    // it locks and updates the address page. It leaves the
-                    // address synchronization block and continues with the next
-                    // block address.
-
-                    // If we free the address, we know that we have not lost a
-                    // race against another page attempting to move the block.
-
-                    // The address might have been freed by a failed playback,
-                    // however.
-
-                    // If the previous address is different from the address of
-                    // the current page, we may have lost a race against another
-                    // thread that changed the address reference.
-
-                    // If the previous address is the same as the address of the
-                    // current page, we thought we lost a race against another
-                    // thread that changed the address reference, but this time
-                    // through we see that the address reference has not
-                    // changed.
-
-                    if (user.free(address, dirtyPages) || user.getRawPage().getPosition() == previous)
-                    {
-                        freedBlockPages.add(user.getRawPage().getPosition());
-                        break;
-                    }
-
-                    // Record this position as the previous position and try
-                    // again.
-                    previous = user.getRawPage().getPosition();
+                    continue;
                 }
 
+                // Moving synchronizes on the source page, then synchronizes on
+                // the destination page. It synchronizes on the address page for
+                // a block address. It frees a block from the source page, adds
+                // a block to the destination page. Then it locks and updates
+                // the address page. It leaves the address synchronization block
+                // and continues with the next block address.
+
+                // If we free the address, we know that we have not lost a race
+                // against another page attempting to move the block.
+
+                // The address might have been freed by a failed playback,
+                // however.
+
+                // If the previous address is different from the address of the
+                // current page, we may have lost a race against another thread
+                // that changed the address reference.
+
+                // If the previous address is the same as the address of the
+                // current page, we thought we lost a race against another
+                // thread that changed the address reference, but this time
+                // through we see that the address reference has not changed.
+
+                user.free(address, dirtyPages);
+                freedBlockPages.add(user.getRawPage().getPosition());
+                
+                break;
             }
         }
         

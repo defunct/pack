@@ -272,8 +272,15 @@ public final class Mutator
             {
                 do
                 {
-                    BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
-                    isContinued = user.isContinued(address);
+                    Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                    synchronized (dereference.getMonitor())
+                    {
+                        BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                        if (blocks != null)
+                        {
+                            isContinued = blocks.isContinued(address);
+                        }
+                    }
                 }
                 while (isContinued == null);
             }
@@ -333,18 +340,25 @@ public final class Mutator
 
         if (isolated == null)
         {
-            // Interim block pages allocated to store writes are tracked
-            // in a separate by size table and a separate set of interim
-            // pages. During commit interim write blocks need only be
-            // copied to the user pages where they reside, while interim
-            // alloc blocks need to be assigned (as a page) to a user
-            // page with space to accommodate them.
+            // Interim block pages allocated to store writes are tracked in a
+            // separate by size table and a separate set of interim pages.
+            // During commit interim write blocks need only be copied to the
+            // user pages where they reside, while interim alloc blocks need to
+            // be assigned (as a page) to a user page with space to accommodate
+            // them.
 
             int blockSize = 0;
             do
             {
-                BlockPage blocks = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
-                blockSize = blocks.getBlockSize(address);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                synchronized (dereference.getMonitor())
+                {
+                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    if (blocks != null)
+                    {
+                        blockSize = blocks.getBlockSize(address);
+                    }
+                }
             }
             while (blockSize == 0);
            
@@ -366,8 +380,15 @@ public final class Mutator
             ByteBuffer copy = ByteBuffer.allocateDirect(blockSize - Pack.BLOCK_HEADER_SIZE);
             do
             {
-                BlockPage blocks = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
-                read = blocks.read(address, copy);
+                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                synchronized (dereference.getMonitor())
+                {
+                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    if (blocks != null)
+                    {
+                        read = blocks.read(address, copy);
+                    }
+                }
             }
             while (read == null);
             read.flip();
@@ -457,10 +478,14 @@ public final class Mutator
             Long isolated = getIsolated(address);
             if (isolated == null)
             {
-                do
+                Dereference dereference = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
+                synchronized (dereference.getMonitor())
                 {
-                    BlockPage user = bouquet.getAddressBoundary().dereference(bouquet.getSheaf(), address);
-                    read = user.read(address, destination);
+                    BlockPage blocks = dereference.getBlockPage(bouquet.getSheaf());
+                    if (blocks != null)
+                    {
+                        read = blocks.read(address, destination);
+                    }
                 }
                 while (read == null);
             }

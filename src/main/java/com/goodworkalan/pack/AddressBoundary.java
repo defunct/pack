@@ -138,53 +138,41 @@ class AddressBoundary
 
     /**
      * Dereferences the block page referenced by the address, adjusting the
-     * position for any page moves made to accommodate address pages.
+     * position for any page moves made to accommodate address pages. Returns an
+     * object used to double check the reference after holding onto the monitor
+     * for the raw page.
      * 
      * @param sheaf
      *            The page manager.
      * @param address
      *            The block address.
-     * @return The user block page.
+     * @return A dereference object used to double check the dereference.
      */
-    public BlockPage dereference(Sheaf sheaf, long address)
+    public Dereference dereference(Sheaf sheaf, long address)
     {
-        for (;;)
+        // Get the address page.
+        AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
+    
+        // Assert that address is not a free address.
+        long initial = addresses.dereference(address);
+        if (initial == 0L || initial == Long.MAX_VALUE)
         {
-            // Get the address page.
-            AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
-        
-            // Assert that address is not a free address.
-            long initial = addresses.dereference(address);
-            if (initial == 0L || initial == Long.MAX_VALUE)
-            {
-                throw new PackException(PackException.ERROR_FREED_ADDRESS);
-            }
-            
-            // If the position is less than the address boundary, follow to
-            // where the page has been moved.
-
-            long position = initial;
-            while (position < getPosition())
-            {
-                position = getForwardReference(sheaf, position);
-            }
-            
-            // Get the raw page with the base page class.
-            Page page = sheaf.getPage(position, Page.class, new Page());
-            RawPage rawPage = page.getRawPage();
-            synchronized (rawPage)
-            {
-                // If the page has not moved since it has been dereferenced.
-                if (addresses.dereference(address) == initial)
-                {
-                    if (page instanceof BlockPage)
-                    {
-                        return (BlockPage) page;
-                    }
-                    return sheaf.getPage(position, BlockPage.class, new BlockPage());
-                }
-            }
+            throw new PackException(PackException.ERROR_FREED_ADDRESS);
         }
+        
+        // If the position is less than the address boundary, follow to
+        // where the page has been moved.
+
+        long position = initial;
+        while (position < getPosition())
+        {
+            position = getForwardReference(sheaf, position);
+        }
+        
+        // Get the raw page with the base page class.
+        Page page = sheaf.getPage(position, Page.class, new Page());
+        RawPage rawPage = page.getRawPage();
+        return new Dereference(address, initial, rawPage);
     }
 
     /**

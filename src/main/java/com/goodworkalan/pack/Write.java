@@ -75,74 +75,66 @@ extends Operation
         // Get the address page for the address.
         AddressPage addresses = sheaf.getPage(address < 0 ? -address : address, AddressPage.class, new AddressPage());
 
-        // If the address is greater than zero and the dereferenced addres is
+        // If the address is greater than zero and the dereferenced address is
         // does not reference a null page position.
         if (address > 0L && addresses.dereference(address) != 0L)
         {
-            long previous = 0L;
             for (;;)
             {
                 // Get the adjusted user page block page.
-                BlockPage user = addressBoundary.dereference(sheaf, address);
-                // FIXME What if page moves here? What if it changes type?
-                // You can't use deference, you have to follow a specific
-                // pattern every place where you want to dereference.
-                synchronized (user.getRawPage())
+                Dereference dereference = addressBoundary.dereference(sheaf, address);
+                synchronized (dereference.getMonitor())
                 {
                     // Ensure that the page did not move since we dereferenced
                     // it.
-                    if (user.getRawPage().getPage() == user)
+                    BlockPage user = dereference.getBlockPage(sheaf);
+                    if (user == null)
                     {
-                        // We may have already updated the address during a
-                        // failed journal playback.
-                        boolean freed = user.getRawPage().getPosition() == position;
-                        if (!freed)
-                        {
-                            // Free the existing block. We may have already
-                            // freed the block but not updated the address
-                            // during a failed playback, or we may have lost a
-                            // race against another thread that is chaing the
-                            // address reference.
-                            freed = user.free(address, dirtyPages);
-                            if (freed)
-                            {
-                                // Record the block page as containing freed
-                                // blocks.
-                                freedBlockPages.add(user.getRawPage().getPosition());
-                            }
-                        }
-
-                        // If we have freed the address, then we know that the
-                        // current page position referenced by the address is
-                        // indeed correct.
-
-                        // The address might have been freed by a failed
-                        // playback, however.
-
-                        // If the previous address is different from the address
-                        // of the current page, we may have lost a race against
-                        // another thread that changed the address refernece.
-
-                        // If the previous address is the same as the address of
-                        // the current page, we thought we lost a race against
-                        // another thread that changed the address reference,
-                        // but this time through we see that the address
-                        // reference has not changed.
+                        continue;
+                    }
+                    // We may have already updated the address during a failed
+                    // journal playback.
+                    boolean freed = user.getRawPage().getPosition() == position;
+                    if (!freed)
+                    {
+                        // Free the existing block. We may have already freed
+                        // the block but not updated the address during a failed
+                        // playback, or we may have lost a race against another
+                        // thread that is changing the address reference.
                         
-                        // FIXME Think about this more. Can that address be 
-                        // moving, moving? Can it move and move back?
-
-                        if (freed || previous == user.getRawPage().getPosition())
+                        // TODO Maybe purged or maybe test, instead of using the
+                        // return value of free to see if it is dirty.
+                        freed = user.free(address, dirtyPages);
+                        if (freed)
                         {
-                            BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
-                            synchronized (interim.getRawPage())
-                            {
-                                addresses.set(address, position, dirtyPages);
-                                break;
-                            }
+                            // Record the block page as containing freed blocks.
+                            freedBlockPages.add(user.getRawPage().getPosition());
                         }
                     }
-                    previous = user.getRawPage().getPosition();
+
+                    // If we have freed the address, then we know that the
+                    // current page position referenced by the address is indeed
+                    // correct.
+
+                    // The address might have been freed by a failed playback,
+                    // however.
+
+                    // If the previous address is different from the address of
+                    // the current page, we may have lost a race against another
+                    // thread that changed the address reference.
+
+                    // If the previous address is the same as the address of the
+                    // current page, we thought we lost a race against another
+                    // thread that changed the address reference, but this time
+                    // through we see that the address reference has not
+                    // changed.
+
+                    BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
+                    synchronized (interim.getRawPage())
+                    {
+                        addresses.set(address, position, dirtyPages);
+                        break;
+                    }
                 }
             }
         }
@@ -150,6 +142,7 @@ extends Operation
         {
             addresses.set(address < 0 ? -address : address, position, dirtyPages);
         }
+
         allocatedBlockPages.add(position);
     }
 
