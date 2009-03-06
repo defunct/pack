@@ -3,7 +3,7 @@ PACK
 A random-access block file format.
 
     Issues and Tasks: http://blogometer.com/trac/incubator
-    Source: http://github.com/bigeasy/litany/tree/master
+    Source: http://github.com/bigeasy/pack/tree/master
     Contact: alan@blogometer.com
 
 PURPOSE
