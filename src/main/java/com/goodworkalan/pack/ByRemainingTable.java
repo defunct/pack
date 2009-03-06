@@ -6,6 +6,7 @@ import java.util.List;
 import com.goodworkalan.pack.vacuum.ByRemaining;
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -148,7 +149,7 @@ final class ByRemainingTable implements ByRemaining
      */
     public void add(BlockPage blocks)
     {
-        add(blocks.getRawPage().getPosition(), blocks.getRemaining());
+        add(blocks.getRawPage_().getPosition(), blocks.getRemaining());
     }
 
     /**
@@ -235,9 +236,11 @@ final class ByRemainingTable implements ByRemaining
                 }
                 long adjusted = addressBoundary.adjust(position);
                 Page page = sheaf.getPage(adjusted, Page.class, new Page());
-                synchronized (page.getRawPage())
+                RawPage rawPage = page.getRawPage_();
+                rawPage.getLock().lock();
+                try
                 {
-                    if (page.getRawPage().getByteBuffer().getInt(0) < 0)
+                    if (rawPage.getByteBuffer().getInt(0) < 0)
                     {
                         BlockPage blocks = sheaf.getPage(adjusted,
                                 BlockPage.class, new BlockPage());
@@ -247,6 +250,10 @@ final class ByRemainingTable implements ByRemaining
                             break;
                         }
                     }
+                }
+                finally
+                {
+                    rawPage.getLock().unlock();
                 }
             }
         }

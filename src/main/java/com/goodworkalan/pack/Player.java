@@ -1,12 +1,14 @@
 package com.goodworkalan.pack;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Region;
 
 /**
  * Plays a journal, calling the {@link Operation#execute(Player) commit} method
@@ -24,7 +26,7 @@ final class Player
     private final Bouquet bouquet;
 
     /** The journal header that indicates the first journal operation. */
-    private final JournalHeader journalHeader;
+    private final Region journalHeader;
 
     /** The dirty page set used to track dirty pages during playback. */
     private final DirtyPageSet dirtyPages;
@@ -61,7 +63,7 @@ final class Player
      * @param dirtyPages
      *            The dirty page set.
      */
-    public Player(Bouquet bouquet, JournalHeader journalHeader, DirtyPageSet dirtyPages)
+    public Player(Bouquet bouquet, Region journalHeader, DirtyPageSet dirtyPages)
     {
         this.bouquet = bouquet;
         this.journalHeader = journalHeader;
@@ -105,14 +107,23 @@ final class Player
      * @return A journal header that refrerences the first operation of the
      *         journal.
      */
-    private static JournalHeader allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
+    private static Region allocateHeader(Journal journal, Bouquet bouquet, DirtyPageSet dirtyPages)
     {
-        JournalHeader header = bouquet.getJournalHeaders().allocate();
+        Region header = bouquet.getJournalHeaders().allocate();
         header.getByteBuffer().putLong(bouquet.getAddressBoundary().adjust(journal.getJournalStart()));
         
         // Write and force our journal.
         dirtyPages.flush();
-        header.write(bouquet.getSheaf().getFileChannel());
+        try
+        {
+            ByteBuffer byteBuffer = header.getByteBuffer();
+            byteBuffer.clear();
+            bouquet.getSheaf().getFileChannel().write(byteBuffer);
+        }
+        catch (IOException e)
+        {
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
+        }
         try
         {
             bouquet.getSheaf().getFileChannel().force(true);
@@ -140,7 +151,7 @@ final class Player
      * 
      * @return The journal header.
      */
-    public JournalHeader getJournalHeader()
+    public Region getJournalHeader()
     {
         return journalHeader;
     }
@@ -218,7 +229,7 @@ final class Player
         {
             operation.execute(this);
             journalPage = operation.getJournalPage(this, journalPage);
-            journalPages.add(journalPage.getRawPage().getPosition());
+            journalPages.add(journalPage.getRawPage_().getPosition());
             operation = journalPage.next();
         }
 

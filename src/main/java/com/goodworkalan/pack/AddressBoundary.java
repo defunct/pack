@@ -6,7 +6,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.goodworkalan.sheaf.Page;
-import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -171,8 +170,7 @@ class AddressBoundary
         
         // Get the raw page with the base page class.
         Page page = sheaf.getPage(position, Page.class, new Page());
-        RawPage rawPage = page.getRawPage();
-        return new Dereference(address, initial, rawPage);
+        return new Dereference(address, initial, page.getRawPage_());
     }
 
     /**

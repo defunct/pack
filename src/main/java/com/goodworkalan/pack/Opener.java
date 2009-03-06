@@ -12,6 +12,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.goodworkalan.sheaf.Header;
+import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -19,7 +21,7 @@ import com.goodworkalan.sheaf.Sheaf;
  */
 public final class Opener
 {
-    /** A set of user defined temporary blocks to store intermeiate states. */ 
+    /** A set of user defined temporary blocks to store intermediate states. */ 
     private final Set<Long> temporaryBlocks;
     
     /** The pack opened by this opener. */
@@ -56,11 +58,12 @@ public final class Opener
      * @throws URISyntaxException If a static URI used to name a block address is malformed.
      * @throws IOException If an I/O error occurs while reading the static blocks.
      */
-    private Map<URI, Long> readStaticBlocks(Header header, FileChannel fileChannel) throws URISyntaxException, IOException 
+    private Map<URI, Long> readStaticBlocks(Header<Integer> header, FileChannel fileChannel) throws URISyntaxException, IOException 
     {
+        int staticBlockCount = header.get(Housekeeping.STATIC_BLOCK_COUNT).getByteBuffer().getInt(0);
         Map<URI, Long> staticBlocks = new TreeMap<URI, Long>();
-        ByteBuffer bytes = ByteBuffer.allocateDirect(header.getStaticBlockCount());
-        fileChannel.read(bytes, header.getStaticBlockMapStart());
+        ByteBuffer bytes = ByteBuffer.allocateDirect(staticBlockCount);
+        fileChannel.read(bytes, Housekeeping.getStaticBlockMapStart(header, header.get(Housekeeping.JOURNAL_COUNT).getByteBuffer().getInt(0)));
         bytes.flip();
         int count = bytes.getInt();
         for (int i = 0; i < count; i++)
@@ -86,18 +89,18 @@ public final class Opener
      * @throws PackException
      *             If an I/O error occurs.
      */
-    private Header readHeader(FileChannel fileChannel)
+    private Header<Integer> readHeader(FileChannel fileChannel)
     {
-        ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
+        Header<Integer> header = Housekeeping.newHeader();
         try
         {
-            fileChannel.read(bytes, 0L);
+            fileChannel.read(header.getByteBuffer(), 0L);
         }
         catch (IOException e)
         {
            throw new PackException(PackException.ERROR_IO_READ, e);
         }
-        return new Header(bytes);
+        return header;
     }
 
     /**
@@ -133,26 +136,51 @@ public final class Opener
         try
         {
             // Read the header and obtain the basic file properties.
-            Header header = readHeader(fileChannel);
+            Header<Integer> header = readHeader(fileChannel);
     
-            if (header.getSignature() != Pack.SIGNATURE)
+            if (header.get(Housekeeping.SIGNATURE).getByteBuffer().getInt(0) != Pack.SIGNATURE)
             {
                 return false;
             }
             
-            int shutdown = header.getShutdown();
-            if (shutdown != Pack.SOFT_SHUTDOWN)
+            Region shutdown = header.get(Housekeeping.SHUTDOWN);
+            shutdown.getLock().lock();
+            try
             {
-                return false;
+                if (shutdown.getByteBuffer().getInt(0) != Pack.SOFT_SHUTDOWN)
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                shutdown.getLock().unlock();
             }
     
             Map<URI, Long> staticBlocks = readStaticBlocks(header, fileChannel);
     
+            Region addressLookupPagePool = header.get(Housekeeping.ADDRESS_LOOKUP_PAGE_POOL);
             int reopenSize = 0;
-            reopenSize = (int) (fileChannel.size() - header.getAddressLookupPagePool());
+            addressLookupPagePool.getLock().lock();
+            try
+            {
+            reopenSize = (int) (fileChannel.size() - addressLookupPagePool.getByteBuffer().getLong(0));
+            }
+            finally
+            {
+                addressLookupPagePool.getLock().unlock();
+            }
             
             ByteBuffer reopen = ByteBuffer.allocateDirect(reopenSize);
-            fileChannel.read(reopen, header.getAddressLookupPagePool());
+            addressLookupPagePool.getLock().lock();
+            try
+            {
+            fileChannel.read(reopen, addressLookupPagePool.getByteBuffer().getLong(0));
+            }
+            finally
+            {
+                addressLookupPagePool.getLock().unlock();
+            }
             reopen.flip();
             
             SortedSet<Long> addressPages = new TreeSet<Long>();
@@ -163,10 +191,21 @@ public final class Opener
                 addressPages.add(reopen.getLong());
             }
             
-            fileChannel.truncate(header.getAddressLookupPagePool());
+            addressLookupPagePool.getLock().lock();
+            try
+            {
+                fileChannel.truncate(addressLookupPagePool.getByteBuffer().getLong(0));
+            }
+            finally
+            {
+                addressLookupPagePool.getLock().unlock();
+            }
             
-            Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
-            AddressBoundary userBoundary = new AddressBoundary(sheaf, header.getUserBoundary());
+            int pageSize = header.get(Housekeeping.PAGE_SIZE).getByteBuffer().getInt(0);
+            int headerSize = header.get(Housekeeping.HEADER_SIZE).getByteBuffer().getInt(0);
+            long addressBoundary = header.get(Housekeeping.ADDRESS_BOUNDARY).getByteBuffer().getLong(0);
+            Sheaf sheaf = new Sheaf(fileChannel, pageSize, headerSize);
+            AddressBoundary userBoundary = new AddressBoundary(sheaf, addressBoundary);
             InterimPagePool interimPagePool = new InterimPagePool(sheaf);
             TemporaryPool temporaryPool = new TemporaryPool(sheaf, header, userBoundary, interimPagePool);
             temporaryBlocks.addAll(temporaryPool.toMap().keySet());
@@ -177,18 +216,21 @@ public final class Opener
             {
                 long position = reopen.getLong();
                 BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
-                freedBlockPages.add(user.getRawPage().getPosition());
+                freedBlockPages.add(user.getRawPage_().getPosition());
             }
     
-            header.setShutdown(Pack.HARD_SHUTDOWN);
-            header.setAddressLookupPagePool(0L);
+            shutdown.getByteBuffer().putInt(0, Pack.HARD_SHUTDOWN);
+            shutdown.dirty();
+            header.getByteBuffer().putLong(0, 0L);
+            header.dirty();
     
             header.write(fileChannel, 0);
             
             fileChannel.force(true);
     
+            int addressPagePoolSize = header.get(Housekeeping.ADDRESS_PAGE_POOL_SIZE).getByteBuffer().getInt(0);
             Bouquet bouquet = new Bouquet(header, staticBlocks, userBoundary, sheaf,
-                        new AddressPagePool(header.getAddressPagePoolSize(), addressPages), 
+                        new AddressPagePool(addressPagePoolSize, addressPages), 
                         interimPagePool, temporaryPool);
             bouquet.getUserPagePool().vacuum(bouquet);
             pack = bouquet.getPack();

@@ -80,7 +80,8 @@ extends Operation
         for (;;)
         {
             Dereference dereference = addressBoundary.dereference(address);
-            synchronized (dereference.getMonitor())
+            dereference.getLock().lock();
+            try
             {
                 // Ensure that the page did not move since we dereferenced it.
                 BlockPage user = dereference.getBlockPage();
@@ -112,9 +113,13 @@ extends Operation
                 // through we see that the address reference has not changed.
 
                 user.free(address, dirtyPages);
-                freedBlockPages.add(user.getRawPage().getPosition());
+                freedBlockPages.add(user.getRawPage_().getPosition());
                 
                 break;
+            }
+            finally
+            {
+                dereference.getLock().unlock();
             }
         }
         

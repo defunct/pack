@@ -6,7 +6,10 @@ import java.util.LinkedList;
 import java.util.Map;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Header;
+import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
+import com.goodworkalan.sheaf.Writable;
 
 /**
  * Manages a linked list of pages that are employed as arrays of page position
@@ -18,13 +21,15 @@ import com.goodworkalan.sheaf.Sheaf;
  * 
  * @author Alan Gutierrez
  */
-abstract class ReferencePool
+class ReferencePool
 {
     /** The page manager. */
     private final Sheaf sheaf;
     
-    /** The file header. */
-    private final Header header;
+    private final Writable header;
+    
+    /** The head reference region. */
+    private final Region field;
     
     /** The boundary between address pages and user pages. */
     private final AddressBoundary addressBoundary;
@@ -53,18 +58,30 @@ abstract class ReferencePool
      * @param interimPagePool
      *            The interim page pool to use to allocate new reference pages.
      */
-    public ReferencePool(Sheaf sheaf, Header header, AddressBoundary addressBoundary, InterimPagePool interimPagePool)
+    public ReferencePool(Sheaf sheaf, Writable header, Region field, AddressBoundary addressBoundary, InterimPagePool interimPagePool)
     {
-        referencePages = new LinkedList<Long>();
-        long position = getHeaderField(header);
+        long position;
+        field.getLock().lock();
+        try
+        {
+            position = field.getByteBuffer().getLong(0);
+        }
+        finally
+        {
+            field.getLock().unlock();
+        }
+
+        LinkedList<Long> referencePages = new LinkedList<Long>();
         while (position != Long.MIN_VALUE)
         {
             referencePages.add(position);
             AddressPage references = addressBoundary.load(position, AddressPage.class, new AddressPage());
             position = references.dereference(position);
         }
+        this.referencePages = referencePages;
         this.sheaf = sheaf;
         this.addressBoundary = addressBoundary;
+        this.field = field;
         this.header = header;
         this.interimPagePool = interimPagePool;
     }
@@ -95,29 +112,6 @@ abstract class ReferencePool
     }
 
     /**
-     * Get the page position from the header of the first reference page in a
-     * linked list of reference pages.
-     * 
-     * @param header
-     *            The file header.
-     * @return The page position from the header of the first page in a linked
-     *         list of reference pages.
-     */
-    protected abstract long getHeaderField(Header header);
-
-    /**
-     * Get the page position from the header of the first reference page in a
-     * linked list of reference pages.
-     * 
-     * @param header
-     *            The file header.
-     * @param position
-     *            The page position from the header of the first page in a
-     *            linked list of reference pages.
-     */
-    protected abstract void setHeaderField(Header header, long position);
-
-    /**
      * Reserve a reference from one of the reference pages in the linked list of
      * reference pages. The given user boundary is used to locate reference
      * pages that were moved by the expansion of the address region.
@@ -138,13 +132,18 @@ abstract class ReferencePool
         {
             long position = referencePages.getFirst();
             AddressPage references = userBoundary.load(position, AddressPage.class, new AddressPage());
-            synchronized (references.getRawPage())
+            references.getRawPage_().getLock().lock();
+            try
             {
                 if (references.getFreeCount() != 0)
                 {
                     reference = references.reserve(dirtyPages);
                     break;
                 }
+            }
+            finally
+            {
+                references.getRawPage_().getLock().unlock();
             }
             referencePages.addLast(referencePages.removeFirst());
         }
@@ -168,9 +167,10 @@ abstract class ReferencePool
             DirtyPageSet allocDirtyPages = new DirtyPageSet();
             long position = interimPagePool.newBlankInterimPage(true);
             AddressPage references = sheaf.setPage(position, AddressPage.class, new AddressPage(), allocDirtyPages);
-            synchronized (header)
+            field.getLock().lock();
+            try
             {
-                references.set(position, getHeaderField(header), dirtyPages);
+                references.set(position, field.getByteBuffer().getLong(0), dirtyPages);
                 allocDirtyPages.flush();
                 try
                 {
@@ -180,7 +180,7 @@ abstract class ReferencePool
                 {
                     throw new PackException(PackException.ERROR_IO_FORCE, e);
                 }
-                setHeaderField(header, position);
+                field.getByteBuffer().putLong(0, position);
                 try
                 {
                     header.write(sheaf.getFileChannel(), 0);
@@ -198,6 +198,10 @@ abstract class ReferencePool
                     throw new PackException(PackException.ERROR_IO_FORCE, e);
                 }
                 referencePages.addFirst(position);
+            }
+            finally
+            {
+                field.getLock().unlock();
             }
             
             reference = reserve(sheaf, addressBoundary, dirtyPages);

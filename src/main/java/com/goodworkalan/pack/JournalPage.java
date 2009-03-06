@@ -41,14 +41,14 @@ extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
         
         bytes.clear();
         bytes.putLong(0);
         bytes.putInt(0);
 
-        getRawPage().dirty(0, JOURNAL_PAGE_HEADER_SIZE);
-        dirtyPages.add(getRawPage());
+        getRawPage_().dirty(0, JOURNAL_PAGE_HEADER_SIZE);
+        dirtyPages.add(getRawPage_());
         
         this.offset = JOURNAL_PAGE_HEADER_SIZE;
     }
@@ -68,14 +68,19 @@ extends Page
     public void writeChecksum(Checksum checksum)
     {
         long value = getChecksum(offset, checksum);
-        RawPage rawPage = getRawPage();
-        synchronized (rawPage)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer byteBuffer = rawPage.getByteBuffer();
             byteBuffer.clear();
             byteBuffer.putInt(offset);
             byteBuffer.putLong(value);
             rawPage.dirty(0, JOURNAL_PAGE_HEADER_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -96,7 +101,7 @@ extends Page
     {
         checksum.reset();
 
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
         bytes.position(JOURNAL_PAGE_HEADER_SIZE);
         bytes.limit(stop);
         while (bytes.remaining() != 0)
@@ -117,13 +122,18 @@ extends Page
      */
     public boolean isValidChecksum(Checksum checksum)
     {
-        RawPage rawPage = getRawPage();
-        synchronized (rawPage)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer byteBuffer = rawPage.getByteBuffer();
             int limit = byteBuffer.getInt();
             long value = byteBuffer.getLong();
             return value == getChecksum(limit, checksum);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -135,7 +145,7 @@ extends Page
      */
     private ByteBuffer getByteBuffer()
     {
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
         
         bytes.clear();
         bytes.position(offset);
@@ -165,20 +175,26 @@ extends Page
      */
     public boolean write(Operation operation, int remaining, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer bytes = getByteBuffer();
 
             if (operation.length() + remaining < bytes.remaining())
             {
-                getRawPage().dirty(offset, operation.length());
+                rawPage.dirty(offset, operation.length());
                 operation.write(bytes);
                 offset = bytes.position();
-                dirtyPages.add(getRawPage());
+                dirtyPages.add(rawPage);
                 return true;
             }
             
             return false;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -193,9 +209,15 @@ extends Page
      */
     public long getJournalPosition()
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            return getRawPage().getPosition() + offset;
+            return rawPage.getPosition() + offset;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -209,9 +231,15 @@ extends Page
      */
     public void seek(long position)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            this.offset = (int) (position - getRawPage().getPosition());
+            this.offset = (int) (position - rawPage.getPosition());
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 

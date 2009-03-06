@@ -6,6 +6,7 @@ import java.util.Map;
 import com.goodworkalan.pack.vacuum.MoveRecorder;
 import com.goodworkalan.pack.vacuum.Vacuum;
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.RawPage;
 
 /**
  * Used by {@link Vacuum} to record the moves necessary to vacuum a
@@ -41,9 +42,7 @@ class CoreMoveRecorder implements MoveRecorder
         this.moves = moves;
     }
     
-    /* (non-Javadoc)
-     * @see com.goodworkalan.pack.MoveRecorder#getPageSize()
-     */
+    // TODO Document.
     public int getPageSize()
     {
         return bouquet.getSheaf().getPageSize();
@@ -61,45 +60,43 @@ class CoreMoveRecorder implements MoveRecorder
         return bouquet.getAddressBoundary().load(position, BlockPage.class, new BlockPage());
     }
 
-    /* (non-Javadoc)
-     * @see com.goodworkalan.pack.MoveRecorder#getBytesRemaining(long)
-     */
+    // TODO Document.
     public int getBytesRemaining(long position)
     {
         return getBlockPage(position).getRemaining();
     }
 
-    /* (non-Javadoc)
-     * @see com.goodworkalan.pack.MoveRecorder#getBlockSizes(long)
-     */
+    // TODO Document.
     public Map<Long, Integer> getBlockSizes(long position)
     {
         Map<Long, Integer> map = new HashMap<Long, Integer>();
         BlockPage blocks = getBlockPage(position);
-        synchronized (blocks.getRawPage())
+        RawPage rawPage = blocks.getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             for (long address : blocks.getAddresses())
             {
                 map.put(address, blocks.getBlockSize(address));
             }
         }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
         return map;
     }
 
-    /* (non-Javadoc)
-     * @see com.goodworkalan.pack.MoveRecorder#move(long, long)
-     */
+    // TODO Document.
     public void move(long source, long destination)
     {
         moves.put(source, destination);
     }
 
-    /* (non-Javadoc)
-     * @see com.goodworkalan.pack.MoveRecorder#move(long)
-     */
+    // TODO Document.
     public void move(long source)
     {
         BlockPage destnation = bouquet.getInterimPagePool().newInterimPage(BlockPage.class, new BlockPage(), dirtyPages, true);
-        moves.put(source, destnation.getRawPage().getPosition());
+        moves.put(source, destnation.getRawPage_().getPosition());
     }
 }

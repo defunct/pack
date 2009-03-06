@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 
 /**
  * Interprets an underlying page as an array of file positions that reference a
@@ -68,7 +69,7 @@ final class AddressPage extends Page
      */
     public void load()
     {
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
 
         bytes.position(0);
 
@@ -92,7 +93,7 @@ final class AddressPage extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
 
         bytes.clear();
         
@@ -102,8 +103,8 @@ final class AddressPage extends Page
             freeCount++;
         }
 
-        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
-        dirtyPages.add(getRawPage());
+        getRawPage_().dirty();
+        dirtyPages.add(getRawPage_());
     }
     
     /**
@@ -114,9 +115,15 @@ final class AddressPage extends Page
      */
     public int getFreeCount()
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             return freeCount;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -135,11 +142,12 @@ final class AddressPage extends Page
      */
     public long reserve(DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        try
         {
             // Get the page buffer.
             
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             bytes.clear();
 
             // Iterate the page buffer looking for a zeroed address that has
@@ -149,15 +157,19 @@ final class AddressPage extends Page
             {
                 if (bytes.getLong(offset) == 0L)
                 {
-                    dirtyPages.add(getRawPage());
+                    dirtyPages.add(rawPage);
                     bytes.putLong(offset, Long.MAX_VALUE);
-                    getRawPage().dirty(offset, Pack.LONG_SIZE);
+                    rawPage.dirty(offset, Pack.LONG_SIZE);
                     freeCount--;
-                    return getRawPage().getPosition() + offset;
+                    return rawPage.getPosition() + offset;
                 }
             }
 
             throw new IllegalStateException();
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -175,13 +187,19 @@ final class AddressPage extends Page
      */
     public void set(long address, long position, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
-            int offset = (int) (address - getRawPage().getPosition());
+            ByteBuffer bytes = rawPage.getByteBuffer();
+            int offset = (int) (address - rawPage.getPosition());
             bytes.putLong(offset, position);
-            getRawPage().dirty(offset, Pack.LONG_SIZE);
-            dirtyPages.add(getRawPage());
+            rawPage.dirty(offset, Pack.LONG_SIZE);
+            dirtyPages.add(rawPage);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -194,10 +212,16 @@ final class AddressPage extends Page
      */
     public long dereference(long address)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            int offset = (int) (address - getRawPage().getPosition());
-            return getRawPage().getByteBuffer().getLong(offset);
+            int offset = (int) (address - rawPage.getPosition());
+            return rawPage.getByteBuffer().getLong(offset);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -211,20 +235,26 @@ final class AddressPage extends Page
      */
     public void free(long address, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
-            int offset = (int) (address - getRawPage().getPosition());
+            ByteBuffer bytes = rawPage.getByteBuffer();
+            int offset = (int) (address - rawPage.getPosition());
             long position = bytes.getLong(offset);
             if (position != 0L)
             {
                 bytes.putLong(offset, 0L);
                 
-                getRawPage().dirty(offset, Pack.LONG_SIZE);
-                dirtyPages.add(getRawPage());
+                rawPage.dirty(offset, Pack.LONG_SIZE);
+                dirtyPages.add(rawPage);
                 
                 freeCount++;
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -242,10 +272,12 @@ final class AddressPage extends Page
     public Map<Long, Long> toMap(int skip)
     {
         Map<Long, Long> map = new HashMap<Long, Long>();
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            long position = getRawPage().getPosition();
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            long position = rawPage.getPosition();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             bytes.clear();
             for (int offset = skip * Pack.LONG_SIZE; offset < bytes.capacity(); offset += Pack.LONG_SIZE)
             {
@@ -255,6 +287,10 @@ final class AddressPage extends Page
                     map.put(position + offset, value);
                 }
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         return map;
     }

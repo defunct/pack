@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Header;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -30,7 +31,10 @@ public final class Creator
     /** The block alignment. */
     private int alignment;
     
-    /** The minimum number of address pages with addresses available for allocation. */
+    /**
+     * The minimum number of address pages with addresses available for
+     * allocation.
+     */
     private int addressPagePoolSize;
 
     private int internalJournalCount;
@@ -140,20 +144,20 @@ public final class Creator
     public Pack create(FileChannel fileChannel)
     {
         // Initialize the header.
-        Header header = new Header(ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE));
+        Header<Integer> header = Housekeeping.newHeader();
         
-        header.setSignature(Pack.SIGNATURE);
-        header.setShutdown(Pack.HARD_SHUTDOWN);
-        header.setPageSize(pageSize);
-        header.setAlignment(alignment);
-        header.setJournalCount(internalJournalCount);
-        header.setStaticBlockCount(getStaticBlockMapSize());
-        header.setHeaderSize(Pack.FILE_HEADER_SIZE + header.getStaticBlockCount() + header.getJournalCount() * Pack.LONG_SIZE);
-        header.setAddressPagePoolSize(addressPagePoolSize);
-        header.setUserBoundary(pageSize);
-        header.setAddressLookupPagePool(0L);
-        header.setFirstTemporaryNode(Long.MIN_VALUE);
-        header.setByRemainingTable(Long.MIN_VALUE);
+        header.get(Housekeeping.SIGNATURE).getByteBuffer().putLong(0, Pack.SIGNATURE);
+        header.get(Housekeeping.SHUTDOWN).getByteBuffer().putInt(0, Pack.HARD_SHUTDOWN);
+        header.get(Housekeeping.PAGE_SIZE).getByteBuffer().putInt(0, pageSize);
+        header.get(Housekeeping.ALIGNMENT).getByteBuffer().putInt(0, alignment);
+        header.get(Housekeeping.JOURNAL_COUNT).getByteBuffer().putInt(0, internalJournalCount);
+        header.get(Housekeeping.STATIC_BLOCK_COUNT).getByteBuffer().putInt(0, getStaticBlockMapSize());
+        header.get(Housekeeping.HEADER_SIZE).getByteBuffer().putInt(0, Pack.FILE_HEADER_SIZE + getStaticBlockMapSize() + internalJournalCount * Pack.LONG_SIZE);
+        header.get(Housekeeping.ADDRESS_PAGE_POOL_SIZE).getByteBuffer().putInt(0, addressPagePoolSize);
+        header.get(Housekeeping.ADDRESS_BOUNDARY).getByteBuffer().putLong(0, pageSize);
+        header.get(Housekeeping.ADDRESS_LOOKUP_PAGE_POOL).getByteBuffer().putLong(0, 0L);
+        header.get(Housekeeping.FIRST_TEMPORARY_RESOURCE_PAGE).getByteBuffer().putLong(0, Long.MIN_VALUE);
+        header.get(Housekeeping.BY_REMAINING_TABLE).getByteBuffer().putLong(0, Long.MIN_VALUE);
 
         try
         {
@@ -194,20 +198,20 @@ public final class Creator
 
         SortedSet<Long> addressPages = new TreeSet<Long>();
         addressPages.add(0L);
-        Sheaf sheaf = new Sheaf(fileChannel, header.getPageSize(), header.getHeaderSize());
+        Sheaf sheaf = new Sheaf(fileChannel, pageSize, header.get(Housekeeping.HEADER_SIZE).getByteBuffer().getInt(0));
         
         DirtyPageSet dirtyPages = new DirtyPageSet();
         AddressPage addresses = sheaf.setPage(sheaf.extend(), AddressPage.class, new AddressPage(), dirtyPages);
         addresses.set(0, Long.MIN_VALUE, dirtyPages);
         dirtyPages.flush();
         
-        AddressBoundary userBoundary = new AddressBoundary(sheaf, header.getUserBoundary());
+        AddressBoundary userBoundary = new AddressBoundary(sheaf, sheaf.getPageSize());
         InterimPagePool interimPagePool = new InterimPagePool(sheaf);
         TemporaryPool temporaryPool = new TemporaryPool(sheaf, header, userBoundary, interimPagePool);
         Bouquet bouquet = new Bouquet(header, staticBlocks,
                 userBoundary,
                 sheaf,
-                new AddressPagePool(header.getAddressPagePoolSize(), addressPages), interimPagePool,
+                new AddressPagePool(addressPagePoolSize, addressPages), interimPagePool,
               temporaryPool);
         
         ByteBuffer statics = ByteBuffer.allocateDirect(getStaticBlockMapSize());
@@ -236,7 +240,7 @@ public final class Creator
         
         try
         {
-            fileChannel.write(statics, header.getStaticBlockMapStart());
+            fileChannel.write(statics, Housekeeping.getStaticBlockMapStart(header, internalJournalCount));
         }
         catch (IOException e)
         {

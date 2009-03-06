@@ -6,6 +6,7 @@ import java.util.Set;
 
 import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Header;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -59,22 +60,9 @@ class TemporaryPool
      * @param interimPagePool
      *            The interim page pool to use to allocate new reference pages.
      */
-    public TemporaryPool(Sheaf sheaf, Header header, AddressBoundary addressBoundary, InterimPagePool interimPagePool)
+    public TemporaryPool(Sheaf sheaf, Header<Integer> header, AddressBoundary addressBoundary, InterimPagePool interimPagePool)
     {
-        this.referencePool = new ReferencePool(sheaf, header, addressBoundary, interimPagePool)
-        {
-            @Override
-            protected long getHeaderField(Header header)
-            {
-                return header.getFirstTemporaryNode();
-            }
-            
-            @Override
-            protected void setHeaderField(Header header, long position)
-            {
-                header.setFirstTemporaryNode(position);
-            }
-        };
+        this.referencePool = new ReferencePool(sheaf, header, header.get(Housekeeping.FIRST_TEMPORARY_RESOURCE_PAGE), addressBoundary, interimPagePool);
         this.latchSet = new LatchSet<Long>(64);
         this.temporaries = new HashMap<Long, Long>();
         for (Map.Entry<Long, Long> mapping : referencePool.toMap(sheaf, addressBoundary).entrySet())

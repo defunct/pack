@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 
 /**
  * A page that references linked lists of slots that reference pages with bytes
@@ -23,13 +24,14 @@ class ByRemainingPage extends Page
     @Override
     public void create(DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
+        RawPage rawPage = getRawPage_();
+        dirtyPages.add(rawPage);
+        ByteBuffer byteBuffer = rawPage.getByteBuffer();
         while (byteBuffer.remaining() == 0)
         {
             byteBuffer.put((byte) 0);
         }
-        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
+        rawPage.dirty();
     }
 
     /**
@@ -41,8 +43,17 @@ class ByRemainingPage extends Page
      */
     public void setAlignment(int alignment, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putInt(0, alignment);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            dirtyPages.add(rawPage);
+            rawPage.getByteBuffer().putInt(0, alignment);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
     
     /**
@@ -52,7 +63,16 @@ class ByRemainingPage extends Page
      */
     public int getAlignment()
     {
-        return getRawPage().getByteBuffer().getInt(0);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            return rawPage.getByteBuffer().getInt(0);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -67,7 +87,16 @@ class ByRemainingPage extends Page
      */
     public long getSlotPosition(int alignmentIndex)
     {
-        return getRawPage().getByteBuffer().getLong(Pack.LONG_SIZE * alignmentIndex);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            return rawPage.getByteBuffer().getLong(Pack.LONG_SIZE * alignmentIndex);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -85,9 +114,18 @@ class ByRemainingPage extends Page
      */
     public void setSlotPosition(int alignmentIndex, long address, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putLong(Pack.LONG_SIZE * alignmentIndex, address);
-        getRawPage().dirty(Pack.LONG_SIZE * alignmentIndex, Pack.LONG_SIZE);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            dirtyPages.add(rawPage);
+            rawPage.getByteBuffer().putLong(Pack.LONG_SIZE * alignmentIndex, address);
+            rawPage.dirty(Pack.LONG_SIZE * alignmentIndex, Pack.LONG_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -101,9 +139,18 @@ class ByRemainingPage extends Page
      */
     public long getAllocSlotPosition(int slotIndex)
     {
-        int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();
-        return getRawPage().getByteBuffer().getLong(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex);
+        RawPage rawPage = getRawPage_();
+        int pageSize = rawPage.getSheaf().getPageSize();
+        rawPage.getLock().lock();
+        try
+        {
+            return rawPage.getByteBuffer().getLong(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -120,10 +167,19 @@ class ByRemainingPage extends Page
      */
     public void setAllocSlotPosition(int slotIndex, long position, DirtyPageSet dirtyPages)
     {
-        int pageSize = getRawPage().getSheaf().getPageSize();
         int alignment = getAlignment();
-        dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putLong(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, position);
-        getRawPage().dirty(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, Pack.LONG_SIZE);
+        RawPage rawPage = getRawPage_();
+        int pageSize = rawPage.getSheaf().getPageSize();
+        rawPage.getLock().lock();
+        try
+        {
+            dirtyPages.add(rawPage);
+            rawPage.getByteBuffer().putLong(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, position);
+            rawPage.dirty(Pack.LONG_SIZE * (pageSize / alignment) + Pack.LONG_SIZE * slotIndex, Pack.LONG_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 }

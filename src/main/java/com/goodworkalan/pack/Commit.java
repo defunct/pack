@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -36,13 +37,25 @@ class Commit extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, JournalHeader journalHeader, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, Region journalHeader, DirtyPageSet dirtyPages)
     {
-        journalHeader.getByteBuffer().clear();
-        journalHeader.getByteBuffer().putLong(0, 0L);
-
         dirtyPages.flush();
-        journalHeader.write(sheaf.getFileChannel());
+        
+        ByteBuffer byteBuffer = journalHeader.getByteBuffer();
+
+        byteBuffer.clear();
+        byteBuffer.putLong(0L);
+        byteBuffer.flip();
+
+        try
+        {
+            sheaf.getFileChannel().write(byteBuffer);
+        }
+        catch (IOException e)
+        {
+            throw new PackException(PackException.ERROR_IO_WRITE, e);
+        }
+
         try
         {
             sheaf.getFileChannel().force(true);

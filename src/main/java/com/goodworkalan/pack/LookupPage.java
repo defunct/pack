@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 
 /**
  * A page for managing sorted blocks of long values in a doubly linked list of
@@ -22,13 +23,14 @@ class LookupPage extends Page
     @Override
     public void create(DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
+        RawPage rawPage = getRawPage_();
+        dirtyPages.add(rawPage);
+        ByteBuffer byteBuffer = rawPage.getByteBuffer();
         while (byteBuffer.remaining() == 0)
         {
             byteBuffer.put((byte) 0);
         }
-        getRawPage().dirty(0, getRawPage().getSheaf().getPageSize());
+        rawPage.dirty(0, rawPage.getSheaf().getPageSize());
     }
 
     /**
@@ -41,9 +43,18 @@ class LookupPage extends Page
      */
     public void setBlockSize(int blockSize, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        getRawPage().getByteBuffer().putInt(0, blockSize);
-        getRawPage().dirty(0, Pack.INT_SIZE);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            dirtyPages.add(rawPage);
+            rawPage.getByteBuffer().putInt(0, blockSize);
+            rawPage.dirty(0, Pack.INT_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
     
     /**
@@ -53,7 +64,16 @@ class LookupPage extends Page
      */
     public int getBlockSize()
     {
-        return getRawPage().getByteBuffer().getInt(0);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            return rawPage.getByteBuffer().getInt(0);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -71,47 +91,56 @@ class LookupPage extends Page
      */
     public boolean add(long position, long value, boolean force, DirtyPageSet dirtyPages)
     {
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (position - getRawPage().getPosition());
-        int blockSize = getBlockSize();
-        if (!force && byteBuffer.getLong(offset + (blockSize - 1) * Pack.LONG_SIZE) != 0L)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            return false;
-        }
-
-        int i;
-        for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) < value; i += Pack.LONG_SIZE)
-        {
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int offset = (int) (position - rawPage.getPosition());
+            int blockSize = getBlockSize();
+            if (!force && byteBuffer.getLong(offset + (blockSize - 1) * Pack.LONG_SIZE) != 0L)
+            {
+                return false;
+            }
+    
+            int i;
+            for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) < value; i += Pack.LONG_SIZE)
+            {
+                if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
+                {
+                    byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
+                    byteBuffer.putLong(i, 0L);
+                    rawPage.dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                }
+            }
+            
             if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
             {
                 byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
-                byteBuffer.putLong(i, 0L);
-                getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                byteBuffer.putLong(i, value);
+                rawPage.dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                return true;
             }
-        }
-        
-        if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
-        {
-            byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
+            
+            int j;
+            for (j = i; byteBuffer.getLong(i) != 0L; i += Pack.LONG_SIZE)
+            {
+            }
+    
+            rawPage.dirty(i, j - i);
+            for (; j != i; j -= Pack.LONG_SIZE)
+            {
+                byteBuffer.putLong(j - Pack.LONG_SIZE, byteBuffer.getLong(j));
+            }
+    
             byteBuffer.putLong(i, value);
-            getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+            
             return true;
         }
-        
-        int j;
-        for (j = i; byteBuffer.getLong(i) != 0L; i += Pack.LONG_SIZE)
+        finally
         {
+            rawPage.getLock().unlock();
         }
-
-        getRawPage().dirty(i, j - i);
-        for (; j != i; j -= Pack.LONG_SIZE)
-        {
-            byteBuffer.putLong(j - Pack.LONG_SIZE, byteBuffer.getLong(j));
-        }
-
-        byteBuffer.putLong(i, value);
-        
-        return true;
     }
 
     /**
@@ -127,21 +156,30 @@ class LookupPage extends Page
      */
     public long remove(long position, DirtyPageSet dirtyPages)
     {
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (position - getRawPage().getPosition());
-        int blockSize = getBlockSize();
-        for (int i = blockSize - Pack.LONG_SIZE; i != offset + Pack.LONG_SIZE; i -= Pack.LONG_SIZE)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            long value = byteBuffer.getLong(offset);
-            if (value != 0L)
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int offset = (int) (position - rawPage.getPosition());
+            int blockSize = getBlockSize();
+            for (int i = blockSize - Pack.LONG_SIZE; i != offset + Pack.LONG_SIZE; i -= Pack.LONG_SIZE)
             {
-                dirtyPages.add(getRawPage());
-                byteBuffer.putLong(offset, 0L);
-                getRawPage().dirty(offset, Pack.LONG_SIZE);
-                return value;
+                long value = byteBuffer.getLong(offset);
+                if (value != 0L)
+                {
+                    dirtyPages.add(rawPage);
+                    byteBuffer.putLong(offset, 0L);
+                    rawPage.dirty(offset, Pack.LONG_SIZE);
+                    return value;
+                }
             }
+            return 0L;
         }
-        return 0L;
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -161,42 +199,51 @@ class LookupPage extends Page
      */
     public boolean remove(long position, long value, DirtyPageSet dirtyPages)
     {
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (position - getRawPage().getPosition());
-        int slotSize = getBlockSize();
-        int low = 0;
-        int j;
-        for (j = offset + slotSize * Pack.LONG_SIZE; byteBuffer.getLong(j) == 0L; j -= Pack.LONG_SIZE)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int offset = (int) (position - rawPage.getPosition());
+            int slotSize = getBlockSize();
+            int low = 0;
+            int j;
+            for (j = offset + slotSize * Pack.LONG_SIZE; byteBuffer.getLong(j) == 0L; j -= Pack.LONG_SIZE)
+            {
+            }
+            int high = (j - offset) - 2;
+            int mid = -1;
+            long found = 0L;
+            while (low <= high)
+            {
+                mid = low + ((high - low) / 2);
+                found = byteBuffer.getLong(offset + Pack.LONG_SIZE * (2 + mid));
+                if (found > value)
+                {
+                    high = mid - 1;
+                }
+                else if (found < value)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if (found == value)
+            {
+                dirtyPages.add(rawPage);
+                byteBuffer.putLong(offset + Pack.LONG_SIZE * (2 + mid), 0L);
+                rawPage.dirty(offset + Pack.LONG_SIZE * (2 + mid), Pack.LONG_SIZE);
+                return true;
+            }
+            return false;
         }
-        int high = (j - offset) - 2;
-        int mid = -1;
-        long found = 0L;
-        while (low <= high)
+        finally
         {
-            mid = low + ((high - low) / 2);
-            found = byteBuffer.getLong(offset + Pack.LONG_SIZE * (2 + mid));
-            if (found > value)
-            {
-                high = mid - 1;
-            }
-            else if (found < value)
-            {
-                low = mid + 1;
-            }
-            else
-            {
-                break;
-            }
+            rawPage.getLock().unlock();
         }
-        if (found == value)
-        {
-            dirtyPages.add(getRawPage());
-            byteBuffer.putLong(offset + Pack.LONG_SIZE * (2 + mid), 0L);
-            getRawPage().dirty(offset + Pack.LONG_SIZE * (2 + mid), Pack.LONG_SIZE);
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -210,8 +257,17 @@ class LookupPage extends Page
      */
     public long least(long block)
     {
-        int offset = (int) (block - getRawPage().getPosition());
-        return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE * 2);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {
+            int offset = (int) (block - rawPage.getPosition());
+            return rawPage.getByteBuffer().getLong(offset + Pack.LONG_SIZE * 2);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -226,18 +282,27 @@ class LookupPage extends Page
      */
     public void compact(long position, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int offset = (int) (position - getRawPage().getPosition());
-        int i;
-        for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) != 0L; i += Pack.LONG_SIZE)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
+            dirtyPages.add(rawPage);
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int offset = (int) (position - rawPage.getPosition());
+            int i;
+            for (i = offset + Pack.LONG_SIZE * 2; byteBuffer.getLong(i) != 0L; i += Pack.LONG_SIZE)
             {
-                byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
-                byteBuffer.putLong(i, 0L);
-                getRawPage().dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                if (byteBuffer.getLong(i - Pack.LONG_SIZE) == 0L)
+                {
+                    byteBuffer.putLong(i - Pack.LONG_SIZE, byteBuffer.getLong(i));
+                    byteBuffer.putLong(i, 0L);
+                    rawPage.dirty(i - Pack.LONG_SIZE, Pack.LONG_SIZE * 2);
+                }
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -254,10 +319,19 @@ class LookupPage extends Page
      */
     public void setPrevious(long position, long previous, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        int offset = (int) (position - getRawPage().getPosition());
-        getRawPage().getByteBuffer().putLong(offset, previous);
-        getRawPage().dirty(offset, Pack.LONG_SIZE);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {        
+            dirtyPages.add(rawPage);
+            int offset = (int) (position - rawPage.getPosition());
+            rawPage.getByteBuffer().putLong(offset, previous);
+            rawPage.dirty(offset, Pack.LONG_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -270,8 +344,17 @@ class LookupPage extends Page
      */
     public long getPrevious(long position)
     {
-        int offset = (int) (position - getRawPage().getPosition());
-        return getRawPage().getByteBuffer().getLong(offset);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {        
+            int offset = (int) (position - rawPage.getPosition());
+            return rawPage.getByteBuffer().getLong(offset);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -287,10 +370,19 @@ class LookupPage extends Page
      */
     public void setNext(long position, long next, DirtyPageSet dirtyPages)
     {
-        dirtyPages.add(getRawPage());
-        int offset = (int) (position - getRawPage().getPosition());
-        getRawPage().getByteBuffer().putLong(offset+ Pack.LONG_SIZE, next);
-        getRawPage().dirty(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {  
+            dirtyPages.add(rawPage);
+            int offset = (int) (position - rawPage.getPosition());
+            rawPage.getByteBuffer().putLong(offset+ Pack.LONG_SIZE, next);
+            rawPage.dirty(offset + Pack.LONG_SIZE, Pack.LONG_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -303,8 +395,17 @@ class LookupPage extends Page
      */
     public long getNext(long position)
     {
-        int offset = (int) (position - getRawPage().getPosition());
-        return getRawPage().getByteBuffer().getLong(offset + Pack.LONG_SIZE);
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {  
+            int offset = (int) (position - rawPage.getPosition());
+            return rawPage.getByteBuffer().getLong(offset + Pack.LONG_SIZE);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -321,21 +422,30 @@ class LookupPage extends Page
      */
     public long allocateBlock(long previous, DirtyPageSet dirtyPages)
     {
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int pageSize = getRawPage().getSheaf().getPageSize();
-        int slotSize = getBlockSize() * Pack.LONG_SIZE;
-        for (int i = Pack.INT_SIZE; i + slotSize < pageSize; i += slotSize)
-        {
-            if (byteBuffer.getLong(i) == 0L)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {  
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int pageSize = rawPage.getSheaf().getPageSize();
+            int slotSize = getBlockSize() * Pack.LONG_SIZE;
+            for (int i = Pack.INT_SIZE; i + slotSize < pageSize; i += slotSize)
             {
-                dirtyPages.add(getRawPage());
-                getRawPage().dirty(i, Pack.LONG_SIZE);
-                byteBuffer.putLong(i, previous);
-                byteBuffer.putLong(i +  Pack.LONG_SIZE , Long.MIN_VALUE);
-                return getRawPage().getPosition() + i;
+                if (byteBuffer.getLong(i) == 0L)
+                {
+                    dirtyPages.add(rawPage);
+                    rawPage.dirty(i, Pack.LONG_SIZE);
+                    byteBuffer.putLong(i, previous);
+                    byteBuffer.putLong(i +  Pack.LONG_SIZE , Long.MIN_VALUE);
+                    return rawPage.getPosition() + i;
+                }
             }
+            return 0L;
         }
-        return 0L;
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 
     /**
@@ -349,23 +459,32 @@ class LookupPage extends Page
      */
     public long[] removeBlock(DirtyPageSet dirtyPages)
     {
-        ByteBuffer byteBuffer = getRawPage().getByteBuffer();
-        int pageSize = getRawPage().getSheaf().getPageSize();
-        int blockSize = getBlockSize() * Pack.LONG_SIZE;
-        for (int i = Pack.INT_SIZE; i + blockSize < pageSize; i += blockSize)
-        {
-            if (byteBuffer.getLong(i) != 0L)
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
+        {  
+            ByteBuffer byteBuffer = rawPage.getByteBuffer();
+            int pageSize = rawPage.getSheaf().getPageSize();
+            int blockSize = getBlockSize() * Pack.LONG_SIZE;
+            for (int i = Pack.INT_SIZE; i + blockSize < pageSize; i += blockSize)
             {
-                dirtyPages.add(getRawPage());
-                long[] values = new long[getBlockSize()];
-                for (int j = i; j < getBlockSize(); j++)
+                if (byteBuffer.getLong(i) != 0L)
                 {
-                    values[j] = byteBuffer.getLong(i + j * Pack.LONG_SIZE);
-                    byteBuffer.putLong(i + j * Pack.LONG_SIZE, 0L);
-                }
-                return values;
-            }            
+                    dirtyPages.add(rawPage);
+                    long[] values = new long[getBlockSize()];
+                    for (int j = i; j < getBlockSize(); j++)
+                    {
+                        values[j] = byteBuffer.getLong(i + j * Pack.LONG_SIZE);
+                        byteBuffer.putLong(i + j * Pack.LONG_SIZE, 0L);
+                    }
+                    return values;
+                }            
+            }
+            return null;
         }
-        return null;
+        finally
+        {
+            rawPage.getLock().unlock();
+        }
     }
 }

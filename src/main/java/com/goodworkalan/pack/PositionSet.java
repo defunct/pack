@@ -1,6 +1,13 @@
 package com.goodworkalan.pack;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import com.goodworkalan.sheaf.BasicRegion;
+import com.goodworkalan.sheaf.Cleanable;
+import com.goodworkalan.sheaf.NullCleanable;
+import com.goodworkalan.sheaf.Region;
 
 /**
  * Maintains a set of allocated and free positions that reference a position on
@@ -55,35 +62,41 @@ final class PositionSet
      * @return A position in which to store a position value from the range
      *         covered by this position set.
      */
-    public synchronized JournalHeader allocate()
+    public Region allocate()
     {
-        JournalHeader segment = null;
-        for (;;)
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(Pack.LONG_SIZE);
+        Lock lock =  new ReentrantLock();
+        Cleanable cleanable = new NullCleanable(Pack.LONG_SIZE);
+        synchronized (this)
         {
-            for (int i = 0; i < reserved.length && segment == null; i++)
+            Region segment = null;
+            for (;;)
             {
-                if (!reserved[i])
+                for (int i = 0; i < reserved.length && segment == null; i++)
                 {
-                    reserved[i] = true;
-                    segment = new JournalHeader(ByteBuffer.allocateDirect(Pack.LONG_SIZE), position + i * Pack.LONG_SIZE, this);
+                    if (!reserved[i])
+                    {
+                        reserved[i] = true;
+                        segment = new BasicRegion(position + i * Pack.LONG_SIZE, byteBuffer, lock, cleanable);
+                    }
+                }
+                if (segment == null)
+                {
+                    try
+                    {
+                        wait();
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+                else
+                {
+                    break;
                 }
             }
-            if (segment == null)
-            {
-                try
-                {
-                    wait();
-                }
-                catch (InterruptedException e)
-                {
-                }
-            }
-            else
-            {
-                break;
-            }
+            return segment;
         }
-        return segment;
     }
 
     /**
@@ -93,7 +106,7 @@ final class PositionSet
      * @param pointer
      *            A structure containing the position the free.
      */
-    public synchronized void free(JournalHeader pointer)
+    public synchronized void free(Region pointer)
     {
         int offset = (int) (pointer.getPosition() - position) / Pack.LONG_SIZE;
         reserved[offset] = false;

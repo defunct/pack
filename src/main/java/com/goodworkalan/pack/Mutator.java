@@ -81,7 +81,7 @@ public final class Mutator
         Sheaf sheaf = bouquet.getSheaf();
         AddressBoundary userBoundary = bouquet.getAddressBoundary();
         InterimPagePool interimPagePool = bouquet.getInterimPagePool();
-        int alignment = bouquet.getHeader().getAlignment();
+        int alignment = bouquet.getAlignment();
         int maximumBlockSize = bouquet.getPack().getMaximumBlockSize();
 
         ByRemainingTable allocByRemaining = new ByRemainingTable(sheaf, userBoundary, interimPagePool, alignment, maximumBlockSize, dirtyPages);
@@ -184,7 +184,7 @@ public final class Mutator
             
             allocByRemaining.add(interim);
             
-            addresses.put(-address, interim.getRawPage().getPosition());
+            addresses.put(-address, interim.getRawPage_().getPosition());
             
             return address;
         }
@@ -273,13 +273,18 @@ public final class Mutator
                 do
                 {
                     Dereference dereference = bouquet.getAddressBoundary().dereference(address);
-                    synchronized (dereference.getMonitor())
+                    dereference.getLock().lock();
+                    try
                     {
                         BlockPage blocks = dereference.getBlockPage();
                         if (blocks != null)
                         {
                             isContinued = blocks.isContinued(address);
                         }
+                    }
+                    finally
+                    {
+                        dereference.getLock().unlock();
                     }
                 }
                 while (isContinued == null);
@@ -351,13 +356,18 @@ public final class Mutator
             do
             {
                 Dereference dereference = bouquet.getAddressBoundary().dereference(address);
-                synchronized (dereference.getMonitor())
+                dereference.getLock().lock();
+                try
                 {
                     BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
                     {
                         blockSize = blocks.getBlockSize(address);
                     }
+                }
+                finally
+                {
+                    dereference.getLock().unlock();
                 }
             }
             while (blockSize == 0);
@@ -381,7 +391,8 @@ public final class Mutator
             do
             {
                 Dereference dereference = bouquet.getAddressBoundary().dereference(address);
-                synchronized (dereference.getMonitor())
+                dereference.getLock().lock();
+                try
                 {
                     BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
@@ -389,12 +400,16 @@ public final class Mutator
                         read = blocks.read(address, copy);
                     }
                 }
+                finally
+                {
+                    dereference.getLock().unlock();
+                }
             }
             while (read == null);
             read.flip();
             interim.write(address, read, dirtyPages);
 
-            addresses.put(address, interim.getRawPage().getPosition());
+            addresses.put(address, interim.getRawPage_().getPosition());
         }
         else
         {
@@ -478,13 +493,21 @@ public final class Mutator
             Long isolated = getIsolated(address);
             if (isolated == null)
             {
-                Dereference dereference = bouquet.getAddressBoundary().dereference(address);
-                synchronized (dereference.getMonitor())
+                do
                 {
-                    BlockPage blocks = dereference.getBlockPage();
-                    if (blocks != null)
+                    Dereference dereference = bouquet.getAddressBoundary().dereference(address);
+                    dereference.getLock().lock();
+                    try
                     {
-                        read = blocks.read(address, destination);
+                        BlockPage blocks = dereference.getBlockPage();
+                        if (blocks != null)
+                        {
+                            read = blocks.read(address, destination);
+                        }
+                    }
+                    finally
+                    {
+                        dereference.getLock().unlock();
                     }
                 }
                 while (read == null);
@@ -556,7 +579,7 @@ public final class Mutator
             {
                 // Free the block from the interim page.
                 BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
-                allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
+                allocByRemaining.remove(interim.getRawPage_().getPosition(), interim.getRemaining());
                 interim.unallocate(address, dirtyPages);
                 
                 // We remove and reinsert because the bytes remaining will change.

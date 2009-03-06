@@ -15,8 +15,6 @@ import java.nio.channels.FileChannel;
 
 import org.testng.annotations.Test;
 
-import com.goodworkalan.sheaf.DirtyMap;
-
 public class PackTestCase
 {
     private File newFile()
@@ -74,44 +72,6 @@ public class PackTestCase
     @Test public void create()
     {
         new Creator().create(newFileChannel()).close();
-    }
-
-    @Test(expectedExceptions=java.lang.IllegalStateException.class) public void regionalLowerRange()
-    {
-        final ByteBuffer expected = ByteBuffer.allocateDirect(64);
-
-        DirtyMap regional = new DirtyMap(0L)
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return expected;
-            }
-        };
-        regional.dirty(-1, 10);
-    }
-
-    @Test(expectedExceptions=java.lang.IllegalStateException.class) public void regionalUpperRange()
-    {
-        final ByteBuffer expected = ByteBuffer.allocateDirect(64);
-
-        DirtyMap regional = new DirtyMap(0L)
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return expected;
-            }
-        };
-        regional.dirty(0, 65);
-    }
-
-    @Test public void header()
-    {
-        ByteBuffer bytes = ByteBuffer.allocateDirect(Pack.FILE_HEADER_SIZE);
-        Header header = new Header(bytes);
-        header.setSignature(0);
-        assertEquals(header.getSignature(), 0);
     }
 
     @Test public void reopen()

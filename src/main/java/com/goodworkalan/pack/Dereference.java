@@ -1,5 +1,7 @@
 package com.goodworkalan.pack;
 
+import java.util.concurrent.locks.Lock;
+
 import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
@@ -63,8 +65,8 @@ public class Dereference
      * 
      * @return The raw page monitor.
      */
-    public Object getMonitor()
+    public Lock getLock()
     {
-        return rawPage;
+        return rawPage.getLock();
     }
 }

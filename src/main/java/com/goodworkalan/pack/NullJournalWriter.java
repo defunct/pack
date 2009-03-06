@@ -81,7 +81,7 @@ extends JournalWriter
         Set<Long> journalPages = new HashSet<Long>();
         JournalPage journal = interimPagePool.newInterimPage(JournalPage.class, new JournalPage(), dirtyPages, false);
         journal.writeChecksum(checksum);
-        journalPages.add(journal.getRawPage().getPosition());
+        journalPages.add(journal.getRawPage_().getPosition());
         return new JournalWriter(sheaf, interimPagePool, checksum, journal.getJournalPosition(), journal, journalPages, dirtyPages);
     }
 }

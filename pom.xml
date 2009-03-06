@@ -72,6 +72,13 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+      <repository>
+        <id>ssh-repository</id>
+        <url>scpexe://maribor.blogometer.com/cb/www/static/goodworkalan/m2/repository</url>
+      </repository>
+    </distributionManagement>
+
     <properties>
         <site.javadoc.show>protected</site.javadoc.show>
         <site.javadoc.visiblity>public</site.javadoc.visiblity>
@@ -184,6 +191,10 @@
                             <offlineLink>
                                 <url>http://curlybraces.org/documentation/sheaf/api/${site.javadoc.visiblity}/</url>
                                 <location>etc/javadoc/sheaf/</location>
+                            </offlineLink>
+                            <offlineLink>
+                                <url>http://curlybraces.org/documentation/region/api/${site.javadoc.visiblity}/</url>
+                                <location>etc/javadoc/region/</location>
                             </offlineLink>
                         </offlineLinks>
                     </configuration>

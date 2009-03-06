@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Page;
+import com.goodworkalan.sheaf.RawPage;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -108,18 +109,19 @@ class BlockPage extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
+        RawPage rawPage = getRawPage_();
         this.count = 0;
-        this.remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
+        this.remaining = rawPage.getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
 
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = rawPage.getByteBuffer();
 
         bytes.clear();
 
-        getRawPage().dirty(0, Pack.BLOCK_PAGE_HEADER_SIZE);
+        rawPage.dirty(0, Pack.BLOCK_PAGE_HEADER_SIZE);
         bytes.putLong(0L);
         bytes.putInt(getDiskBlockCount());
 
-        dirtyPages.add(getRawPage());
+        dirtyPages.add(rawPage);
     }
 
     /**
@@ -131,7 +133,7 @@ class BlockPage extends Page
      */
     private int calcRemaining()
     {
-        int remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
+        int remaining = getRawPage_().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
         ByteBuffer bytes = getBlockRange();
         for (int i = 0; i < count; i++)
         {
@@ -147,7 +149,7 @@ class BlockPage extends Page
      */
     public void load()
     {
-        ByteBuffer bytes = getRawPage().getByteBuffer();
+        ByteBuffer bytes = getRawPage_().getByteBuffer();
 
         bytes.clear();
         bytes.getLong();
@@ -163,9 +165,15 @@ class BlockPage extends Page
      */
     public int getBlockCount()
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             return count;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
     
@@ -181,9 +189,15 @@ class BlockPage extends Page
      */
     public int getRemaining()
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             return remaining;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
     
@@ -231,13 +245,19 @@ class BlockPage extends Page
      */
     public Boolean isContinued(long address)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 return bytes.getLong(bytes.position() + Pack.INT_SIZE) < 0L;
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         
         return null;
@@ -261,14 +281,20 @@ class BlockPage extends Page
      */
     public boolean setContinued(long address)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 bytes.putLong(bytes.position() + Pack.INT_SIZE, -getAddress(bytes));
                 return true;
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         
         return false;
@@ -312,7 +338,7 @@ class BlockPage extends Page
      */
     protected ByteBuffer getBlockRange()
     {
-        return getBlockRange(getRawPage().getByteBuffer());
+        return getBlockRange(getRawPage_().getByteBuffer());
     }
 
     /**
@@ -361,9 +387,11 @@ class BlockPage extends Page
      */
     public void truncate(long address, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            dirtyPages.add(getRawPage());
+            dirtyPages.add(rawPage);
             count = 0;
             if (address != 0L)
             {
@@ -379,13 +407,17 @@ class BlockPage extends Page
                     advance(bytes, size);
                 }
             }
-            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
-            getRawPage().getByteBuffer().putInt(Pack.LONG_SIZE, getDiskBlockCount());
+            rawPage.dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
+            rawPage.getByteBuffer().putInt(Pack.LONG_SIZE, getDiskBlockCount());
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
     /**
-     * Attempt to pruge the block page of freed blocks by removing those freed
+     * Attempt to purge the block page of freed blocks by removing those freed
      * blocks that are not followed by allocated blocks. That is, remove any
      * consecutive freed blocks at the end of the list of blocks.
      * <p>
@@ -432,8 +464,9 @@ class BlockPage extends Page
         {
             count -= free;
             remaining += freed;
-            dirtyPages.add(getRawPage());
-            getRawPage().getByteBuffer().putInt(0, getDiskBlockCount());
+            RawPage rawPage = getRawPage_();
+            dirtyPages.add(rawPage);
+            rawPage.getByteBuffer().putInt(0, getDiskBlockCount());
         }
         return continuous;
     }
@@ -449,13 +482,19 @@ class BlockPage extends Page
      */
     public int getBlockSize(long address)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 return getBlockSize(bytes);
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         return 0;
     }
@@ -469,7 +508,9 @@ class BlockPage extends Page
     public List<Long> getAddresses()
     {
         List<Long> listOfAddresses = new ArrayList<Long>(getBlockCount());
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer bytes = getBlockRange();
             for (int i = 0; i < count; i++)
@@ -481,6 +522,10 @@ class BlockPage extends Page
                 }
                 advance(bytes, size);
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         return listOfAddresses;
     }
@@ -504,7 +549,9 @@ class BlockPage extends Page
     public long getLastAddress()
     {
         long last = 0L;
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer bytes = getBlockRange();
             for (int i = 0; i < count; i++)
@@ -516,6 +563,10 @@ class BlockPage extends Page
                 }
                 advance(bytes, size);
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         return last;
     }
@@ -538,7 +589,9 @@ class BlockPage extends Page
             throw new IllegalArgumentException();
         }
     
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer bytes = getBlockRange();
             
@@ -547,7 +600,7 @@ class BlockPage extends Page
                 throw new IllegalStateException();
             }
 
-            getRawPage().dirty(bytes.position(), blockSize);
+            rawPage.dirty(bytes.position(), blockSize);
 
             bytes.putInt(blockSize);
             bytes.putLong(address);
@@ -557,9 +610,13 @@ class BlockPage extends Page
 
             bytes.clear();
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
-            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
+            rawPage.dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
 
-            dirtyPages.add(getRawPage());
+            dirtyPages.add(rawPage);
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -589,9 +646,11 @@ class BlockPage extends Page
      */
     public boolean write(long address, ByteBuffer data, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 int offset = bytes.position();
@@ -605,13 +664,17 @@ class BlockPage extends Page
                 {
                     throw new BufferOverflowException();
                 }
-                getRawPage().dirty(bytes.position(), bytes.remaining());
+                rawPage.dirty(bytes.position(), bytes.remaining());
                 bytes.put(data);
                 bytes.limit(bytes.capacity());
-                dirtyPages.add(getRawPage());
+                dirtyPages.add(rawPage);
                 return true;
             }
             return false;
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 
@@ -649,9 +712,11 @@ class BlockPage extends Page
      */
     public ByteBuffer read(long address, ByteBuffer destination)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 if (destination == null)
@@ -669,6 +734,10 @@ class BlockPage extends Page
                 bytes.limit(bytes.capacity());
                 return destination;
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         return null;
     }
@@ -691,12 +760,14 @@ class BlockPage extends Page
     public boolean free(long address, DirtyPageSet dirtyPages)
     {
         // Synchronize on the raw page.
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             // If the block is found, negate the block size, indicating that the
             // absolute value of the block size should be skipped when iterating
             // the blocks.
-            ByteBuffer bytes = getRawPage().getByteBuffer();
+            ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
                 int offset = bytes.position();
@@ -707,13 +778,17 @@ class BlockPage extends Page
                     size = -size;
                 }
     
-                getRawPage().dirty(offset, Pack.INT_SIZE);
+                rawPage.dirty(offset, Pack.INT_SIZE);
                 bytes.putInt(offset, size);
     
-                dirtyPages.add(getRawPage());
+                dirtyPages.add(rawPage);
                 
                 return true;
             }
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
         
         return false;
@@ -737,7 +812,9 @@ class BlockPage extends Page
      */
     public void unallocate(long address, DirtyPageSet dirtyPages)
     {
-        synchronized (getRawPage())
+        RawPage rawPage = getRawPage_();
+        rawPage.getLock().lock();
+        try
         {
             ByteBuffer bytes = getBlockRange();
             int blockSize = 0;
@@ -788,13 +865,17 @@ class BlockPage extends Page
             
             if (length != 0)
             {
-                getRawPage().dirty(to, length);
+                rawPage.dirty(to, length);
             }
+            
+            count--;
     
-             count--;
-    
-            getRawPage().dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
+            rawPage.dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
+        }
+        finally
+        {
+            rawPage.getLock().unlock();
         }
     }
 }

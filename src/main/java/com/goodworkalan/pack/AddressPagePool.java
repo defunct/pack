@@ -318,7 +318,7 @@ class AddressPagePool implements Iterable<Long>
      */
     public void returnAddressPage(AddressPage addressPage)
     {
-        long position = addressPage.getRawPage().getPosition();
+        long position = addressPage.getRawPage_().getPosition();
         synchronized (addressPages)
         {
             if (returningAddressPages.remove(position))

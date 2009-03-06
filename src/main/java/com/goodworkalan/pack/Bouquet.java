@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.goodworkalan.lock.many.LatchSet;
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Header;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -24,13 +25,16 @@ final class Bouquet
     private final Pack pack;
     
     /** Housekeeping information stored at the head of the file. */
-    private final Header header;
+    private final Header<Integer> header;
 
     /**
      * A map of URIs that identify the addresses of static blocks specified
      * at the creation of the pack.
      */
     private final Map<URI, Long> staticBlocks;
+
+    // TODO Document.
+    private final int alignment;
 
     /**
      * The set of journal header positions stored in a {@link PositionSet} that
@@ -74,7 +78,7 @@ final class Bouquet
      * by the journaled file vacuum.
      */
     private final DirtyPageSet vacuumDirtyPages;
-
+    
     /**
      * Create a bouquet of the given services.
      * 
@@ -94,18 +98,19 @@ final class Bouquet
      * @param temporaryFactory
      *            The temporary address reference pool.
      */
-    public Bouquet(Header header, Map<URI, Long> staticBlocks, AddressBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, InterimPagePool interimPagePool, TemporaryPool temporaryFactory)
+    public Bouquet(Header<Integer> header, Map<URI, Long> staticBlocks, AddressBoundary userBoundary, Sheaf sheaf, AddressPagePool addressPagePool, InterimPagePool interimPagePool, TemporaryPool temporaryFactory)
     {
+        this.alignment = header.get(Housekeeping.ALIGNMENT).getByteBuffer().getInt(0);
         this.pack = new Pack(this);
         this.header = header;
         this.staticBlocks = staticBlocks;
-        this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.getJournalCount());
+        this.journalHeaders = new PositionSet(Pack.FILE_HEADER_SIZE, header.get(Housekeeping.JOURNAL_COUNT).getByteBuffer().getInt(0));
         this.addressBoundary = userBoundary;
         this.sheaf = sheaf;
         this.addressPagePool = addressPagePool;
         this.vacuumDirtyPages = new DirtyPageSet();
         this.interimPagePool = interimPagePool;
-        this.userPagePool = new UserPagePool(new ByRemainingTable(sheaf, userBoundary, interimPagePool, header.getAlignment(), pack.getMaximumBlockSize(), vacuumDirtyPages), header.getPageSize(), header.getAlignment());
+        this.userPagePool = new UserPagePool(new ByRemainingTable(sheaf, userBoundary, interimPagePool, alignment, pack.getMaximumBlockSize(), vacuumDirtyPages), sheaf.getPageSize(), alignment);
         this.temporaryPool = temporaryFactory;
         this.vacuumMutex = new Object();
         this.addressLocker = new LatchSet<Long>(64);
@@ -126,7 +131,7 @@ final class Bouquet
      * 
      * @return The housekeeping information stored at the head of the file.
      */
-    public Header getHeader()
+    public Header<Integer> getHeader()
     {
         return header;
     }
@@ -142,6 +147,11 @@ final class Bouquet
     public Map<URI, Long> getStaticBlocks()
     {
         return staticBlocks;
+    }
+
+    public int getAlignment()
+    {
+        return alignment;
     }
 
     /**

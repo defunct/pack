@@ -9,6 +9,8 @@ import java.util.Map;
 
 import com.goodworkalan.pack.vacuum.Vacuum;
 import com.goodworkalan.sheaf.DirtyPageSet;
+import com.goodworkalan.sheaf.Header;
+import com.goodworkalan.sheaf.Region;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.
@@ -60,6 +62,7 @@ public class Pack
     
     /** The bouquet of services. */
     final Bouquet bouquet;
+
     
     /**
      * Create a pack with the given bouquet of services.
@@ -98,13 +101,18 @@ public class Pack
             do
             {
                 Dereference dereference = bouquet.getAddressBoundary().dereference(address);
-                synchronized (dereference.getMonitor())
+                dereference.getLock().lock();
+                try
                 {
                     BlockPage blocks = dereference.getBlockPage();
                     if (blocks != null)
                     {
                         read = blocks.read(address, destination);
                     }
+                }
+                finally
+                {
+                    dereference.getLock().unlock();
                 }
             }
             while (read == null);
@@ -182,7 +190,7 @@ public class Pack
      */
     public int getAlignment()
     {
-        return bouquet.getHeader().getAlignment();
+        return bouquet.getAlignment();
     }
     
     /**
@@ -388,10 +396,43 @@ public class Pack
             throw new PackException(PackException.ERROR_IO_TRUNCATE, e);
         }
         
-        bouquet.getHeader().setUserBoundary(bouquet.getAddressBoundary().getPosition());
-        bouquet.getHeader().setAddressLookupPagePool(endOfSheaf);
+        Header<Integer> header = bouquet.getHeader();
+        Region addressBoundary = header.get(Housekeeping.ADDRESS_BOUNDARY);
+        addressBoundary.getLock().lock();
+        try
+        {
+            addressBoundary.getByteBuffer().putLong(0, bouquet.getAddressBoundary().getPosition());
+            addressBoundary.dirty();
+        }
+        finally
+        {
+            addressBoundary.getLock().unlock();
+        }
+        
+        Region addressLookupPagePool = header.get(Housekeeping.ADDRESS_LOOKUP_PAGE_POOL);
+        addressLookupPagePool.getLock().lock();
+        try
+        {
+            addressLookupPagePool.getByteBuffer().putLong(0, endOfSheaf);
+            addressLookupPagePool.dirty();
+        }
+        finally
+        {
+            addressLookupPagePool.getLock().unlock();
+        }
 
-        bouquet.getHeader().setShutdown(Pack.SOFT_SHUTDOWN);
+        Region shutdown = header.get(Housekeeping.SHUTDOWN);
+        shutdown.getLock().lock();
+        try
+        {
+            shutdown.getByteBuffer().putInt(0, Pack.SOFT_SHUTDOWN);
+            shutdown.dirty();
+        }
+        finally            
+        {
+            shutdown.getLock().unlock();
+        }
+
         try
         {
             bouquet.getHeader().write(bouquet.getSheaf().getFileChannel(), 0);
