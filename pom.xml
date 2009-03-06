@@ -48,6 +48,11 @@
         </dependency>
         <dependency>
             <groupId>com.goodworkalan</groupId>
+            <artifactId>region</artifactId>
+            <version>0.1.X</version>
+        </dependency>
+        <dependency>
+            <groupId>com.goodworkalan</groupId>
             <artifactId>sheaf</artifactId>
             <version>0.1.X</version>
         </dependency>

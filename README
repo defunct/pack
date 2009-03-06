@@ -1,0 +1,15 @@
+PACK
+
+A random-access block file format.
+
+    Issues and Tasks: http://blogometer.com/trac/incubator
+    Source: http://github.com/bigeasy/litany/tree/master
+    Contact: alan@blogometer.com
+
+PURPOSE
+
+Split a file into blocks for storage of objects.
+
+MOTIVATION
+
+Simplify object storage. Random access without a relational database.
