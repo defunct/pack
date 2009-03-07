@@ -177,6 +177,12 @@ class BlockPage extends Page
         }
     }
     
+    /**
+     * Get the count of blocks in the block page as it should be written to
+     * disk.
+     * 
+     * @return The disk representation of the block count.
+     */
     private int getDiskBlockCount()
     {
         return -count;

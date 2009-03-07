@@ -12,7 +12,7 @@ import java.util.Map;
 public interface MoveRecorder
 {
     /**
-     * Get the size of a page in the <code>Pack</code>.
+     * Get the size of a page in the file.
      * 
      * @return The page size.
      */
@@ -22,7 +22,7 @@ public interface MoveRecorder
      * Get the bytes remaining in the block page at the given position.
      * 
      * @param position
-     *            The position of the block page.
+     *            The block page position.
      * @return The bytes remaining in the block page.
      */
     public int getBytesRemaining(long position);

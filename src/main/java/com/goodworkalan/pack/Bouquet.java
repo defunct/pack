@@ -33,7 +33,7 @@ final class Bouquet
      */
     private final Map<URI, Long> staticBlocks;
 
-    // TODO Document.
+    /** The block alignment. */
     private final int alignment;
 
     /**
@@ -149,6 +149,11 @@ final class Bouquet
         return staticBlocks;
     }
 
+    /**
+     * Get the alignment to which all block allocations are rounded.
+     * 
+     * @return The alignment to which all block allocations are rounded.
+     */
     public int getAlignment()
     {
         return alignment;
