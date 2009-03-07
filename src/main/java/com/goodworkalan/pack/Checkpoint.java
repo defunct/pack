@@ -3,8 +3,8 @@ package com.goodworkalan.pack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.region.Region;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**

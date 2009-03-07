@@ -24,7 +24,7 @@ class ByRemainingPage extends Page
     @Override
     public void create(DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         dirtyPages.add(rawPage);
         ByteBuffer byteBuffer = rawPage.getByteBuffer();
         while (byteBuffer.remaining() == 0)
@@ -43,7 +43,7 @@ class ByRemainingPage extends Page
      */
     public void setAlignment(int alignment, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -63,7 +63,7 @@ class ByRemainingPage extends Page
      */
     public int getAlignment()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -87,7 +87,7 @@ class ByRemainingPage extends Page
      */
     public long getSlotPosition(int alignmentIndex)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -114,7 +114,7 @@ class ByRemainingPage extends Page
      */
     public void setSlotPosition(int alignmentIndex, long address, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -140,7 +140,7 @@ class ByRemainingPage extends Page
     public long getAllocSlotPosition(int slotIndex)
     {
         int alignment = getAlignment();
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         int pageSize = rawPage.getSheaf().getPageSize();
         rawPage.getLock().lock();
         try
@@ -168,7 +168,7 @@ class ByRemainingPage extends Page
     public void setAllocSlotPosition(int slotIndex, long position, DirtyPageSet dirtyPages)
     {
         int alignment = getAlignment();
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         int pageSize = rawPage.getSheaf().getPageSize();
         rawPage.getLock().lock();
         try

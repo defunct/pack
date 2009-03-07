@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.goodworkalan.region.Region;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Region;
 
 /**
  * Plays a journal, calling the {@link Operation#execute(Player) commit} method
@@ -229,7 +229,7 @@ final class Player
         {
             operation.execute(this);
             journalPage = operation.getJournalPage(this, journalPage);
-            journalPages.add(journalPage.getRawPage_().getPosition());
+            journalPages.add(journalPage.getRawPage().getPosition());
             operation = journalPage.next();
         }
 

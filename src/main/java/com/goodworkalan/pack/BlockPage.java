@@ -109,7 +109,7 @@ class BlockPage extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         this.count = 0;
         this.remaining = rawPage.getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
 
@@ -133,7 +133,7 @@ class BlockPage extends Page
      */
     private int calcRemaining()
     {
-        int remaining = getRawPage_().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
+        int remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
         ByteBuffer bytes = getBlockRange();
         for (int i = 0; i < count; i++)
         {
@@ -149,7 +149,7 @@ class BlockPage extends Page
      */
     public void load()
     {
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
         bytes.getLong();
@@ -165,7 +165,7 @@ class BlockPage extends Page
      */
     public int getBlockCount()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -195,7 +195,7 @@ class BlockPage extends Page
      */
     public int getRemaining()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -251,7 +251,7 @@ class BlockPage extends Page
      */
     public Boolean isContinued(long address)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -287,7 +287,7 @@ class BlockPage extends Page
      */
     public boolean setContinued(long address)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -344,7 +344,7 @@ class BlockPage extends Page
      */
     protected ByteBuffer getBlockRange()
     {
-        return getBlockRange(getRawPage_().getByteBuffer());
+        return getBlockRange(getRawPage().getByteBuffer());
     }
 
     /**
@@ -393,7 +393,7 @@ class BlockPage extends Page
      */
     public void truncate(long address, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -470,7 +470,7 @@ class BlockPage extends Page
         {
             count -= free;
             remaining += freed;
-            RawPage rawPage = getRawPage_();
+            RawPage rawPage = getRawPage();
             dirtyPages.add(rawPage);
             rawPage.getByteBuffer().putInt(0, getDiskBlockCount());
         }
@@ -488,7 +488,7 @@ class BlockPage extends Page
      */
     public int getBlockSize(long address)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -514,7 +514,7 @@ class BlockPage extends Page
     public List<Long> getAddresses()
     {
         List<Long> listOfAddresses = new ArrayList<Long>(getBlockCount());
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -555,7 +555,7 @@ class BlockPage extends Page
     public long getLastAddress()
     {
         long last = 0L;
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -595,7 +595,7 @@ class BlockPage extends Page
             throw new IllegalArgumentException();
         }
     
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -652,7 +652,7 @@ class BlockPage extends Page
      */
     public boolean write(long address, ByteBuffer data, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -718,7 +718,7 @@ class BlockPage extends Page
      */
     public ByteBuffer read(long address, ByteBuffer destination)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -766,7 +766,7 @@ class BlockPage extends Page
     public boolean free(long address, DirtyPageSet dirtyPages)
     {
         // Synchronize on the raw page.
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -818,7 +818,7 @@ class BlockPage extends Page
      */
     public void unallocate(long address, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {

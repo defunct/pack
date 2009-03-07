@@ -41,14 +41,14 @@ extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
         
         bytes.clear();
         bytes.putLong(0);
         bytes.putInt(0);
 
-        getRawPage_().dirty(0, JOURNAL_PAGE_HEADER_SIZE);
-        dirtyPages.add(getRawPage_());
+        getRawPage().dirty(0, JOURNAL_PAGE_HEADER_SIZE);
+        dirtyPages.add(getRawPage());
         
         this.offset = JOURNAL_PAGE_HEADER_SIZE;
     }
@@ -68,7 +68,7 @@ extends Page
     public void writeChecksum(Checksum checksum)
     {
         long value = getChecksum(offset, checksum);
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -101,7 +101,7 @@ extends Page
     {
         checksum.reset();
 
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
         bytes.position(JOURNAL_PAGE_HEADER_SIZE);
         bytes.limit(stop);
         while (bytes.remaining() != 0)
@@ -122,7 +122,7 @@ extends Page
      */
     public boolean isValidChecksum(Checksum checksum)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -145,7 +145,7 @@ extends Page
      */
     private ByteBuffer getByteBuffer()
     {
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
         
         bytes.clear();
         bytes.position(offset);
@@ -175,7 +175,7 @@ extends Page
      */
     public boolean write(Operation operation, int remaining, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -209,7 +209,7 @@ extends Page
      */
     public long getJournalPosition()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -231,7 +231,7 @@ extends Page
      */
     public void seek(long position)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {

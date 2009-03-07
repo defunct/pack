@@ -23,7 +23,7 @@ class LookupPage extends Page
     @Override
     public void create(DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         dirtyPages.add(rawPage);
         ByteBuffer byteBuffer = rawPage.getByteBuffer();
         while (byteBuffer.remaining() == 0)
@@ -43,7 +43,7 @@ class LookupPage extends Page
      */
     public void setBlockSize(int blockSize, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -64,7 +64,7 @@ class LookupPage extends Page
      */
     public int getBlockSize()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -91,7 +91,7 @@ class LookupPage extends Page
      */
     public boolean add(long position, long value, boolean force, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -156,7 +156,7 @@ class LookupPage extends Page
      */
     public long remove(long position, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -199,7 +199,7 @@ class LookupPage extends Page
      */
     public boolean remove(long position, long value, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -257,7 +257,7 @@ class LookupPage extends Page
      */
     public long least(long block)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -282,7 +282,7 @@ class LookupPage extends Page
      */
     public void compact(long position, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -319,7 +319,7 @@ class LookupPage extends Page
      */
     public void setPrevious(long position, long previous, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {        
@@ -344,7 +344,7 @@ class LookupPage extends Page
      */
     public long getPrevious(long position)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {        
@@ -370,7 +370,7 @@ class LookupPage extends Page
      */
     public void setNext(long position, long next, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {  
@@ -395,7 +395,7 @@ class LookupPage extends Page
      */
     public long getNext(long position)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {  
@@ -422,7 +422,7 @@ class LookupPage extends Page
      */
     public long allocateBlock(long previous, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {  
@@ -459,7 +459,7 @@ class LookupPage extends Page
      */
     public long[] removeBlock(DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {  

@@ -10,8 +10,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.goodworkalan.region.Header;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Header;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -37,6 +37,7 @@ public final class Creator
      */
     private int addressPagePoolSize;
 
+    /** The number of journal headers in the file. */
     private int internalJournalCount;
     
     /**

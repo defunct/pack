@@ -8,9 +8,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import com.goodworkalan.pack.vacuum.Vacuum;
+import com.goodworkalan.region.Header;
+import com.goodworkalan.region.Region;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Header;
-import com.goodworkalan.sheaf.Region;
 
 /**
  * Management of a file as a reusable randomly accessible blocks of data.

@@ -149,7 +149,7 @@ final class ByRemainingTable implements ByRemaining
      */
     public void add(BlockPage blocks)
     {
-        add(blocks.getRawPage_().getPosition(), blocks.getRemaining());
+        add(blocks.getRawPage().getPosition(), blocks.getRemaining());
     }
 
     /**
@@ -236,7 +236,7 @@ final class ByRemainingTable implements ByRemaining
                 }
                 long adjusted = addressBoundary.adjust(position);
                 Page page = sheaf.getPage(adjusted, Page.class, new Page());
-                RawPage rawPage = page.getRawPage_();
+                RawPage rawPage = page.getRawPage();
                 rawPage.getLock().lock();
                 try
                 {

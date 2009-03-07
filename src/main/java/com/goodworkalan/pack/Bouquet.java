@@ -4,8 +4,8 @@ import java.net.URI;
 import java.util.Map;
 
 import com.goodworkalan.lock.many.LatchSet;
+import com.goodworkalan.region.Header;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Header;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**

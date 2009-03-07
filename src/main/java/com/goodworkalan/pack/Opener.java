@@ -12,8 +12,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.goodworkalan.sheaf.Header;
-import com.goodworkalan.sheaf.Region;
+import com.goodworkalan.region.Header;
+import com.goodworkalan.region.Region;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -216,7 +216,7 @@ public final class Opener
             {
                 long position = reopen.getLong();
                 BlockPage user = sheaf.getPage(position, BlockPage.class, new BlockPage());
-                freedBlockPages.add(user.getRawPage_().getPosition());
+                freedBlockPages.add(user.getRawPage().getPosition());
             }
     
             shutdown.getByteBuffer().putInt(0, Pack.HARD_SHUTDOWN);

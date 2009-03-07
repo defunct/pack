@@ -74,18 +74,18 @@ class Move extends Operation
         // The deference method is not necessary since only one thread moves
         // blocks outside of a user write or free.
         BlockPage sourcePage = addressBoundary.load(source, BlockPage.class, new BlockPage());
-        sourcePage.getRawPage_().getLock().lock();
+        sourcePage.getRawPage().getLock().lock();
         try
         {
             BlockPage destinationPage = addressBoundary.load(destination, BlockPage.class, new BlockPage());
-            destinationPage.getRawPage_().getLock().lock();
+            destinationPage.getRawPage().getLock().lock();
             try
             {
                 destinationPage.truncate(truncate, dirtyPages);
                 for (long address : sourcePage.getAddresses())
                 {
                     AddressPage addresses = sheaf.getPage(address, AddressPage.class, new AddressPage());
-                    addresses.getRawPage_().getLock().lock();
+                    addresses.getRawPage().getLock().lock();
                     try
                     {
                         long current = addresses.dereference(address);
@@ -103,18 +103,18 @@ class Move extends Operation
                     }
                     finally
                     {
-                        addresses.getRawPage_().getLock().unlock();
+                        addresses.getRawPage().getLock().unlock();
                     }
                 }
             }
             finally
             {
-                destinationPage.getRawPage_().getLock().unlock();
+                destinationPage.getRawPage().getLock().unlock();
             }
         }
         finally
         {
-            sourcePage.getRawPage_().getLock().unlock();
+            sourcePage.getRawPage().getLock().unlock();
         }
     }
 

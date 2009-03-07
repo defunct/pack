@@ -170,7 +170,7 @@ class AddressBoundary
         
         // Get the raw page with the base page class.
         Page page = sheaf.getPage(position, Page.class, new Page());
-        return new Dereference(address, initial, page.getRawPage_());
+        return new Dereference(address, initial, page.getRawPage());
     }
 
     /**

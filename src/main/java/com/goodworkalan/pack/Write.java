@@ -95,7 +95,7 @@ extends Operation
                     }
                     // We may have already updated the address during a failed
                     // journal playback.
-                    boolean freed = user.getRawPage_().getPosition() == position;
+                    boolean freed = user.getRawPage().getPosition() == position;
                     if (!freed)
                     {
                         // Free the existing block. We may have already freed
@@ -109,7 +109,7 @@ extends Operation
                         if (freed)
                         {
                             // Record the block page as containing freed blocks.
-                            freedBlockPages.add(user.getRawPage_().getPosition());
+                            freedBlockPages.add(user.getRawPage().getPosition());
                         }
                     }
 
@@ -131,7 +131,7 @@ extends Operation
                     // changed.
 
                     BlockPage interim = sheaf.getPage(position, BlockPage.class, new BlockPage());
-                    interim.getRawPage_().getLock().lock();
+                    interim.getRawPage().getLock().lock();
                     try
                     {
                         addresses.set(address, position, dirtyPages);
@@ -139,7 +139,7 @@ extends Operation
                     }
                     finally
                     {
-                        interim.getRawPage_().getLock().unlock();
+                        interim.getRawPage().getLock().unlock();
                     }
                 }
                 finally

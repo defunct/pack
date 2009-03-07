@@ -4,10 +4,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.goodworkalan.sheaf.BasicRegion;
-import com.goodworkalan.sheaf.Cleanable;
-import com.goodworkalan.sheaf.NullCleanable;
-import com.goodworkalan.sheaf.Region;
+import com.goodworkalan.region.BasicRegion;
+import com.goodworkalan.region.Cleanable;
+import com.goodworkalan.region.NullCleanable;
+import com.goodworkalan.region.Region;
 
 /**
  * Maintains a set of allocated and free positions that reference a position on

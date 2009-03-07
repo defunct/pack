@@ -113,7 +113,7 @@ public class LookupPagePool
     {
         LookupPage setPage = interimPagePool.newInterimPage(LookupPage.class, new LookupPage(), dirtyPages, true);
         setPage.setBlockSize(blockSizes.get(blockSizeIndex), dirtyPages);
-        lookupPagePositionIO.write(blockSizeIndex, setPage.getRawPage_().getPosition(), dirtyPages);
+        lookupPagePositionIO.write(blockSizeIndex, setPage.getRawPage().getPosition(), dirtyPages);
     }
 
     /**
@@ -188,7 +188,7 @@ public class LookupPagePool
         LookupPage lookupPage = addressBoundary.load(position, LookupPage.class, new LookupPage());
         if (!lookupPage.add(position, value, false, dirtyPages))
         {
-            newLookupBlock(getNextBlockSizeIndex(lookupPage), lookupPage.getRawPage_().getPosition(), dirtyPages);
+            newLookupBlock(getNextBlockSizeIndex(lookupPage), lookupPage.getRawPage().getPosition(), dirtyPages);
             position = lookupBlockPositionIO.read(); 
             lookupPage.add(position, value, false, dirtyPages);
         }

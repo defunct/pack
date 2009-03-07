@@ -113,7 +113,7 @@ extends Operation
                 // through we see that the address reference has not changed.
 
                 user.free(address, dirtyPages);
-                freedBlockPages.add(user.getRawPage_().getPosition());
+                freedBlockPages.add(user.getRawPage().getPosition());
                 
                 break;
             }

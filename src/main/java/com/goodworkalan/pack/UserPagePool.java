@@ -154,10 +154,10 @@ class UserPagePool
         {
             long position = continuous.next();
             BlockPage blocks = bouquet.getAddressBoundary().load(position, BlockPage.class, new BlockPage());
-            blocks.getRawPage_().getLock().lock();
+            blocks.getRawPage().getLock().lock();
             try
             {
-                byRemaining.remove(blocks.getRawPage_().getPosition(), blocks.getRemaining());
+                byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining());
                 if (blocks.purge(dirtyPages))
                 {
                     continuous.remove();
@@ -167,13 +167,13 @@ class UserPagePool
                     }
                     else
                     {
-                        byRemaining.add(blocks.getRawPage_().getPosition(), blocks.getRemaining());
+                        byRemaining.add(blocks.getRawPage().getPosition(), blocks.getRemaining());
                     }
                 }
             }
             finally
             {
-                blocks.getRawPage_().getLock().unlock();
+                blocks.getRawPage().getLock().unlock();
             }
         }
         

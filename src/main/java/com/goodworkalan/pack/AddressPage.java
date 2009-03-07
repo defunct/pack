@@ -69,7 +69,7 @@ final class AddressPage extends Page
      */
     public void load()
     {
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.position(0);
 
@@ -93,7 +93,7 @@ final class AddressPage extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
-        ByteBuffer bytes = getRawPage_().getByteBuffer();
+        ByteBuffer bytes = getRawPage().getByteBuffer();
 
         bytes.clear();
         
@@ -103,8 +103,8 @@ final class AddressPage extends Page
             freeCount++;
         }
 
-        getRawPage_().dirty();
-        dirtyPages.add(getRawPage_());
+        getRawPage().dirty();
+        dirtyPages.add(getRawPage());
     }
     
     /**
@@ -115,7 +115,7 @@ final class AddressPage extends Page
      */
     public int getFreeCount()
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -142,7 +142,7 @@ final class AddressPage extends Page
      */
     public long reserve(DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         try
         {
             // Get the page buffer.
@@ -187,7 +187,7 @@ final class AddressPage extends Page
      */
     public void set(long address, long position, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -212,7 +212,7 @@ final class AddressPage extends Page
      */
     public long dereference(long address)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -235,7 +235,7 @@ final class AddressPage extends Page
      */
     public void free(long address, DirtyPageSet dirtyPages)
     {
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -272,7 +272,7 @@ final class AddressPage extends Page
     public Map<Long, Long> toMap(int skip)
     {
         Map<Long, Long> map = new HashMap<Long, Long>();
-        RawPage rawPage = getRawPage_();
+        RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {

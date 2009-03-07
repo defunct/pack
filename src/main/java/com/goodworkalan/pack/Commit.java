@@ -3,8 +3,8 @@ package com.goodworkalan.pack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import com.goodworkalan.region.Region;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
 
 /**
@@ -37,10 +37,11 @@ class Commit extends Operation
      * @param dirtyPages
      *            The dirty page set.
      */
-    private void commit(Sheaf sheaf, Region journalHeader, DirtyPageSet dirtyPages)
+    private void commit(Sheaf sheaf, Region journalHeader,
+            DirtyPageSet dirtyPages)
     {
         dirtyPages.flush();
-        
+
         ByteBuffer byteBuffer = journalHeader.getByteBuffer();
 
         byteBuffer.clear();
@@ -76,9 +77,10 @@ class Commit extends Operation
     @Override
     public void execute(Player player)
     {
-        commit(player.getBouquet().getSheaf(), player.getJournalHeader(), player.getDirtyPages());
+        commit(player.getBouquet().getSheaf(), player.getJournalHeader(),
+                player.getDirtyPages());
     }
-    
+
     /**
      * Return the length of the operation in the journal including the type
      * flag.
@@ -103,7 +105,7 @@ class Commit extends Operation
     {
         bytes.putShort(COMMIT);
     }
-    
+
     /**
      * Return the length of the operation in the journal including the type
      * flag.

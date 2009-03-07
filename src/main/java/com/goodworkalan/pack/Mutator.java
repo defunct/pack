@@ -184,7 +184,7 @@ public final class Mutator
             
             allocByRemaining.add(interim);
             
-            addresses.put(-address, interim.getRawPage_().getPosition());
+            addresses.put(-address, interim.getRawPage().getPosition());
             
             return address;
         }
@@ -409,7 +409,7 @@ public final class Mutator
             read.flip();
             interim.write(address, read, dirtyPages);
 
-            addresses.put(address, interim.getRawPage_().getPosition());
+            addresses.put(address, interim.getRawPage().getPosition());
         }
         else
         {
@@ -579,7 +579,7 @@ public final class Mutator
             {
                 // Free the block from the interim page.
                 BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
-                allocByRemaining.remove(interim.getRawPage_().getPosition(), interim.getRemaining());
+                allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
                 interim.unallocate(address, dirtyPages);
                 
                 // We remove and reinsert because the bytes remaining will change.

@@ -5,11 +5,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import com.goodworkalan.region.Header;
+import com.goodworkalan.region.Region;
+import com.goodworkalan.region.Writable;
 import com.goodworkalan.sheaf.DirtyPageSet;
-import com.goodworkalan.sheaf.Header;
-import com.goodworkalan.sheaf.Region;
 import com.goodworkalan.sheaf.Sheaf;
-import com.goodworkalan.sheaf.Writable;
 
 /**
  * Manages a linked list of pages that are employed as arrays of page position
@@ -132,7 +132,7 @@ class ReferencePool
         {
             long position = referencePages.getFirst();
             AddressPage references = userBoundary.load(position, AddressPage.class, new AddressPage());
-            references.getRawPage_().getLock().lock();
+            references.getRawPage().getLock().lock();
             try
             {
                 if (references.getFreeCount() != 0)
@@ -143,7 +143,7 @@ class ReferencePool
             }
             finally
             {
-                references.getRawPage_().getLock().unlock();
+                references.getRawPage().getLock().unlock();
             }
             referencePages.addLast(referencePages.removeFirst());
         }

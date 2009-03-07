@@ -87,7 +87,7 @@ class CoreMoveRecorder implements MoveRecorder
     {
         Map<Long, Integer> map = new HashMap<Long, Integer>();
         BlockPage blocks = getBlockPage(position);
-        RawPage rawPage = blocks.getRawPage_();
+        RawPage rawPage = blocks.getRawPage();
         rawPage.getLock().lock();
         try
         {
@@ -141,6 +141,6 @@ class CoreMoveRecorder implements MoveRecorder
     public void move(long source)
     {
         BlockPage destnation = bouquet.getInterimPagePool().newInterimPage(BlockPage.class, new BlockPage(), dirtyPages, true);
-        moves.put(source, destnation.getRawPage_().getPosition());
+        moves.put(source, destnation.getRawPage().getPosition());
     }
 }
