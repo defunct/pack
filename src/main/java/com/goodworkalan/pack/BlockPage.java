@@ -72,6 +72,8 @@ class BlockPage extends Page
     /** The count of blocks in this page. */
     private int count;
 
+    // FIXME Calculate this. And return different values based on whether the
+    // caller wants to include freed blocks.
     /** The count of bytes remaining for block allocation. */
     private int remaining;
 
@@ -176,7 +178,7 @@ class BlockPage extends Page
             rawPage.getLock().unlock();
         }
     }
-    
+
     /**
      * Get the count of blocks in the block page as it should be written to
      * disk.
@@ -206,7 +208,7 @@ class BlockPage extends Page
             rawPage.getLock().unlock();
         }
     }
-    
+
     /**
      * Get the full block size including the block header of the block at the
      * position of the given byte buffer of the underlying block page.
@@ -265,7 +267,7 @@ class BlockPage extends Page
         {
             rawPage.getLock().unlock();
         }
-        
+
         return null;
     }
 
@@ -294,7 +296,8 @@ class BlockPage extends Page
             ByteBuffer bytes = rawPage.getByteBuffer();
             if (seek(bytes, address))
             {
-                bytes.putLong(bytes.position() + Pack.INT_SIZE, -getAddress(bytes));
+                bytes.putLong(bytes.position() + Pack.INT_SIZE,
+                        -getAddress(bytes));
                 return true;
             }
         }
@@ -302,7 +305,7 @@ class BlockPage extends Page
         {
             rawPage.getLock().unlock();
         }
-        
+
         return false;
     }
 
@@ -479,8 +482,8 @@ class BlockPage extends Page
 
     /**
      * Get the full block size including the block header of the block in this
-     * block page at the given address. Returns zero if the block is not in
-     * this block page.
+     * block page at the given address. Returns zero if the block is not in this
+     * block page.
      * 
      * @param address
      *            The address of the block.
@@ -594,13 +597,13 @@ class BlockPage extends Page
         {
             throw new IllegalArgumentException();
         }
-    
+
         RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
             ByteBuffer bytes = getBlockRange();
-            
+
             if (seek(bytes, address))
             {
                 throw new IllegalStateException();
@@ -663,7 +666,8 @@ class BlockPage extends Page
                 int size = bytes.getInt();
                 if (bytes.getLong() != address)
                 {
-                    throw new PackException(PackException.ERROR_BLOCK_PAGE_CORRUPT);
+                    throw new PackException(
+                            PackException.ERROR_BLOCK_PAGE_CORRUPT);
                 }
                 bytes.limit(offset + size);
                 if (bytes.remaining() < data.remaining())
@@ -727,7 +731,9 @@ class BlockPage extends Page
             {
                 if (destination == null)
                 {
-                    destination = ByteBuffer.allocateDirect(getBlockSize(address) - Pack.BLOCK_HEADER_SIZE);
+                    destination = ByteBuffer
+                            .allocateDirect(getBlockSize(address)
+                                    - Pack.BLOCK_HEADER_SIZE);
                 }
                 int offset = bytes.position();
                 int size = bytes.getInt();
@@ -752,7 +758,7 @@ class BlockPage extends Page
      * Free a user block page.
      * <p>
      * The page is altered so that the block is skipped when the list of blocks
-     * is iterated. If the block is the last block, then the bytes are 
+     * is iterated. If the block is the last block, then the bytes are
      * immediately available for reallocation. If teh block is followed by one
      * or more blocks, the bytes are not available for reallocation until the
      * user page is vacuumed (or until all the blocks after this block are
@@ -777,18 +783,18 @@ class BlockPage extends Page
             if (seek(bytes, address))
             {
                 int offset = bytes.position();
-    
+
                 int size = bytes.getInt();
                 if (size > 0)
                 {
                     size = -size;
                 }
-    
+
                 rawPage.dirty(offset, Pack.INT_SIZE);
                 bytes.putInt(offset, size);
-    
+
                 dirtyPages.add(rawPage);
-                
+
                 return true;
             }
         }
@@ -796,7 +802,7 @@ class BlockPage extends Page
         {
             rawPage.getLock().unlock();
         }
-        
+
         return false;
     }
 
@@ -828,54 +834,54 @@ class BlockPage extends Page
             while (block < count)
             {
                 blockSize = getBlockSize(bytes);
-    
+
                 assert blockSize > 0;
-    
+
                 if (getAddress(bytes) == address)
                 {
                     break;
                 }
-    
+
                 advance(bytes, blockSize);
-    
+
                 block++;
             }
-    
+
             assert block != count;
-            
+
             int to = bytes.position();
             advance(bytes, blockSize);
             int from = bytes.position();
-            
+
             remaining += (from - to);
-    
+
             block++;
-    
+
             while (block < count)
             {
                 blockSize = getBlockSize(bytes);
-                
+
                 assert blockSize > 0;
-                
+
                 advance(bytes, blockSize);
-                
+
                 block++;
             }
-            
+
             int length = bytes.position() - from;
-            
+
             for (int i = 0; i < length; i++)
             {
                 bytes.put(to + i, bytes.get(from + i));
             }
-            
+
             if (length != 0)
             {
                 rawPage.dirty(to, length);
             }
-            
+
             count--;
-    
+
             rawPage.dirty(Pack.LONG_SIZE, Pack.INT_SIZE);
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
         }

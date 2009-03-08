@@ -32,7 +32,7 @@ public class Pack
 {
     /**  The null address value, zero. */
     public final static long NULL_ADDRESS = 0L;
-
+    
     /** A value written at start of the file to identify the file. */
     final static long SIGNATURE = 0xAAAAAAAAAAAAAAAAL;
     
