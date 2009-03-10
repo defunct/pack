@@ -47,6 +47,12 @@ final class Player
      * addresses during playback.
      */
     private final Set<Long> allocatedBlockPages;
+    
+    /**
+     * The set of pages to return to the free interim page pool after the player
+     * commits.
+     */
+    private final Set<Long> interimPages;
 
     /** The journal pages visited during playback. */
     private final Set<Long> journalPages;
@@ -72,6 +78,7 @@ final class Player
         this.lockedTemporaryReferences = new HashSet<Long>();
         this.journalPages = new HashSet<Long>();
         this.freedBlockPages = new HashSet<Long>();
+        this.interimPages = new HashSet<Long>();
         this.allocatedBlockPages = new HashSet<Long>();
     }
 
@@ -208,6 +215,18 @@ final class Player
     public Set<Long> getAllocatedBlockPages()
     {
         return allocatedBlockPages;
+    }
+
+    /**
+     * Get the set of pages to return to the free interim page pool after the
+     * player commits.
+     * 
+     * @return The set of pages to return to the free interim page pool after
+     *         the player commits.
+     */
+    public Set<Long> getInterimPages()
+    {
+        return interimPages;
     }
 
     /**

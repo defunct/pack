@@ -2,6 +2,7 @@ package com.goodworkalan.pack;
 
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Set;
 
 import com.goodworkalan.sheaf.DirtyPageSet;
 import com.goodworkalan.sheaf.Sheaf;
@@ -26,9 +27,9 @@ import com.goodworkalan.sheaf.Sheaf;
  * Thereafter all blocks allocated will be of the first block size.
  * <p>
  * For the primary application of the lookup page pool, the by remaining table,
- * this allows a small lookup table to use few pages. The lookup pools for 
- * each aligned by remaining value can allocate blocks from a common lookup page
- * for the given block size.
+ * this allows a small lookup table to use few pages. The lookup pools for each
+ * aligned by remaining value can allocate blocks from a common lookup page for
+ * the given block size.
  * <p>
  * Lookup blocks are allocated from a lookup page. Different lookup page pools
  * can share lookup pages, so long as the lookup page pools share the same range
@@ -70,7 +71,7 @@ public class LookupPagePool
      * minimum slot size.
      * 
      * @param blockSizes
-     *           A descending list of the block sizes.
+     *            A descending list of the block sizes.
      */
     public LookupPagePool(Sheaf sheaf, AddressBoundary userBoundary, InterimPagePool interimPagePool, LookupPagePositionIO lookupPagePositionIO, LookupBlockPositionIO lookupBlockPositionIO)
     {
@@ -105,9 +106,14 @@ public class LookupPagePool
     }
 
     /**
-     * Initiate a ..
+     * Allocate a new page to store lookup blocks of the block size given by the
+     * block size index and link it to the head of the linked list lookup pages
+     * for that size.
      * 
-     * @return A new slot position.
+     * @param blockSizeIndex
+     *            The index of the block size.
+     * @param dirtyPages
+     *            The dirty page set.
      */
     private void newLookupPage(int blockSizeIndex, DirtyPageSet dirtyPages)
     {
@@ -353,6 +359,28 @@ public class LookupPagePool
                     lookupPagePositionIO.write(blockSizeIndex, previous, dirtyPages);
                     interimPagePool.free(alloc);
                 }
+            }
+        }
+    }
+
+    /**
+     * Add the pages used to lookup blocks in this lookup page pool to the given
+     * set of pages.
+     * 
+     * @param pages
+     *            A set of pages
+     */
+    public void getPages(Set<Long> pages)
+    {
+        long block = adjust(lookupBlockPositionIO.read());
+        if (block != 0L)
+        {
+            while (block != Long.MAX_VALUE)
+            {
+                block = adjust(block);
+                pages.add(sheaf.floor(block));
+                LookupPage lookupPage = sheaf.getPage(block, LookupPage.class, new LookupPage());
+                block = lookupPage.getPrevious(block);
             }
         }
     }

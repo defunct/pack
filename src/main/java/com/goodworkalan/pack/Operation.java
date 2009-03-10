@@ -4,9 +4,6 @@ import java.nio.ByteBuffer;
 
 /**
  * Base class for all journal operations.
- * <p>
- * FIXME Create a journal operation that will dismantle a
- * {@link ByRemainingTable} and return its pages to the interim page pool.
  * 
  * @author Alan Gutierrez
  */

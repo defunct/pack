@@ -654,6 +654,14 @@ public final class Mutator
         {
             bouquet.getInterimPagePool().free(position);
         }
+        
+        // Free the pages used by the by remaining table.
+        Set<Long> pages = new HashSet<Long>();
+        allocByRemaining.getPages(pages);
+        for (long position : pages)
+        {
+            bouquet.getInterimPagePool().free(position);
+        }
     }
     
     /**
@@ -712,6 +720,14 @@ public final class Mutator
 
         // Create a journal player.
         new Player(bouquet, journal, dirtyPages).play();
+        
+        // Free the pages used by the by remaining table.
+        Set<Long> pages = new HashSet<Long>();
+        allocByRemaining.getPages(pages);
+        for (long position : pages)
+        {
+            bouquet.getInterimPagePool().free(position);
+        }
     }
 
     /**
