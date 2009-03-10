@@ -95,20 +95,18 @@ extends Operation
                     }
                     // We may have already updated the address during a failed
                     // journal playback.
-                    boolean freed = user.getRawPage().getPosition() == position;
-                    if (!freed)
+                    if (user.getRawPage().getPosition() != position)
                     {
                         // Free the existing block. We may have already freed
                         // the block but not updated the address during a failed
                         // playback, or we may have lost a race against another
                         // thread that is changing the address reference.
                         
-                        // TODO Maybe purged or maybe test, instead of using the
-                        // return value of free to see if it is dirty.
-                        freed = user.free(address, dirtyPages);
-                        if (freed)
+                        user.free(address, dirtyPages);
+                        
+                        // Record the block page as containing freed blocks.
+                        if (user.dirty())
                         {
-                            // Record the block page as containing freed blocks.
                             freedBlockPages.add(user.getRawPage().getPosition());
                         }
                     }

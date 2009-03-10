@@ -73,7 +73,7 @@ class CoreMoveRecorder implements MoveRecorder
      */
     public int getBytesRemaining(long position)
     {
-        return getBlockPage(position).getRemaining();
+        return getBlockPage(position).getRemaining(false);
     }
 
     /**

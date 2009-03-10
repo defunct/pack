@@ -16,8 +16,6 @@ import com.goodworkalan.sheaf.Sheaf;
  * An isolated view of an atomic alteration the contents of a {@link Pack}. In
  * order to allocate, read, write or free blocks, one must create a
  * <code>Mutator</code> by calling {@link Pack#mutate()}.
- * <p>
- * TODO Make sure you call flush. Add a setter for page cache count.
  */
 public final class Mutator
 {
@@ -57,6 +55,12 @@ public final class Mutator
     private long lastAddressPage;
     
     /**
+     * The size of the cache that stores dirty pages. When the cache reaches
+     * the dirty page cache size, the entire cache is flushed.
+     */
+    private int dirtyPageCacheSize;
+    
+    /**
      * Create a new mutator to alter the contents of a specific pagers.
      * 
      * @param pager
@@ -92,6 +96,7 @@ public final class Mutator
         this.dirtyPages = dirtyPages;
         this.addresses = new TreeMap<Long, Long>();
         this.temporaries = new HashSet<Long>();
+        this.dirtyPageCacheSize = 8;
     }
 
     /**
@@ -126,10 +131,47 @@ public final class Mutator
         {
             long reference = bouquet.getTemporaryPool().allocate(dirtyPages);
             journal.write(new Temporary(address, reference));
+            flushIfAtDirtyPageCacheSize();
         }
         finally
         {
             bouquet.getAddressBoundary().getPageMoveLock().readLock().unlock();
+        }
+    }
+
+    /**
+     * Set size of the cache that stores dirty pages. When the cache reaches the
+     * dirty page cache size, the entire cache is flushed.
+     * 
+     * @param dirtyPageCacheSize
+     *            The size of the cache that stores dirty pages.
+     */
+    public void setDirtyPageCacheSize(int dirtyPageCacheSize)
+    {
+        this.dirtyPageCacheSize = dirtyPageCacheSize;
+    }
+
+    /**
+     * Get size of the cache that stores dirty pages. When the cache reaches the
+     * dirty page cache size, the entire cache is flushed.
+     * 
+     * @param dirtyPageCacheSize
+     *            The size of the cache that stores dirty pages.
+     */
+    public int getDirtyPageCacheSize()
+    {
+        return dirtyPageCacheSize;
+    }
+
+    /**
+     * Flush the cache of dirty pages if the dirty page cache size has been
+     * surpassed.
+     */
+    private void flushIfAtDirtyPageCacheSize()
+    {
+        if (dirtyPages.size() > dirtyPageCacheSize)
+        {
+            dirtyPages.flush();
         }
     }
 
@@ -186,6 +228,8 @@ public final class Mutator
             
             addresses.put(-address, interim.getRawPage().getPosition());
             
+            flushIfAtDirtyPageCacheSize();
+
             return address;
         }
         finally
@@ -231,6 +275,8 @@ public final class Mutator
             {
                 throw new IllegalStateException();
             }
+            
+            flushIfAtDirtyPageCacheSize();
         }
         finally
         {
@@ -331,6 +377,7 @@ public final class Mutator
             {
                 throw new IllegalStateException();
             }
+            flushIfAtDirtyPageCacheSize();
         }
         finally
         {
@@ -579,7 +626,7 @@ public final class Mutator
             {
                 // Free the block from the interim page.
                 BlockPage interim = bouquet.getAddressBoundary().load(isolated, BlockPage.class, new BlockPage());
-                allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining());
+                allocByRemaining.remove(interim.getRawPage().getPosition(), interim.getRemaining(false));
                 interim.unallocate(address, dirtyPages);
                 
                 // We remove and reinsert because the bytes remaining will change.
@@ -599,6 +646,8 @@ public final class Mutator
             {
                 journal.write(new Free(address));
             }
+
+            flushIfAtDirtyPageCacheSize();
         }
         finally
         {

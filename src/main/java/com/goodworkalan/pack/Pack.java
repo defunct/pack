@@ -330,7 +330,7 @@ public class Pack
      * <p>
      * Create the actions Force, FreeHeader, and the like.
      * <p>
-     * TODO Even more magic.
+     * FIXME Even more magic.
      */
     public void survey()
     {

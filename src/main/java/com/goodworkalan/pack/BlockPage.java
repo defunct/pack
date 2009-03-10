@@ -72,11 +72,6 @@ class BlockPage extends Page
     /** The count of blocks in this page. */
     private int count;
 
-    // FIXME Calculate this. And return different values based on whether the
-    // caller wants to include freed blocks.
-    /** The count of bytes remaining for block allocation. */
-    private int remaining;
-
     /**
      * Construct an uninitialized block page that is then initialized by calling
      * the {@link #create create} or {@link #load load} methods. The default
@@ -111,10 +106,10 @@ class BlockPage extends Page
      */
     public void create(DirtyPageSet dirtyPages)
     {
+        count = 0;
+        
         RawPage rawPage = getRawPage();
-        this.count = 0;
-        this.remaining = rawPage.getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
-
+        
         ByteBuffer bytes = rawPage.getByteBuffer();
 
         bytes.clear();
@@ -124,26 +119,6 @@ class BlockPage extends Page
         bytes.putInt(getDiskBlockCount());
 
         dirtyPages.add(rawPage);
-    }
-
-    /**
-     * Calculate the count of bytes remaining for block allocation by tallying
-     * all allocated and freed blocks and subtracting that from the page size
-     * less the block page header size.
-     * 
-     * @return The count of bytes remaining for block allocation.
-     */
-    private int calcRemaining()
-    {
-        int remaining = getRawPage().getSheaf().getPageSize() - Pack.BLOCK_PAGE_HEADER_SIZE;
-        ByteBuffer bytes = getBlockRange();
-        for (int i = 0; i < count; i++)
-        {
-            int size = Math.abs(getBlockSize(bytes));
-            remaining -= size;
-            advance(bytes, size);
-        }
-        return remaining;
     }
 
     /**
@@ -157,7 +132,6 @@ class BlockPage extends Page
         bytes.getLong();
 
         count = - bytes.getInt();
-        remaining = calcRemaining();
     }
 
     /**
@@ -193,15 +167,44 @@ class BlockPage extends Page
     /**
      * Get the count of bytes remaining for block allocation.
      * 
+     * @param compressed
+     *            If true, exclude free blocks when calculating the bytes
+     *            remaining.
      * @return The count of bytes remaining for block allocation.
      */
-    public int getRemaining()
+    public int getRemaining(boolean compressed)
     {
+        return getRawPage().getSheaf().getPageSize() - getAllocated(compressed);
+    }
+
+    /**
+     * Get the count of bytes used for block allocation and block page headers.
+     * 
+     * @param compressed
+     *            If true, exclude free blocks when calculating the bytes in
+     *            use.
+     * @return The count allocated bytes.
+     */
+    private int getAllocated(boolean compressed)
+    {
+        int allocated = Pack.BLOCK_PAGE_HEADER_SIZE;
         RawPage rawPage = getRawPage();
         rawPage.getLock().lock();
         try
         {
-            return remaining;
+            ByteBuffer bytes = getBlockRange();
+            for (int i = 0; i < count; i++)
+            {
+                int size = getBlockSize(bytes);
+                boolean freed = size < 0;
+                size = Math.abs(size);
+                if (!compressed || !freed)
+                {
+                    allocated += size;
+                }
+                advance(bytes, size);
+            }
+            return allocated;
         }
         finally
         {
@@ -472,7 +475,6 @@ class BlockPage extends Page
         if (free != 0)
         {
             count -= free;
-            remaining += freed;
             RawPage rawPage = getRawPage();
             dirtyPages.add(rawPage);
             rawPage.getByteBuffer().putInt(0, getDiskBlockCount());
@@ -615,7 +617,6 @@ class BlockPage extends Page
             bytes.putLong(address);
 
             count++;
-            remaining -= blockSize;
 
             bytes.clear();
             bytes.putInt(Pack.LONG_SIZE, getDiskBlockCount());
@@ -755,11 +756,31 @@ class BlockPage extends Page
     }
 
     /**
+     * Return true if the block page contains any dirty blocks.
+     * 
+     * @return True if the block page contains dirty blocks.
+     */
+    public boolean dirty()
+    {
+        ByteBuffer bytes = getBlockRange();
+        for (int i = 0; i < count; i++)
+        {
+            int size = getBlockSize(bytes);
+            if (size < 0)
+            {
+                return true;
+            }
+            advance(bytes, size);
+        }
+        return false;
+    }
+
+    /**
      * Free a user block page.
      * <p>
      * The page is altered so that the block is skipped when the list of blocks
      * is iterated. If the block is the last block, then the bytes are
-     * immediately available for reallocation. If teh block is followed by one
+     * immediately available for reallocation. If the block is followed by one
      * or more blocks, the bytes are not available for reallocation until the
      * user page is vacuumed (or until all the blocks after this block are
      * freed, but that is not at all predictable.)
@@ -769,7 +790,7 @@ class BlockPage extends Page
      * @param dirtyPages
      *            The set of dirty pages.
      */
-    public boolean free(long address, DirtyPageSet dirtyPages)
+    public void free(long address, DirtyPageSet dirtyPages)
     {
         // Synchronize on the raw page.
         RawPage rawPage = getRawPage();
@@ -794,16 +815,12 @@ class BlockPage extends Page
                 bytes.putInt(offset, size);
 
                 dirtyPages.add(rawPage);
-
-                return true;
             }
         }
         finally
         {
             rawPage.getLock().unlock();
         }
-
-        return false;
     }
 
     /**
@@ -852,8 +869,6 @@ class BlockPage extends Page
             int to = bytes.position();
             advance(bytes, blockSize);
             int from = bytes.position();
-
-            remaining += (from - to);
 
             block++;
 

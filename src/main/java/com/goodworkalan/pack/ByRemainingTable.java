@@ -177,7 +177,7 @@ final class ByRemainingTable implements ByRemaining
      */
     public void add(BlockPage blocks)
     {
-        add(blocks.getRawPage().getPosition(), blocks.getRemaining());
+        add(blocks.getRawPage().getPosition(), blocks.getRemaining(false));
     }
 
     /**
@@ -280,7 +280,7 @@ final class ByRemainingTable implements ByRemaining
                     {
                         BlockPage blocks = sheaf.getPage(adjusted,
                                 BlockPage.class, new BlockPage());
-                        if (alignRemaining(blocks.getRemaining()) != alignmentIndex
+                        if (alignRemaining(blocks.getRemaining(false)) != alignmentIndex
                                 * alignment)
                         {
                             break;

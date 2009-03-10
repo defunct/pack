@@ -142,6 +142,8 @@ class UserPagePool
      */
     public void vacuum(Bouquet bouquet)
     {
+        // FIXME You're not going to return a freed page when you need to
+        // compress it are you?
         Set<Long> allocatedBlockPages = getAllocatedBlockPages();
         Set<Long> freedBlockPages = getFreedBlockPages();
         Set<Long> emptyBlockPages = new HashSet<Long>();
@@ -157,7 +159,7 @@ class UserPagePool
             blocks.getRawPage().getLock().lock();
             try
             {
-                byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining());
+                byRemaining.remove(blocks.getRawPage().getPosition(), blocks.getRemaining(false));
                 if (blocks.purge(dirtyPages))
                 {
                     continuous.remove();
@@ -167,7 +169,7 @@ class UserPagePool
                     }
                     else
                     {
-                        byRemaining.add(blocks.getRawPage().getPosition(), blocks.getRemaining());
+                        byRemaining.add(blocks.getRawPage().getPosition(), blocks.getRemaining(false));
                     }
                 }
             }
