@@ -55,8 +55,7 @@ final class AddressPage extends Page
      * is a variation on the prototype object construction pattern.
      * 
      * @see com.goodworkalan.sheaf.Sheaf#getPage(long, Class, Page)
-     * @see com.goodworkalan.sheaf.Sheaf#setPage(long, Class, Page,
-     *      DirtyPageSet, boolean)
+     * @see com.goodworkalan.sheaf.Sheaf#setPage(long, Class, Page, DirtyPageSet, boolean)
      */
     public AddressPage()
     {
