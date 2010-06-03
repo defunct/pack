@@ -244,53 +244,50 @@ class AddressPagePool implements Iterable<Long>
                 // try again.
                 return null;
             }
+            // If we can return the last selected address page,
+            // let's. It will help with locality of reference.
+
+            if (addressPages.contains(lastSelected))
+            {
+                position = lastSelected;
+            }
+            else if (addressPages.size() != 0)
+            {
+                position = addressPages.first();
+            }
             else
             {
-                // If we can return the last selected address page,
-                // let's. It will help with locality of reference.
-    
-                if (addressPages.contains(lastSelected))
+                // We are here because our set of returning address
+                // pages is not empty, meaning that a Mutator will
+                // be returning an address page that has some space
+                // left. We need to wait for it.
+                
+                try
                 {
-                    position = lastSelected;
+                    addressPages.wait();
                 }
-                else if (addressPages.size() != 0)
+                catch (InterruptedException e)
                 {
-                    position = addressPages.first();
                 }
-                else
-                {
-                    // We are here because our set of returning address
-                    // pages is not empty, meaning that a Mutator will
-                    // be returning an address page that has some space
-                    // left. We need to wait for it.
-                    
-                    try
-                    {
-                        addressPages.wait();
-                    }
-                    catch (InterruptedException e)
-                    {
-                    }
-    
-                    // When it arrives, we'll return null indicating we
-                    // need to try again.
-    
-                    return null;
-                }
-    
-                // Remove the address page from the set of address
-                // pages available for allocation.
-    
-                addressPages.remove(position);
+
+                // When it arrives, we'll return null indicating we
+                // need to try again.
+
+                return null;
             }
+
+            // Remove the address page from the set of address pages available
+            // for allocation.
+
+            addressPages.remove(position);
     
             // Get the address page.
             AddressPage addressPage = bouquet.getSheaf().getPage(position, AddressPage.class, new AddressPage());
     
-            // If the address page has two or more addresses available,
-            // then we add it to the set of returning address pages, the
-            // address pages that have space, but are currently in use,
-            // so we should wait for them.
+            // If the address page has two or more addresses available, then we
+            // add it to the set of returning address pages, the address pages
+            // that have space, but are currently in use, so we should wait for
+            // them.
     
             if (addressPage.getFreeCount() > 1)
             {
